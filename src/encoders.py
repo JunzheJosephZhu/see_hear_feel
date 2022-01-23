@@ -1,16 +1,40 @@
-from torchvision.models import resnet50
-from torchvision.models.feature_extraction import create_feature_extractor, get_graph_node_names
+from torchvision.models import resnet18
+from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 from torch import nn
-# train_nodes, eval_nodes = get_graph_node_names(resnet50(pretrained=True))
-# print(train_nodes)
-image_encoder = create_feature_extractor(resnet50(pretrained=True), ["layer4.2.add"])
-test_image = torch.zeros((1, 3, 300, 300))
-print(image_encoder(test_image))
+
+class Encoder(torch.nn.Module):
+    def __init__(self, feature_extractor, out_dim):
+        super().__init__()
+        self.feature_extractor = feature_extractor
+        self.projection = nn.Linear(512, out_dim)
+
+    def forward(self, x):
+        feats = self.feature_extractor(x)["avgpool"]
+        feats = feats.squeeze(3).squeeze(2)
+        return self.projection(feats)
+
+def make_vision_encoder(out_dim):
+    vision_extractor = resnet18(pretrained=True)
+    vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
+    return Encoder(vision_extractor, out_dim)
 
 
+def make_tactile_encoder(out_dim):
+    tactile_extractor = resnet18()
+    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
+    return Encoder(tactile_extractor, out_dim)
 
 
-def make_audio_extractor():
-    audio_extractor = resnet50()
-    audio_extractor.conv1 = nn.Conv2d(2, audio_extractor.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+def make_audio_encoder(out_dim):
+    audio_extractor = resnet18()
+    audio_extractor.conv1 = nn.Conv2d(
+        2, 64, kernel_size=7, stride=1, padding=3, bias=False
+    )
+    audio_extractor = create_feature_extractor(audio_extractor, ["avgpool"])
+    return Encoder(audio_extractor, out_dim)
+
+if __name__ == "__main__":
+    vision_encoder = make_vision_encoder(128)
+    empty_input = torch.zeros((1, 3, 64, 101))
+    print(vision_encoder(empty_input).shape)
