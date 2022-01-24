@@ -1,6 +1,6 @@
 import torch
 from dataset import TripletDataset
-from encoders import make_audio_encoder, make_vision_encoder, make_tactile_encoder
+from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder
 from engine import MetricLearn
 from torch.utils.data import DataLoader
 import os
@@ -9,10 +9,10 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 def main(args):
-    train_set = TripletDataset(args.train_csv)
-    val_set = TripletDataset(args.val_csv)
+    train_set = TripletDataset(args.train_csv, args.sil_ratio)
+    val_set = TripletDataset(args.val_csv, args.sil_ratio)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=args.num_workers)
-    val_loader = DataLoader(val_set, 1, False, num_workers=4)
+    val_loader = DataLoader(val_set, 1, num_workers=4)
     v_encoder = make_vision_encoder(args.embed_dim)
     a_encoder = make_audio_encoder(args.embed_dim)
     t_encoder = make_tactile_encoder(args.embed_dim)
@@ -70,6 +70,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
+    p.add("--sil_ratio", default=0.2)
 
     args = p.parse_args()
     main(args)
