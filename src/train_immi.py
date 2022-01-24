@@ -18,7 +18,7 @@ def main(args):
         """
         return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
 
-    # get pretrained model    
+    # get pretrained model
     train_set = ImmitationDataSet(args.train_csv)
     val_set = ImmitationDataSet(args.val_csv)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=1)
