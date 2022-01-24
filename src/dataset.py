@@ -32,8 +32,8 @@ class TripletDataset(Dataset):
 
     def __getitem__(self, idx):
         trial = os.path.join(self.data_folder, self.logs.iloc[idx].Time)
-        audio1, sr = sf.read(os.path.join(trial, "audio_in1.wav"))
-        audio2, sr = sf.read(os.path.join(trial, "audio_in2.wav"))
+        audio1, sr = sf.read(os.path.join(trial, "audio_holebase.wav"))
+        audio2, sr = sf.read(os.path.join(trial, "audio_gripper.wav"))
         assert sr == 16000
         resolution = sr // 10  # number of audio samples in each video frame
         # print(audio1.max(), audio1.min(), audio2.max(), audio2.min(), audio1.shape, audio2.shape)
@@ -41,7 +41,7 @@ class TripletDataset(Dataset):
         audio = torch.as_tensor(np.stack([audio1, audio2], 0)).float()
 
         # read camera frames
-        cam_video = cv2.VideoCapture(os.path.join(trial, "cam.avi"))
+        cam_video = cv2.VideoCapture(os.path.join(trial, "cam_gripper.avi"))
         success, cam_frame = cam_video.read()
         cam_frames = []
         while success:
@@ -189,14 +189,14 @@ class ImmitationDataSet(IterableDataset):
         # get file older
         trial = os.path.join(self.data_folder, self.logs.iloc[idx].Time)
         # load audio tracks
-        audio1, sr = sf.read(os.path.join(trial, "audio_in1.wav"))
-        audio2, sr = sf.read(os.path.join(trial, "audio_in2.wav"))
+        audio1, sr = sf.read(os.path.join(trial, "audio_holebase.wav"))
+        audio2, sr = sf.read(os.path.join(trial, "audio_gripper.wav"))
         self.audio = torch.as_tensor(np.stack([audio1, audio2], 0)).float()
         # load json file
         with open(os.path.join(trial, "timestamps.json")) as ts:
             self.timestamps = json.load(ts)
         # read camera frames
-        self.cam_video = cv2.VideoCapture(os.path.join(trial, "cam.avi"))
+        self.cam_video = cv2.VideoCapture(os.path.join(trial, "cam_gripper.avi"))
         # read gelsight frames
         self.gs_video = cv2.VideoCapture(os.path.join(trial, "gs.avi"))
 
