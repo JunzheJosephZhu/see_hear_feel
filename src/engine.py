@@ -77,11 +77,6 @@ class ImmiLearn(LightningModule):
         self.config = config
         self.cce = torch.nn.CrossEntropyLoss()
 
-    def common_step(self, batch):
-
-
-        return gs_loss, audio_loss, dist_dict
-
     def training_step(self, batch, batch_idx):
         def compute_loss(pred, demo):
             """
@@ -94,7 +89,7 @@ class ImmiLearn(LightningModule):
             pred = pred.reshape(batch_size, 3, space_dim)
             return self.cce(pred, demo)
         v_inp, a_inp, t_inp, keyboard = batch
-        action_pred = self.actor(v_inp, a_inp, t_inp)
+        action_pred = self.actor(v_inp, a_inp, t_inp, self.current_epoch < self.config.freeze_till)
         loss = compute_loss(action_pred, keyboard)
         return loss
 

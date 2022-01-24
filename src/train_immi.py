@@ -1,7 +1,7 @@
 import torch
 from dataset import ImmitationDataSet
-from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder
-from engine import MetricLearn
+from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor
+from engine import ImmiLearn
 from torch.utils.data import DataLoader
 import os
 import yaml
@@ -23,28 +23,55 @@ def main(args):
     v_encoder = make_vision_encoder(args.embed_dim)
     a_encoder = make_audio_encoder(args.embed_dim)
     t_encoder = make_tactile_encoder(args.embed_dim)
-    state_dict = torch.load(args.pretrained)["state_dict"]
+    state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
     v_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
     a_encoder.load_state_dict(strip_sd(state_dict, "a_model."))
     t_encoder.load_state_dict(strip_sd(state_dict, "t_model."))
-    # freeze stuff
-    def freeze_net(network):
-        for p in network.parameters():
-            p.requires_grad = False
-    if args.freeze:
-        freeze_net(v_encoder)
-        freeze_net(a_encoder)
-        freeze_net(t_encoder)
-    # verifying
-    for cam_frame, gs_frame, log_spec, action in train_loader:
-        cam_frame, gs_frame, log_spec, action
-        v_embed = v_encoder(cam_frame)
-        a_embed = a_encoder(log_spec)
-        t_embed = t_encoder(gs_frame)
-        def l2d(a, b):
-            return (a - b).pow(2).sum(1)
-        print(l2d(v_embed, a_embed))
-        print(l2d(v_embed, t_embed))
+    actor = Immitation_Actor(v_encoder, a_encoder, t_encoder, args.embed_dim, args.num_heads, args.action_dim)
+    optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
+    # save config
+    config_name = os.path.basename(args.config).split(".yaml")[0]
+    exp_dir = os.path.join("exp", config_name)
+    if not os.path.exists(exp_dir):
+        os.makedirs(exp_dir)
+    with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
+        yaml.safe_dump(vars(args), outfile)
+    # pl stuff
+    pl_module = ImmiLearn(actor, optimizer, train_loader, val_loader, scheduler, args)
+    checkpoint = ModelCheckpoint(
+        dirpath=os.path.join(exp_dir, "checkpoints"),
+        filename="{epoch}-{step}",
+        save_top_k=-1,
+        save_last=True,
+    )
+    trainer = Trainer(
+        max_epochs=args.epochs,
+        callbacks=[checkpoint],
+        default_root_dir=exp_dir,
+        gpus=-1,
+        strategy="dp",
+        limit_val_batches=10,
+        check_val_every_n_epoch=1,
+        log_every_n_steps=5
+    )
+    trainer.fit(
+        pl_module,
+        ckpt_path=None
+        if args.resume is None
+        else os.path.join(os.getcwd(), args.resume),
+    )
+    print("best_model", checkpoint.best_model_path)
+    # # verifying
+    # for cam_frame, gs_frame, log_spec, action in train_loader:
+    #     cam_frame, gs_frame, log_spec, action
+    #     v_embed = v_encoder(cam_frame)
+    #     a_embed = a_encoder(log_spec)
+    #     t_embed = t_encoder(gs_frame)
+    #     def l2d(a, b):
+    #         return (a - b).pow(2).sum(1)
+    #     print(l2d(v_embed, a_embed))
+    #     print(l2d(v_embed, t_embed))
         
 
 
@@ -64,7 +91,9 @@ if __name__ == "__main__":
     # model
     p.add("--embed_dim", required=True, type=int)
     p.add("--pretrained", required=True)
-    p.add("--freeze_till", default=True)
+    p.add("--freeze_till", required=True, type=int)
+    p.add("--action_dim", default=3, type=int)
+    p.add("--num_heads", type=int)
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")

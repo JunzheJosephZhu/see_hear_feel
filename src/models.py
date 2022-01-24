@@ -50,21 +50,22 @@ class Attention_Fusion(torch.nn.Module):
         return v_out, a_out, t_out
 
 class Immitation_Actor(torch.nn.Module):
-    def __init__(self, v_encoder, a_encoder, t_encoder, embed_dim, num_heads, action_dim, freeze):
+    def __init__(self, v_encoder, a_encoder, t_encoder, embed_dim, num_heads, action_dim):
         super().__init__()
         self.v_encoder = v_encoder
         self.a_encoder = a_encoder
         self.t_encoder = t_encoder
         self.fusion = Attention_Fusion(embed_dim, num_heads)
         self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 3, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
-        self.freeze = freeze
 
-    def forward(self, v_inp, a_inp, t_inp):
-        if self.freeze:
+    def forward(self, v_inp, a_inp, t_inp, freeze):
+        if freeze:
+            print("freeze")
             with torch.no_grad():
                 v_embed = self.v_encoder(v_inp)
                 a_embed = self.a_encoder(a_inp)
                 t_embed = self.t_encoder(t_inp)
+            v_embed, a_embed, t_embed = v_embed.detach(), a_embed.detach(), t_embed.detach()
         else:
             v_embed = self.v_encoder(v_inp)
             a_embed = self.a_encoder(a_inp)
