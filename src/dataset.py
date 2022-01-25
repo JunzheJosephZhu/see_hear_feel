@@ -1,4 +1,8 @@
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 from argparse import ArgumentParser
+from re import L
 import pandas as pd
 from torch.utils.data import Dataset, IterableDataset
 import os
@@ -49,6 +53,7 @@ class TripletDataset(Dataset):
             success, cam_frame = cam_video.read()
         cam_frames = torch.as_tensor(np.stack(cam_frames, 0))
         # print("cam_frames shape: {}".format(cam_frames.shape))
+
         # read gelsight frames
         gs_video = cv2.VideoCapture(os.path.join(trial, "gs.avi"))
         success, gs_frame = gs_video.read()
@@ -64,19 +69,19 @@ class TripletDataset(Dataset):
 
         # voice activity detection
         audio_frames = audio.unfold(dimension=-1, size=resolution, step=resolution)
-        energy = torch.pow(audio_frames, 2).sum(-1).sum(0)
+        energy = torch.pow(audio_frames, 2).sum(-1).sum(0) # user the gripper piezo
         # plt.plot(energy)
-        # plt.plot(torch.ones(energy.shape) * 2)
+        # plt.plot(torch.ones(energy.shape) * 2.5)
         # print(trial)
         # plt.show()
         # sample anchor times
-        if torch.rand(()) > self.sil_ratio and (energy > 2).any():  # sample anchor with audio event
-            anchor_choices = torch.nonzero(energy > 2)
+        if torch.rand(()) > self.sil_ratio and (energy > 2.5).any():  # sample anchor with audio event
+            anchor_choices = torch.nonzero(energy > 2.5)
             anchor = anchor_choices[
                 torch.randint(high=anchor_choices.size(0), size=())
             ].item()
         else:
-            anchor_choices = torch.nonzero(energy < 2)
+            anchor_choices = torch.nonzero(energy < 2.5)
             anchor = anchor_choices[
                 torch.randint(high=anchor_choices.size(0), size=())
             ].item()
@@ -150,13 +155,21 @@ class ImmitationDataSet(IterableDataset):
         success, cam_fixed_frame = self.cam_fixed_video.read()
         success, gs_frame = self.gs_video.read()
         if not success:
+            self.cam_video.release()
+            self.cam_fixed_video.release()
+            self.gs_video.release()
             self.idx += 1
             if self.idx == len(self.logs):
+                self.idx = 0
+                self.load_episode(0)
                 raise StopIteration
             self.load_episode(self.idx)
             success, cam_frame = self.cam_video.read()
+            assert success
             success, cam_fixed_frame = self.cam_fixed_video.read()
+            assert success
             success, gs_frame = self.gs_video.read()
+            assert success
         assert success
         cam_frame = torch.as_tensor(cam_frame).permute(2, 0, 1) / 255
         cam_fixed_frame = torch.as_tensor(cam_fixed_frame).permute(2, 0, 1) / 255
@@ -215,9 +228,9 @@ if __name__ == "__main__":
     parser.add_argument("--log_file", default="train.csv")
     args = parser.parse_args()
     dataset = TripletDataset(args.log_file)
-    cam_pos, gs_pos, log_spec, cam_neg = dataset[11]
+    cam_pos, gs_pos, log_spec, cam_neg = dataset[53]
 
-    dataset = ImmitationDataSet(args.log_file)
-    loader = DataLoader(dataset, 4, num_workers=1)
-    for _ in loader:
-        pass
+    # dataset = ImmitationDataSet(args.log_file)
+    # loader = DataLoader(dataset, 4, num_workers=1)
+    # for _ in loader:
+    #     pass

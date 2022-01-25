@@ -103,3 +103,41 @@ class ImmiLearn(LightningModule):
 
     def configure_optimizers(self):
         return [self.optimizer], [self.scheduler]
+
+class ImmiBaselineLearn(LightningModule):
+    def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
+        super().__init__()
+        self.actor = actor
+        self.optimizer = optimizer
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.scheduler = scheduler
+        self.config = config
+        self.cce = torch.nn.CrossEntropyLoss()
+
+    def training_step(self, batch, batch_idx):
+        def compute_loss(pred, demo):
+            """
+            pred: # [batch, 3 * action_dims]
+            demo: # [batch, action_dims]
+            """
+            batch_size = pred.size(0)
+            space_dim = demo.size(-1)
+            # [batch, 3, num_dims]
+            pred = pred.reshape(batch_size, 3, space_dim)
+            return self.cce(pred, demo)
+        v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
+        action_pred = self.actor(v_gripper_inp, v_fixed_inp, self.current_epoch < self.config.freeze_till)
+        loss = compute_loss(action_pred, keyboard)
+        return loss
+
+    def train_dataloader(self):
+        """Training dataloader"""
+        return self.train_loader
+
+    def val_dataloader(self):
+        """Validation dataloader"""
+        return self.val_loader
+
+    def configure_optimizers(self):
+        return [self.optimizer], [self.scheduler]

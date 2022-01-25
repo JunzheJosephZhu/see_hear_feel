@@ -14,8 +14,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 def main(args):
     train_set = TripletDataset(args.train_csv, args.sil_ratio)
     val_set = TripletDataset(args.val_csv, args.sil_ratio)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=args.num_workers)
-    val_loader = DataLoader(val_set, 1, num_workers=4)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
+    val_loader = DataLoader(val_set, 1, num_workers=0)
     v_encoder = make_vision_encoder(args.embed_dim)
     a_encoder = make_audio_encoder(args.embed_dim)
     t_encoder = make_tactile_encoder(args.embed_dim)
