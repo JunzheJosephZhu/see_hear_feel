@@ -48,6 +48,7 @@ class TripletDataset(Dataset):
             cam_frames.append(cam_frame)
             success, cam_frame = cam_video.read()
         cam_frames = torch.as_tensor(np.stack(cam_frames, 0))
+        # print("cam_frames shape: {}".format(cam_frames.shape))
         # read gelsight frames
         gs_video = cv2.VideoCapture(os.path.join(trial, "gs.avi"))
         success, gs_frame = gs_video.read()
@@ -56,6 +57,7 @@ class TripletDataset(Dataset):
             gs_frames.append(gs_frame)
             success, gs_frame = gs_video.read()
         gs_frames = torch.as_tensor(np.stack(gs_frames, 0))
+        # print("gs_frames shape: {}".format(gs_frames.shape))
         # see how many frames there are
         assert cam_frames.size(0) == gs_frames.size(0)
         num_frames = cam_frames.size(0)
@@ -145,6 +147,7 @@ class ImmitationDataSet(IterableDataset):
         sr = 16000
         resolution = sr // 10
         success, cam_frame = self.cam_video.read()
+        success, cam_fixed_frame = self.cam_fixed_video.read()
         success, gs_frame = self.gs_video.read()
         if not success:
             self.idx += 1
@@ -152,9 +155,11 @@ class ImmitationDataSet(IterableDataset):
                 raise StopIteration
             self.load_episode(self.idx)
             success, cam_frame = self.cam_video.read()
+            success, cam_fixed_frame = self.cam_fixed_video.read()
             success, gs_frame = self.gs_video.read()
         assert success
         cam_frame = torch.as_tensor(cam_frame).permute(2, 0, 1) / 255
+        cam_fixed_frame = torch.as_tensor(cam_fixed_frame).permute(2, 0, 1) / 255
         gs_frame = torch.as_tensor(gs_frame).permute(2, 0, 1) / 255
         # load audio clip
         # audio length is 1 second
@@ -181,7 +186,7 @@ class ImmitationDataSet(IterableDataset):
         z = z_space[action_c[2]]
         action = torch.as_tensor([x, y, z])
         self.timestep += 1
-        return cam_frame, gs_frame, log_spec, action
+        return cam_frame, cam_fixed_frame, gs_frame, log_spec, action
 
     def load_episode(self, idx):
         # reset timestep
@@ -197,6 +202,7 @@ class ImmitationDataSet(IterableDataset):
             self.timestamps = json.load(ts)
         # read camera frames
         self.cam_video = cv2.VideoCapture(os.path.join(trial, "cam_gripper.avi"))
+        self.cam_fixed_video = cv2.VideoCapture(os.path.join(trial, "cam_fixed.avi"))
         # read gelsight frames
         self.gs_video = cv2.VideoCapture(os.path.join(trial, "gs.avi"))
 

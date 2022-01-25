@@ -46,7 +46,7 @@ class Attention_Fusion(torch.nn.Module):
         inp = torch.stack([v_inp, a_inp, t_inp], dim=0)
         sublayer_out, weights = self.mha(inp, inp, inp)
         out = self.layernorm(sublayer_out + inp)
-        v_out, a_out, t_out = out.split(1, 0)
+        v_out, a_out, t_out = out[:]
         return v_out, a_out, t_out
 
 class Immitation_Actor(torch.nn.Module):
@@ -71,6 +71,7 @@ class Immitation_Actor(torch.nn.Module):
             a_embed = self.a_encoder(a_inp)
             t_embed = self.t_encoder(t_inp)
         v_out, a_out, t_out = self.fusion(v_embed, a_embed, t_embed)
+
         mlp_inp = torch.cat([v_out, a_out, t_out], dim=1)
         action_logits = self.mlp(mlp_inp)
         return action_logits

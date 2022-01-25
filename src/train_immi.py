@@ -26,10 +26,12 @@ def main(args):
     v_encoder = make_vision_encoder(args.embed_dim)
     a_encoder = make_audio_encoder(args.embed_dim)
     t_encoder = make_tactile_encoder(args.embed_dim)
+
     state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
     v_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
     a_encoder.load_state_dict(strip_sd(state_dict, "a_model."))
     t_encoder.load_state_dict(strip_sd(state_dict, "t_model."))
+
     actor = Immitation_Actor(v_encoder, a_encoder, t_encoder, args.embed_dim, args.num_heads, args.action_dim)
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)

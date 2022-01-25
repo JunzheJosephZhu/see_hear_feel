@@ -1,3 +1,6 @@
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import torch
 from dataset import TripletDataset
 from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder

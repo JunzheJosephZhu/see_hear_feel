@@ -88,7 +88,7 @@ class ImmiLearn(LightningModule):
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, 3, space_dim)
             return self.cce(pred, demo)
-        v_inp, a_inp, t_inp, keyboard = batch
+        v_inp, _, t_inp, a_inp, keyboard = batch
         action_pred = self.actor(v_inp, a_inp, t_inp, self.current_epoch < self.config.freeze_till)
         loss = compute_loss(action_pred, keyboard)
         return loss
