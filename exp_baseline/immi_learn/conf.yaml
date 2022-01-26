@@ -1,0 +1,15 @@
+action_dim: 3
+batch_size: 8
+config: conf/immi_learn.yaml
+embed_dim: 128
+epochs: 100
+freeze_till: 50
+gamma: 0.9
+lr: 0.001
+num_heads: 4
+num_workers: 4
+period: 3
+pretrained: /home/robot/perls2_gelsight/projects/test_close_gripper/svl_project/exp/metric_learn/checkpoints/last.ckpt
+resume: null
+train_csv: train.csv
+val_csv: val.csv

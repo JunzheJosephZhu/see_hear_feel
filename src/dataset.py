@@ -147,8 +147,8 @@ class ImmitationDataSet(IterableDataset):
 
     def __next__(self):
         worker_info = torch.utils.data.get_worker_info()
-        if worker_info is not None:
-            assert worker_info.num_workers == 1, "multiworker not supported"
+        # if worker_info is not None:
+        #     assert worker_info.num_workers == 1, "multiworker not supported"
         sr = 16000
         resolution = sr // 10
         success, cam_frame = self.cam_video.read()
@@ -231,6 +231,6 @@ if __name__ == "__main__":
     cam_pos, gs_pos, log_spec, cam_neg = dataset[53]
 
     # dataset = ImmitationDataSet(args.log_file)
-    # loader = DataLoader(dataset, 4, num_workers=1)
+    # loader = DataLoader(dataset, 4, num_workers=0)
     # for _ in loader:
     #     pass

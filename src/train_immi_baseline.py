@@ -21,13 +21,13 @@ def main(args):
     # get pretrained model
     train_set = ImmitationDataSet(args.train_csv)
     val_set = ImmitationDataSet(args.val_csv)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=1)
-    val_loader = DataLoader(val_set, 1, num_workers=1)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
+    val_loader = DataLoader(val_set, 1, num_workers=0)
     v_gripper_encoder = make_vision_encoder(args.embed_dim)
     v_fixed_encoder = make_vision_encoder(args.embed_dim)
 
-    state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
-    v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
+    # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
+    # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
 
     actor = Immitation_Baseline_Actor(v_gripper_encoder, v_fixed_encoder, args.embed_dim, args.action_dim)
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
