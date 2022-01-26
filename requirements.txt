@@ -1,0 +1,7 @@
+pyaml
+opencv-python
+pytorch_lightning
+pandas
+soundfile
+matplotlib
+configargparse
