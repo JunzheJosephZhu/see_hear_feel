@@ -63,7 +63,6 @@ def baselineLearning(args):
     )
     print("best_model", checkpoint.best_model_path)
 
-
 if __name__ == "__main__":
     import configargparse
 

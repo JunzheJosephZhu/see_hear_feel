@@ -94,6 +94,23 @@ class ImmiLearn(LightningModule):
         self.log_dict({"train/action_loss": loss})
         return loss
 
+    def validation_step(self, batch, batch_idx):
+        def compute_loss(pred, demo):
+            """
+            pred: # [batch, 3 * action_dims]
+            demo: # [batch, action_dims]
+            """
+            batch_size = pred.size(0)
+            space_dim = demo.size(-1)
+            # [batch, 3, num_dims]
+            pred = pred.reshape(batch_size, 3, space_dim)
+            return self.cce(pred, demo)
+        v_inp, _, t_inp, a_inp, keyboard = batch
+        action_pred = self.actor(v_inp, a_inp, t_inp, self.current_epoch < self.config.freeze_till)
+        with torch.no_grad():
+            loss = compute_loss(action_pred, keyboard)
+        self.log_dict({"val/action_loss": loss})
+
     def train_dataloader(self):
         """Training dataloader"""
         return self.train_loader
@@ -133,6 +150,23 @@ class ImmiBaselineLearn(LightningModule):
         loss = compute_loss(action_pred, keyboard)
         self.log_dict({"train/action_loss": loss})
         return loss
+
+    def validation_step(self, batch, batch_idx):
+        def compute_loss(pred, demo):
+            """
+            pred: # [batch, 3 * action_dims]
+            demo: # [batch, action_dims]
+            """
+            batch_size = pred.size(0)
+            space_dim = demo.size(-1)
+            # [batch, 3, num_dims]
+            pred = pred.reshape(batch_size, 3, space_dim)
+            return self.cce(pred, demo)
+        v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
+        action_pred = self.actor(v_gripper_inp, v_fixed_inp, self.current_epoch < self.config.freeze_till)
+        with torch.no_grad():
+            loss = compute_loss(action_pred, keyboard)
+        self.log_dict({"val/action_loss": loss})
 
     def train_dataloader(self):
         """Training dataloader"""
