@@ -1,4 +1,4 @@
 embed_dim: 128
 pretrained: "/home/hao/Desktop/Research/svl/svl_project/exp/metric_learn/checkpoints/last.ckpt"
-freeze_till: 10
+freeze_till: 30
 num_heads: 4

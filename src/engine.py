@@ -76,6 +76,7 @@ class ImmiLearn(LightningModule):
         self.scheduler = scheduler
         self.config = config
         self.cce = torch.nn.CrossEntropyLoss()
+        print("immi learn")
 
     def training_step(self, batch, batch_idx):
         def compute_loss(pred, demo):
@@ -132,7 +133,9 @@ class ImmiBaselineLearn(LightningModule):
         self.val_loader = val_loader
         self.scheduler = scheduler
         self.config = config
-        self.cce = torch.nn.CrossEntropyLoss()
+        # self.cce = torch.nn.CrossEntropyLoss()
+        self.mse = torch.nn.MSELoss()
+        print("baseline learn")
 
     def training_step(self, batch, batch_idx):
         def compute_loss(pred, demo):
@@ -143,10 +146,13 @@ class ImmiBaselineLearn(LightningModule):
             batch_size = pred.size(0)
             space_dim = demo.size(-1)
             # [batch, 3, num_dims]
-            pred = pred.reshape(batch_size, 3, space_dim)
-            return self.cce(pred, demo)
+            pred = pred.reshape(batch_size, space_dim)
+            return self.mse(pred, demo)
         v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
+        keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
         action_pred = self.actor(v_gripper_inp, v_fixed_inp, self.current_epoch < self.config.freeze_till)
+        print("action", action_pred)
+        print("keyboard", keyboard)
         loss = compute_loss(action_pred, keyboard)
         self.log_dict({"train/action_loss": loss})
         return loss
@@ -160,9 +166,10 @@ class ImmiBaselineLearn(LightningModule):
             batch_size = pred.size(0)
             space_dim = demo.size(-1)
             # [batch, 3, num_dims]
-            pred = pred.reshape(batch_size, 3, space_dim)
-            return self.cce(pred, demo)
+            pred = pred.reshape(batch_size, space_dim)
+            return self.mse(pred, demo)
         v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
+        keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
         action_pred = self.actor(v_gripper_inp, v_fixed_inp, self.current_epoch < self.config.freeze_till)
         with torch.no_grad():
             loss = compute_loss(action_pred, keyboard)

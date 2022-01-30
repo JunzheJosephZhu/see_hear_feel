@@ -81,7 +81,10 @@ class Immitation_Baseline_Actor(torch.nn.Module):
         super().__init__()
         self.v_gripper_encoder = v_gripper_encoder
         self.v_fixed_encoder = v_fixed_encoder
-        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 2, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 2, 1024),
+                                       torch.nn.ReLU(),
+                                       torch.nn.Linear(1024, 1024),
+                                       torch.nn.Tanh(), torch.nn.Linear(1024, action_dim),torch.nn.Tanh())
 
     def forward(self, v_gripper_inp, v_fixed_inp, freeze):
         if freeze:

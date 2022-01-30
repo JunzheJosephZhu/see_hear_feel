@@ -59,29 +59,29 @@ def baselineValidate(args):
         real.append(keyboard)
 
         cnt += 1
-        # if cnt == 10:
+        # if cnt == 100:
         #     break
 
     predict = np.asarray(predict)
     real = np.asarray(real).reshape(cnt,3)
     fig = plt.figure(0)
     plt.title("x")
-    plt.scatter(range(cnt),predict[:,0])
-    plt.scatter(range(cnt),real[:, 0], alpha= 0.5)
+    plt.scatter(range(cnt),predict[:,0], s = 0.3)
+    plt.scatter(range(cnt),real[:, 0], s = 0.3, alpha= 0.5)
     plt.xlabel("count of batches")
     plt.ylabel("actions(0:move -;1:stay;2:move +")
     plt.legend(["pred","real"])
     fig = plt.figure(1)
     plt.title("y")
-    plt.scatter(range(cnt), predict[:, 1])
-    plt.scatter(range(cnt), real[:, 1],alpha= 0.5)
+    plt.scatter(range(cnt), predict[:, 1], s = 0.3)
+    plt.scatter(range(cnt), real[:, 1],s = 0.3,alpha= 0.5)
     plt.xlabel("count of batches")
     plt.ylabel("actions(0:move -;1:stay;2:move +")
     plt.legend(["pred", "real"])
     fig = plt.figure(2)
     plt.title("z")
-    plt.scatter(range(cnt), predict[:, 2])
-    plt.scatter(range(cnt), real[:, 2],alpha=0.5)
+    plt.scatter(range(cnt), predict[:, 2],s = 0.3)
+    plt.scatter(range(cnt), real[:, 2],s = 0.3,alpha=0.5)
     plt.xlabel("count of batches")
     plt.ylabel("actions(0:move -;1:stay;2:move +")
     plt.legend(["pred", "real"])
