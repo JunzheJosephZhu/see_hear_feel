@@ -42,6 +42,7 @@ class TripletDataset(Dataset):
         assert audio1.shape == audio2.shape
         audio = torch.as_tensor(np.stack([audio1, audio2], 0)).float()
 
+
         # read camera frames
         cam_video = cv2.VideoCapture(os.path.join(trial, "cam_gripper.avi"))
         success, cam_frame = cam_video.read()
@@ -187,14 +188,16 @@ class ImmitationDataSet(IterableDataset):
         spec = self.mel(audio_clip)
         log_spec = torch.log(spec + EPS)
         action_c = self.timestamps["action_history"][self.timestep]
+        ee_pos_c = self.timestamps["pose_history"][self.timestep]
         xy_space = {-0.006: 0, 0: 1, 0.006: 2}
         z_space = {-0.003: 0, 0: 1, 0.003: 2}
         x = xy_space[action_c[0]]
         y = xy_space[action_c[1]]
         z = z_space[action_c[2]]
         action = torch.as_tensor([x, y, z])
+        # ee_pos = torch.as_tensor([ee_pos_c[0], ee_pos_c[1], ee_pos_c[2]])
         self.timestep += 1
-        return cam_frame, cam_fixed_frame, gs_frame, log_spec, action
+        return cam_frame, cam_fixed_frame, gs_frame, log_spec, action #ee_pos
 
     def load_episode(self, idx):
         # reset timestep
