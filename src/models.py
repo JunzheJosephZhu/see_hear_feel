@@ -4,6 +4,8 @@ from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 from torch import nn
 
+from engine import Future_Prediction
+
 class Encoder(torch.nn.Module):
     def __init__(self, feature_extractor, out_dim):
         super().__init__()
@@ -49,6 +51,22 @@ class Attention_Fusion(torch.nn.Module):
         v_out, a_out, t_out = out[:]
         return v_out, a_out, t_out
 
+class Forward_Model(torch.nn.Module):
+    def __init__(self, embed_dim, action_dim):
+        super().__init__()
+        self.action_encoder = torch.nn.Sequential(torch.nn.Linear(action_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
+        self.mlp_v = torch.nn.Sequential(torch.nn.Linear(embed_dim * 4, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
+        self.mlp_a = torch.nn.Sequential(torch.nn.Linear(embed_dim * 4 , embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
+        self.mlp_t = torch.nn.Sequential(torch.nn.Linear(embed_dim * 4, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
+
+    def forward(self, v_out, a_out, t_out, actions):
+        action_embed = self.action_encoder(actions)
+        fused = torch.cat([v_out, a_out, t_out, action_embed], dim=1)
+        v_pred = self.mlp_v(fused)
+        a_pred = self.mlp_a(fused)
+        t_pred = self.mlp_t(fused)
+        return v_pred, a_pred, t_pred
+
 class Immitation_Actor(torch.nn.Module):
     def __init__(self, v_encoder, a_encoder, t_encoder, embed_dim, num_heads, action_dim):
         super().__init__()
@@ -56,7 +74,7 @@ class Immitation_Actor(torch.nn.Module):
         self.a_encoder = a_encoder
         self.t_encoder = t_encoder
         self.fusion = Attention_Fusion(embed_dim, num_heads)
-        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 3, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 3, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
 
     def forward(self, v_inp, a_inp, t_inp, freeze):
         if freeze:
@@ -80,7 +98,7 @@ class Immitation_Baseline_Actor(torch.nn.Module):
         super().__init__()
         self.v_gripper_encoder = v_gripper_encoder
         self.v_fixed_encoder = v_fixed_encoder
-        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 2, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 2, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
 
     def forward(self, v_gripper_inp, v_fixed_inp, freeze):
         if freeze:
@@ -103,7 +121,10 @@ if __name__ == "__main__":
     print(vision_encoder(empty_input).shape)
 
     fusion = Attention_Fusion(128, 4)
+    forward_model = Forward_Model(128, 3)
     v_inp = torch.rand((8, 128))
     a_inp = torch.rand((8, 128))
     t_inp = torch.rand((8, 128))
+    action = torch.rand((8, 3))
     v_out, a_out, t_out = fusion(v_inp, a_inp, t_inp)
+    v_pred, a_pred, t_pred = forward_model(v_out, a_out, t_out, action)
