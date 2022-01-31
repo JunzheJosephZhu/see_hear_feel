@@ -145,6 +145,8 @@ class ImmitationDataSet(IterableDataset):
         self.iter_end = len(self.logs)
         self.idx = 0
         self.load_episode(self.idx)
+        self.pose_mean = torch.Tensor([.49, 0., .18])
+        self.pose_var = torch.Tensor([0.04, 0.04, 0.04])
 
     def __iter__(self):
         return self
@@ -195,7 +197,8 @@ class ImmitationDataSet(IterableDataset):
         y = xy_space[action_c[1]]
         z = z_space[action_c[2]]
         action = torch.as_tensor([x, y, z])
-        pose = torch.as_tensor([pose_c[0], pose_c[1], pose_c[2]])
+        pose = torch.as_tensor([pose_c[0], pose_c[1], pose_c[2]]) - self.pose_mean
+        pose /= self.pose_var
         self.timestep += 1
         return cam_frame, cam_fixed_frame, gs_frame, log_spec, action, pose
 
@@ -320,6 +323,6 @@ if __name__ == "__main__":
     parser.add_argument("--log_file", default="train.csv")
     args = parser.parse_args()
 
-    dataset = FuturePredDataset("train.csv", 10)
-    for cam_frames, log_specs, gs_frames, actions in dataset:
-        pass
+    dataset = ImmitationDataSet("train.csv")
+    for _, _, _, _, action, pose in dataset:
+        print(action, pose)
