@@ -29,7 +29,7 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
     config_name = os.path.basename(args.config).split(".yaml")[0]
-    exp_dir = os.path.join("exp_pose_baseline", config_name)
+    exp_dir = os.path.join("exp", config_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
@@ -65,9 +65,9 @@ if __name__ == "__main__":
     import configargparse
 
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default="conf/immi_learn_pose_baseline.yaml")
+    p.add("-c", "--config", is_config_file=True, default="conf/immi_learn_pose_baseline_reg.yaml")
     p.add("--batch_size", default=8)
-    p.add("--lr", default=0.001)
+    p.add("--lr", default=1e-4)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
     p.add("--epochs", default=100)

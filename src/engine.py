@@ -160,13 +160,16 @@ class ImmiPoseBaselineLearn(LightningModule):
             pred: # [batch, 3 * action_dims]
             demo: # [batch, action_dims]
             """
-            batch_size = pred.size(0)
-            space_dim = demo.size(-1)
-            # [batch, 3, num_dims]
+            # batch_size = pred.size(0)
+            # space_dim = demo.size(-1)
+            # # [batch, 3, num_dims]
             # pred = pred.reshape(batch_size, 3, space_dim)
-            print(f"pred = {pred}, demo = {demo}")
-            return self.mse(pred, demo)
             # return self.cce(pred, demo)
+
+            demo = (demo - 1).type(torch.cuda.FloatTensor)
+            # print(f"pred = {pred}, demo = {demo}")
+            return self.mse(pred, demo)
+
         _, _, _, _, keyboard, pose = batch
         # print('\nbatch {} pose:\n{}'.format(batch_idx, pose))
         action_pred = self.actor(pose, False)
@@ -180,13 +183,17 @@ class ImmiPoseBaselineLearn(LightningModule):
             pred: # [batch, 3 * action_dims]
             demo: # [batch, action_dims]
             """
-            batch_size = pred.size(0)
-            space_dim = demo.size(-1)
-            # [batch, 3, num_dims]
-            pred = pred.reshape(batch_size, 3, space_dim)
-            return self.cce(pred, demo)
+            # batch_size = pred.size(0)
+            # space_dim = demo.size(-1)
+            # # [batch, 3, num_dims]
+            # pred = pred.reshape(batch_size, 3, space_dim)
+            # return self.cce(pred, demo)
+
+            demo = (demo - 1).type(torch.cuda.FloatTensor)
+            return self.mse(pred, demo)
+            
         _, _, _, _, keyboard, pose = batch
-        action_pred = self.actor(pose, False)
+        action_pred = self.actor(pose, True)
         with torch.no_grad():
             loss = compute_loss(action_pred, keyboard)
         self.log_dict({"val/loss": loss})
