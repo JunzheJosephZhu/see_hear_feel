@@ -20,12 +20,10 @@ def make_vision_encoder(out_dim):
     vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
     return Encoder(vision_extractor, out_dim)
 
-
 def make_tactile_encoder(out_dim):
     tactile_extractor = resnet18()
     tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
     return Encoder(tactile_extractor, out_dim)
-
 
 def make_audio_encoder(out_dim):
     audio_extractor = resnet18()
@@ -84,6 +82,7 @@ class Immitation_Baseline_Actor(torch.nn.Module):
 
     def forward(self, v_gripper_inp, v_fixed_inp, freeze):
         if freeze:
+            # print("freeze")
             with torch.no_grad():
                 v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
                 v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
@@ -94,6 +93,22 @@ class Immitation_Baseline_Actor(torch.nn.Module):
         mlp_inp = torch.cat([v_gripper_embed, v_fixed_embed], dim=1)
         action_logits = self.mlp(mlp_inp)
         return action_logits
+
+class Immitation_Pose_Baseline_Actor(torch.nn.Module):
+    def __init__(self, embed_dim, action_dim):
+        super().__init__()
+        self.mlp = torch.nn.Sequential(
+            torch.nn.Linear(3, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, embed_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(embed_dim, action_dim),
+            torch.nn.Tanh()
+        )
+
+    def forward(self, pose_inp, freeze):
+        actions = self.mlp(pose_inp)
+        return actions
 
 
 

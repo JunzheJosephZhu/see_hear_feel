@@ -3,8 +3,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import torch
 from dataset import ImmitationDataSet
-from models import make_vision_encoder, Immitation_Baseline_Actor
-from engine import ImmiBaselineLearn
+from models import Immitation_Pose_Baseline_Actor
+from engine import ImmiPoseBaselineLearn
 from torch.utils.data import DataLoader
 import os
 import yaml
@@ -23,24 +23,19 @@ def main(args):
     val_set = ImmitationDataSet(args.val_csv)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
     val_loader = DataLoader(val_set, 1, num_workers=0)
-    v_gripper_encoder = make_vision_encoder(args.embed_dim)
-    v_fixed_encoder = make_vision_encoder(args.embed_dim)
 
-    # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
-    # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
-
-    actor = Immitation_Baseline_Actor(v_gripper_encoder, v_fixed_encoder, args.embed_dim, args.action_dim)
+    actor = Immitation_Pose_Baseline_Actor(args.embed_dim, args.action_dim)
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
     config_name = os.path.basename(args.config).split(".yaml")[0]
-    exp_dir = os.path.join("exp_baseline", config_name)
+    exp_dir = os.path.join("exp_pose_baseline", config_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
         yaml.safe_dump(vars(args), outfile)
     # pl stuff
-    pl_module = ImmiBaselineLearn(actor, optimizer, train_loader, val_loader, scheduler, args)
+    pl_module = ImmiPoseBaselineLearn(actor, optimizer, train_loader, val_loader, scheduler, args)
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename="{epoch}-{step}",

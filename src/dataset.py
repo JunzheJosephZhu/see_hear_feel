@@ -192,14 +192,16 @@ class ImmitationDataSet(IterableDataset):
         spec = self.mel(audio_clip)
         log_spec = torch.log(spec + EPS)
         action_c = self.timestamps["action_history"][self.timestep]
+        pose_c = self.timestamps["pose_history"][self.timestep]
         xy_space = {-0.006: 0, 0: 1, 0.006: 2}
         z_space = {-0.003: 0, 0: 1, 0.003: 2}
         x = xy_space[action_c[0]]
         y = xy_space[action_c[1]]
         z = z_space[action_c[2]]
         action = torch.as_tensor([x, y, z])
+        pose = torch.as_tensor([pose_c[0], pose_c[1], pose_c[2]])
         self.timestep += 1
-        return cam_frame, cam_fixed_frame, gs_frame, log_spec, action
+        return cam_frame, cam_fixed_frame, gs_frame, log_spec, action, pose
 
     def load_episode(self, idx):
         # reset timestep
