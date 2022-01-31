@@ -1,0 +1,4 @@
+embed_dim: 128
+pretrained: "/home/robot/perls2_gelsight/projects/test_close_gripper/svl_project/exp/metric_learn/checkpoints/last.ckpt"
+freeze_till: 20
+num_heads: 4
