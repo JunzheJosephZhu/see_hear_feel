@@ -19,8 +19,8 @@ def baselineLearning(args):
     # get pretrained model
     train_set = ImmitationDataSet(args.train_csv)
     val_set = ImmitationDataSet(args.val_csv)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
-    val_loader = DataLoader(val_set, 1, num_workers=0)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
+    val_loader = DataLoader(val_set, 1, num_workers=8)
     v_encoder = make_vision_encoder(args.embed_dim)
     v_fixed_encoder = make_vision_encoder(args.embed_dim)
 
@@ -73,8 +73,8 @@ def baselineLearning_Tuning(args):
     # get pretrained model
     train_set = ImmitationDataSet_Tuning(args.train_csv, args.num_stack, args.frameskip)
     val_set = ImmitationDataSet_Tuning(args.val_csv, args.num_stack, args.frameskip)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
-    val_loader = DataLoader(val_set, 1, num_workers=0)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=1)
+    val_loader = DataLoader(val_set, 1, num_workers=1)
     v_encoder = make_vision_encoder(args.embed_dim)
 
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
@@ -122,10 +122,10 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/immi_learn.yaml")
     p.add("--batch_size", default=8)
-    p.add("--lr", default=0.00001)
+    p.add("--lr", default=0.0001)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=100)
+    p.add("--epochs", default=50)
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # model

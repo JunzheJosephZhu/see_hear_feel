@@ -275,7 +275,7 @@ class ImmiBaselineLearn_Tuning(LightningModule):
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, space_dim)
             return self.mse(pred, demo)
-        v_gripper_inp, v_fixed_inp, _, _, keyboard, _ = batch
+        v_gripper_inp, v_fixed_inp, keyboard = batch
         # print("gripper_video", v_gripper_inp)
         # print("fixed_video", v_fixed_inp)
         v_input = torch.cat([v_gripper_inp,  v_fixed_inp], dim=1)
@@ -299,7 +299,7 @@ class ImmiBaselineLearn_Tuning(LightningModule):
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, space_dim)
             return self.mse(pred, demo)
-        v_gripper_inp, v_fixed_inp, _, _, keyboard, _ = batch
+        v_gripper_inp, v_fixed_inp, keyboard = batch
         v_input = torch.cat([v_gripper_inp, v_fixed_inp], dim=1)
         keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till)
