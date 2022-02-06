@@ -2,6 +2,12 @@ exp
 data
 exp_2022_1_24_multi
 exp_2022_1_29_baseline
+exp_baseline_reg_2022_1_31
+exp_baseline_tuning
 exp_baseline
+exp_multi
+exp_pose
 *.pth
 *.pt
+
+last.ckpt
