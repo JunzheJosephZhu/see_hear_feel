@@ -77,6 +77,7 @@ class ImmiLearn(LightningModule):
         self.scheduler = scheduler
         self.config = config
         self.cce = torch.nn.CrossEntropyLoss()
+        self.mse = torch.nn.MSELoss()
 
     def training_step(self, batch, batch_idx):
         def compute_loss(pred, demo):
@@ -128,7 +129,7 @@ class ImmiBaselineLearn(LightningModule):
             pred = pred.reshape(batch_size, 3, space_dim)
             return self.cce(pred, demo)
         v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
-        action_pred = self.actor(v_gripper_inp, v_fixed_inp, self.current_epoch < self.config.freeze_till)
+        action_pred = self.actor(v_gripper_inp, v_fixed_inp)
         loss = compute_loss(action_pred, keyboard)
         return loss
 

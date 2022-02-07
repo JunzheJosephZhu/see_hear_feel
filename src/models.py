@@ -90,6 +90,39 @@ class Immitation_Actor(torch.nn.Module):
         action_logits = self.mlp(mlp_inp)
         return action_logits
 
+class Immitation_Actor_Reg(torch.nn.Module):
+    def __init__(self, v_encoder, a_encoder, t_encoder, embed_dim, num_heads, action_dim):
+        super().__init__()
+        self.v_encoder = v_encoder
+        self.a_encoder = a_encoder
+        self.t_encoder = t_encoder
+        self.fusion = Attention_Fusion(embed_dim, num_heads)
+        self.mlp = torch.nn.Sequential(
+                torch.nn.Linear(embed_dim * 3, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, action_dim),
+                torch.nn.Tanh()
+        )
+        
+    def forward(self, v_inp, a_inp, t_inp, freeze):
+        if freeze:
+            with torch.no_grad():
+                v_embed = self.v_encoder(v_inp)
+                a_embed = self.a_encoder(a_inp)
+                t_embed = self.t_encoder(t_inp)
+            v_embed, a_embed, t_embed = v_embed.detach(), a_embed.detach(), t_embed.detach()
+        else:
+            v_embed = self.v_encoder(v_inp)
+            a_embed = self.a_encoder(a_inp)
+            t_embed = self.t_encoder(t_inp)
+        v_out, a_out, t_out = self.fusion(v_embed, a_embed, t_embed)
+
+        mlp_inp = torch.cat([v_out, a_out, t_out], dim=1)
+        action_logits = self.mlp(mlp_inp)
+        return action_logits
+
 class Immitation_Baseline_Actor(torch.nn.Module):
     def __init__(self, v_gripper_encoder, v_fixed_encoder, embed_dim, action_dim):
         super().__init__()
@@ -105,16 +138,9 @@ class Immitation_Baseline_Actor(torch.nn.Module):
                 torch.nn.Tanh()
         )
             
-    def forward(self, v_gripper_inp, v_fixed_inp, freeze):
-        if freeze:
-            # print("freeze")
-            with torch.no_grad():
-                v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
-                v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
-            v_gripper_embed, v_fixed_embed = v_gripper_embed.detach(), v_fixed_embed.detach()
-        else:
-            v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
-            v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
+    def forward(self, v_gripper_inp, v_fixed_inp):
+        v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
+        v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
         mlp_inp = torch.cat([v_gripper_embed, v_fixed_embed], dim=1)
         action_logits = self.mlp(mlp_inp)
         return action_logits
