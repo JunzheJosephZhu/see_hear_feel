@@ -7,7 +7,10 @@ exp_baseline_tuning
 exp_baseline
 exp_multi
 exp_pose
+exp_baseline_tuning_2_6/
+
 *.pth
 *.pt
 
 last.ckpt
+test_data.hdf5

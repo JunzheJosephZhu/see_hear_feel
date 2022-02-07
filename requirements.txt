@@ -1,7 +1,9 @@
 pyaml
-opencv-python
 pytorch_lightning
+opencv-python
 pandas
 soundfile
 matplotlib
 configargparse
+torchaudio
+torchvision

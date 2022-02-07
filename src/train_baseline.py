@@ -1,13 +1,18 @@
 import torch
+from torch.utils.data import DataLoader
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+
+import cv2
 from dataset import ImmitationDataSet, ImmitationDataSet_Tuning
 from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
     Immitation_Baseline_Actor, Immitation_Baseline_Actor_Tuning
 from engine import ImmiLearn, ImmiBaselineLearn,ImmiBaselineLearn_Tuning
-from torch.utils.data import DataLoader
+
 import os
 import yaml
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+
+
 
 def baselineLearning(args):
     def strip_sd(state_dict, prefix):
@@ -73,8 +78,8 @@ def baselineLearning_Tuning(args):
     # get pretrained model
     train_set = ImmitationDataSet_Tuning(args.train_csv, args.num_stack, args.frameskip)
     val_set = ImmitationDataSet_Tuning(args.val_csv, args.num_stack, args.frameskip)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=1)
-    val_loader = DataLoader(val_set, 1, num_workers=1)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
+    val_loader = DataLoader(val_set, 1, num_workers=0)
     v_encoder = make_vision_encoder(args.embed_dim)
 
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
@@ -122,10 +127,10 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/immi_learn.yaml")
     p.add("--batch_size", default=8)
-    p.add("--lr", default=0.0001)
+    p.add("--lr", default=0.00001)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=50)
+    p.add("--epochs", default=100)
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # model
