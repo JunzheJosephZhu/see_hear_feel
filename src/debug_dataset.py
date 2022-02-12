@@ -68,22 +68,25 @@ class ImmitationDataSet_Tuning(IterableDataset):
         return self
 
     def __next__(self):
-        assert self.idx <= 100
-        cam_frame = self.dataset[self.idx,:]
+        assert self.idx <= 5
+        cam_frame = self.img_hdf5['cam_gripper_color'][next(self.dataset)]
+        plt.imshow(cam_frame)
+        plt.show()
         cam_frame = torch.as_tensor(cam_frame).permute(2, 0, 1) / 255
+
         self.idx += 1
         return cam_frame
 
     def open_hdf5(self):
-        self.img_hdf5 = h5py.File('test_data.hdf5', 'r')
-        self.dataset = self.img_hdf5['dataset']
+        self.img_hdf5 = h5py.File('data/test_recordings_0208_repeat/2022-02-08 19_36_51.349856/data.hdf5', 'r')
+        self.dataset = self.img_hdf5['cam_gripper_color'].iter_chunks()
 
     def __len__(self):
         return self.maxlen
 
 
 if __name__ == "__main__":
-    convert2hdf5("data/test_recordings_0123/2022-01-23 15_30_48.020917")
+    # convert2hdf5("data/test_recordings_0208_repeat/2022-02-08 19_36_51.349856")
     dataset = ImmitationDataSet_Tuning()
     # print("dataset", dataset.len)
     for cam_frame in dataset:

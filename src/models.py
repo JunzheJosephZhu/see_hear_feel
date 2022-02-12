@@ -16,11 +16,11 @@ class Encoder(torch.nn.Module):
         feats = feats.squeeze(3).squeeze(2)
         return self.projection(feats)
 
-def make_vision_encoder(out_dim):
+def make_vision_encoder(out_dim, channel):
     vision_extractor = resnet18(pretrained=True)
     # change the first conv layer to fit 30 channels
     vision_extractor.conv1 = nn.Conv2d(
-        30, 64, kernel_size=7, stride=2, padding=3, bias=False
+        channel, 64, kernel_size=7, stride=2, padding=3, bias=False
     )
     vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
     return Encoder(vision_extractor, out_dim)
