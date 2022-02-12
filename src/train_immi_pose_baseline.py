@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-import sys
-if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
-    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
-=======
->>>>>>> haodesktop
 import torch
 from dataset import ImmitationDataSet
 from models import Immitation_Pose_Baseline_Actor
@@ -32,11 +26,7 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
     config_name = os.path.basename(args.config).split(".yaml")[0]
-<<<<<<< HEAD
-    exp_dir = os.path.join("exp", config_name)
-=======
     exp_dir = os.path.join("exp_pose", config_name)
->>>>>>> haodesktop
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
