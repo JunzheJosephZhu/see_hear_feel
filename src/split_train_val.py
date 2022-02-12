@@ -24,9 +24,10 @@ if __name__ == "__main__":
 
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
-        "csv_file",
+        "--csv_file",
         type=str,
         help="folder for csv files",
+        default="./episode_times_0208_repeat.csv",
     )
     argparser.add_argument("--output_dir", type=str, default=".")
 

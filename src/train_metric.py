@@ -1,6 +1,9 @@
+<<<<<<< HEAD
 import sys
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+=======
+>>>>>>> haodesktop
 import torch
 from dataset import TripletDataset
 from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder
@@ -14,8 +17,13 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 def main(args):
     train_set = TripletDataset(args.train_csv, args.sil_ratio)
     val_set = TripletDataset(args.val_csv, args.sil_ratio)
+<<<<<<< HEAD
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
     val_loader = DataLoader(val_set, 1, num_workers=4)
+=======
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
+    val_loader = DataLoader(val_set, 1, num_workers=0)
+>>>>>>> haodesktop
     v_encoder = make_vision_encoder(args.embed_dim)
     a_encoder = make_audio_encoder(args.embed_dim)
     t_encoder = make_tactile_encoder(args.embed_dim)

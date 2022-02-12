@@ -1,3 +1,7 @@
 embed_dim: 128
 pretrained: exp/metric_learn/checkpoints/last.ckpt
+<<<<<<< HEAD
 num_heads: 4
+=======
+num_heads: 4
+>>>>>>> haodesktop

@@ -1,4 +1,9 @@
 embed_dim: 128
+<<<<<<< HEAD
 pretrained: "\exp/metric_learn/checkpoints/last.ckpt"
 freeze_till: 50
+=======
+pretrained: "/home/hao/Desktop/Research/svl/svl_project/exp/metric_learn/checkpoints/last.ckpt"
+freeze_till: 10
+>>>>>>> haodesktop
 num_heads: 4
