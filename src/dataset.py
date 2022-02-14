@@ -515,7 +515,8 @@ class ImmitationDataSet_hdf5(IterableDataset):
 
         cam_frame = transform(cam_frame)
         cam_fixed_frame = transform(cam_fixed_frame)
-
+        # plt.imshow(cam_fixed_frame.permute(1,2,0))
+        # plt.show()
         self.framestack_cam.append(cam_frame)
         self.framestack_fixed_cam.append(cam_fixed_frame)
         # self.framestack_gel.append(gs_frame)
@@ -719,5 +720,8 @@ if __name__ == "__main__":
 
     dataset = ImmitationDataSet_hdf5("train.csv")
     # print("dataset", dataset.len)
+    cnt = 0
     for cam_frame, _, _ in dataset:
-        print(cam_frame)
+        cnt+=1
+        if cnt >=5:
+            break

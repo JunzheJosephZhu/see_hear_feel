@@ -6,8 +6,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import cv2
 from dataset import ImmitationDataSet, ImmitationDataSet_Tuning, ImmitationDataSet_hdf5
 from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
-    Immitation_Baseline_Actor, Immitation_Baseline_Actor_Tuning
-from engine import ImmiLearn, ImmiBaselineLearn,ImmiBaselineLearn_Tuning
+    Immitation_Baseline_Actor, Immitation_Baseline_Actor_Tuning_Classify
+from engine import ImmiLearn, ImmiBaselineLearn,ImmiBaselineLearn_Tuning_Classify
 
 import os
 import yaml
@@ -85,7 +85,7 @@ def baselineLearning_Tuning(args):
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
     # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
 
-    actor = Immitation_Baseline_Actor_Tuning(v_encoder, args.embed_dim, args.action_dim)
+    actor = Immitation_Baseline_Actor_Tuning_Classify(v_encoder, args.embed_dim, args.action_dim)
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -96,7 +96,7 @@ def baselineLearning_Tuning(args):
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
         yaml.safe_dump(vars(args), outfile)
     # pl stuff
-    pl_module = ImmiBaselineLearn_Tuning(actor, optimizer, train_loader, val_loader, scheduler, args)
+    pl_module = ImmiBaselineLearn_Tuning_Classify(actor, optimizer, train_loader, val_loader, scheduler, args)
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename="{epoch}-{step}",
@@ -139,7 +139,7 @@ def baselineLearning_hdf5(args):
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
     # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
 
-    actor = Immitation_Baseline_Actor_Tuning(v_encoder, args.embed_dim, args.action_dim)
+    actor = Immitation_Baseline_Actor_Tuning_Classify(v_encoder, args.embed_dim, args.action_dim)
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -150,7 +150,7 @@ def baselineLearning_hdf5(args):
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
         yaml.safe_dump(vars(args), outfile)
     # pl stuff
-    pl_module = ImmiBaselineLearn_Tuning(actor, optimizer, train_loader, val_loader, scheduler, args)
+    pl_module = ImmiBaselineLearn_Tuning_Classify(actor, optimizer, train_loader, val_loader, scheduler, args)
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename="{epoch}-{step}",
@@ -182,10 +182,10 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/immi_learn.yaml")
     p.add("--batch_size", default=8)
-    p.add("--lr", default=0.000001)
+    p.add("--lr", default=0.00001)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=300)
+    p.add("--epochs", default=50)
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # model
@@ -197,11 +197,11 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--num_stack", default=4)
-    p.add("--frameskip", default=4)
+    p.add("--num_stack", default=3)
+    p.add("--frameskip", default=3)
     p.add("--crop_height", default=432)
     p.add("--crop_width", default=576)
-    p.add("--data_folder", default="data/test_recordings_0208_repeat")
+    p.add("--data_folder", default="data/test_recordings_broken_audio")
 
     args = p.parse_args()
     baselineLearning_hdf5(args)

@@ -146,6 +146,46 @@ class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
         action_logits = self.mlp(mlp_inp)
         return action_logits
 
+class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
+    def __init__(self, v_encoder, embed_dim, action_dim):
+        super().__init__()
+        self.v_encoder = v_encoder
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim, 1024),
+                                       torch.nn.ReLU(),
+                                       torch.nn.Linear(1024, 1024),
+                                       torch.nn.ReLU(), torch.nn.Linear(1024, action_dim),torch.nn.Tanh())
+
+    def forward(self, v_inp, freeze):
+        if freeze:
+            with torch.no_grad():
+                v_embed = self.v_encoder(v_inp)
+            v_embed = v_embed.detach()
+        else:
+            v_embed = self.v_encoder(v_inp)
+        mlp_inp = v_embed
+        action_logits = self.mlp(mlp_inp)
+        return action_logits
+
+class Immitation_Baseline_Actor_Tuning_Classify(torch.nn.Module):
+    def __init__(self, v_encoder, embed_dim, action_dim):
+        super().__init__()
+        self.v_encoder = v_encoder
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim, 1024),
+                                       torch.nn.ReLU(),
+                                       torch.nn.Linear(1024, 1024),
+                                       torch.nn.ReLU(), torch.nn.Linear(1024, 3 * action_dim))
+
+    def forward(self, v_inp, freeze):
+        if freeze:
+            with torch.no_grad():
+                v_embed = self.v_encoder(v_inp)
+            v_embed = v_embed.detach()
+        else:
+            v_embed = self.v_encoder(v_inp)
+        mlp_inp = v_embed
+        action_logits = self.mlp(mlp_inp)
+        return action_logits
+
 class Immitation_Pose_Baseline_Actor(torch.nn.Module):
     def __init__(self, embed_dim, action_dim):
         super().__init__()
