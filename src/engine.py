@@ -344,7 +344,7 @@ class ImmiBaselineLearn_Tuning_Classify(LightningModule):
             space_dim = demo.size(-1)
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, 3, space_dim)
-            return self.mse(pred, demo)
+            return self.cce(pred, demo)
         v_gripper_inp, v_fixed_inp, keyboard = batch
         # print("gripper_video", v_gripper_inp)
         # print("fixed_video", v_fixed_inp)
