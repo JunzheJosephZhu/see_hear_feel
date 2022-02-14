@@ -350,7 +350,7 @@ class ImmiBaselineLearn_Tuning_Classify(LightningModule):
         # print("fixed_video", v_fixed_inp)
         v_input = torch.cat([v_gripper_inp,  v_fixed_inp], dim=1)
         # print("v_cat", v_input)
-        keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
+        # keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till)
         # print("action", action_pred)
         # print("keyboard", keyboard)
@@ -371,7 +371,7 @@ class ImmiBaselineLearn_Tuning_Classify(LightningModule):
             return self.cce(pred, demo)
         v_gripper_inp, v_fixed_inp, keyboard = batch
         v_input = torch.cat([v_gripper_inp, v_fixed_inp], dim=1)
-        keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
+        # keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till)
         with torch.no_grad():
             loss = compute_loss(action_pred, keyboard)
