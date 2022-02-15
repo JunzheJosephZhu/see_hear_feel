@@ -1,29 +1,25 @@
 from torch.nn.modules.activation import MultiheadAttention
 from torchvision.models import resnet18
-from torchvision.models.feature_extraction import create_feature_extractor
+from torchvision.models.feature_extraction import create_feature_extractor,get_graph_node_names
 import torch
 from torch import nn
 from engine import Future_Prediction
+from basic_modules import ResNet_Decoder, Encoder
 
-class Encoder(torch.nn.Module):
-    def __init__(self, feature_extractor, out_dim):
-        super().__init__()
-        self.feature_extractor = feature_extractor
-        self.projection = nn.Linear(512, out_dim)
 
-    def forward(self, x):
-        feats = self.feature_extractor(x)["avgpool"]
-        feats = feats.squeeze(3).squeeze(2)
-        return self.projection(feats)
 
-def make_vision_encoder(out_dim, channel):
+def make_vision_encoder(channel):
     vision_extractor = resnet18(pretrained=True)
     # change the first conv layer to fit 30 channels
     vision_extractor.conv1 = nn.Conv2d(
         channel, 64, kernel_size=7, stride=2, padding=3, bias=False
     )
-    vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
-    return Encoder(vision_extractor, out_dim)
+    vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
+    return Encoder(vision_extractor, 4480, 1280)
+
+def make_vision_decoder():
+    vision_decoder = ResNet_Decoder(out_channels=3)
+    return vision_decoder
 
 
 def make_tactile_encoder(out_dim):
@@ -77,7 +73,8 @@ class Immitation_Actor(torch.nn.Module):
         self.t_encoder = t_encoder
         self.fusion = Attention_Fusion(embed_dim, num_heads)
         #for classification
-        # self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 3, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
+        # self.mlp = torch.nn.Sequential(torch.nms.MelSpectrogram(
+            # sample_rate=sr, n_fft=int(n.Linear(embed_dim * 3, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, 3 * action_dim))
         #for regression
         self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 3, 1024),
                                        torch.nn.ReLU(),
@@ -188,9 +185,15 @@ class Immitation_Baseline_Actor_Classify(torch.nn.Module):
         return action_logits
 
 if __name__ == "__main__":
-    vision_encoder = make_vision_encoder(128)
-    empty_input = torch.zeros((1, 3, 64, 101))
-    print(vision_encoder(empty_input).shape)
+    vision_encoder = make_vision_encoder(3)
+    vision_decoder = make_vision_decoder()
+    # empty_input = torch.zeros((1, 2, 64, 101))
+    empty_input = torch.zeros((1, 3, 640, 480))
+    bottleneck = vision_encoder(empty_input)
+    print(bottleneck.shape)
+    recon = vision_decoder(bottleneck)
+    print(recon.shape)
+
 
     fusion = Attention_Fusion(128, 4)
     forward_model = Forward_Model(128, 3)
