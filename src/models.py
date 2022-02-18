@@ -4,6 +4,8 @@ from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 from torch import nn
 from engine import Future_Prediction
+import cv2
+import numpy as np
 
 class Encoder(torch.nn.Module):
     def __init__(self, feature_extractor, out_dim):
@@ -175,7 +177,16 @@ class Immitation_Baseline_Actor_Tuning_Classify(torch.nn.Module):
                                        torch.nn.Linear(1024, 1024),
                                        torch.nn.ReLU(), torch.nn.Linear(1024, 3 * action_dim))
 
-    def forward(self, v_inp, freeze):
+    def forward(self, v_inp, freeze, idx):
+        print(f"\nFORWARD, idx shape: {idx.shape}")
+        print(idx.cpu().numpy())
+        # for i1 in idx:
+            # print([i.cpu().numpy() for i in i1])
+        for i in range(8):
+            img = v_inp[0, 3*i : 3*i+3, :, :]
+            print(img.permute(1, 2, 0).cpu().numpy().shape)
+            cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
+            cv2.waitKey(100)
         if freeze:
             with torch.no_grad():
                 v_embed = self.v_encoder(v_inp)
@@ -216,6 +227,10 @@ class Immitation_Baseline_Actor_Classify(torch.nn.Module):
                                        torch.nn.Linear(embed_dim, 3 * action_dim))
 
     def forward(self, v_gripper_inp, v_fixed_inp, freeze):
+        print(v_gripper_inp.shape)
+        for i in range(8):
+            cv2.imshow('input', v_gripper_inp[0,3*i:3*i+3,:,:])
+            cv2.waitKey(1)
         if freeze:
             with torch.no_grad():
                 v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)

@@ -329,7 +329,6 @@ class ImmiBaselineLearn_Tuning_Classify(LightningModule):
         self.val_loader = val_loader
         self.scheduler = scheduler
         self.config = config
-        # self.cce = torch.nn.CrossEntropyLoss()
         self.mse = torch.nn.MSELoss()
         self.cce = torch.nn.CrossEntropyLoss()
         print("baseline learn")
@@ -345,13 +344,13 @@ class ImmiBaselineLearn_Tuning_Classify(LightningModule):
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, 3, space_dim)
             return self.cce(pred, demo)
-        v_gripper_inp, v_fixed_inp, keyboard = batch
+        v_gripper_inp, v_fixed_inp, keyboard, idx = batch
         # print("gripper_video", v_gripper_inp)
         # print("fixed_video", v_fixed_inp)
         v_input = torch.cat([v_gripper_inp,  v_fixed_inp], dim=1)
         # print("v_cat", v_input)
         # keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
-        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till)
+        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till, idx)
         # print("action", action_pred)
         # print("keyboard", keyboard)
         loss = compute_loss(action_pred, keyboard)
@@ -369,10 +368,10 @@ class ImmiBaselineLearn_Tuning_Classify(LightningModule):
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, 3, space_dim)
             return self.cce(pred, demo)
-        v_gripper_inp, v_fixed_inp, keyboard = batch
+        v_gripper_inp, v_fixed_inp, keyboard, idx = batch
         v_input = torch.cat([v_gripper_inp, v_fixed_inp], dim=1)
         # keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
-        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till)
+        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till, idx)
         with torch.no_grad():
             loss = compute_loss(action_pred, keyboard)
         self.log_dict({"val/action_loss": loss})
