@@ -28,7 +28,7 @@ def baselineLearning_hdf5(args):
         args.train_csv, args.num_stack, args.frameskip, args.crop_height, args.crop_width, args.data_folder)
     val_set = ImmitationDataSet_hdf5(
         args.val_csv, args.num_stack, args.frameskip, args.crop_height, args.crop_width, args.data_folder)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=1)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
     val_loader = DataLoader(val_set, 1, num_workers=1)
     v_encoder = make_vision_encoder(args.embed_dim, args.num_stack * 3 * 2)
 
