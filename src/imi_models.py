@@ -18,13 +18,13 @@ class Encoder(torch.nn.Module):
         feats = feats.squeeze(3).squeeze(2)
         return self.projection(feats)
 
-# def make_vision_encoder(out_dim, channel):
-def make_vision_encoder(out_dim):
+def make_vision_encoder(out_dim, channel):
+# def make_vision_encoder(out_dim):
     vision_extractor = resnet18(pretrained=True)
     # # change the first conv layer to fit 30 channels
-    # vision_extractor.conv1 = nn.Conv2d(
-    #     channel, 64, kernel_size=7, stride=2, padding=3, bias=False
-    # )
+    vision_extractor.conv1 = nn.Conv2d(
+        channel, 64, kernel_size=7, stride=2, padding=3, bias=False
+    )
     vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
     return Encoder(vision_extractor, out_dim)
 
@@ -52,15 +52,15 @@ class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
             )
 
     def forward(self, v_inp, freeze, idx):
-        # # debugging dataloader
-        # print(f"\nFORWARD, idx shape: {idx.shape}")
-        # print(idx.cpu().numpy())
-        # print(v_inp.shape)
-        # for i in range(v_inp.shape[1] // 3):
-        #     img = v_inp[0, 3*i : 3*i+3, :, :]
-        #     print(img.permute(1, 2, 0).cpu().numpy().shape)
-        #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
-        #     cv2.waitKey(100)
+        # debugging dataloader
+        print(f"\nFORWARD, idx shape: {idx.shape}")
+        print(idx.cpu().numpy())
+        print(v_inp.shape)
+        for i in range(v_inp.shape[1] // 3):
+            img = v_inp[0, 3*i : 3*i+3, :, :]
+            print(img.permute(1, 2, 0).cpu().numpy().shape)
+            cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
+            cv2.waitKey(100)
         if freeze:
             with torch.no_grad():
                 v_embed = self.v_encoder(v_inp)

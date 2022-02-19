@@ -51,8 +51,8 @@ class ImmitationDataSet_hdf5(IterableDataset):
         self.idx = 0
         self.load_episode(self.idx)
         self.stack_idx = deque(maxlen=(num_stack- 1)*frameskip + 1)
-        self.framestack_cam = deque(maxlen = (num_stack-1) * frameskip + 1)
-        self.framestack_fixed_cam = deque(maxlen = (num_stack-1) * frameskip + 1)
+        self.framestack_cam_gripper = deque(maxlen = (num_stack-1) * frameskip + 1)
+        self.framestack_cam_fixed = deque(maxlen = (num_stack-1) * frameskip + 1)
         self.max_len = (num_stack-1) * frameskip + 1
         self.fps = 10
 
@@ -60,45 +60,41 @@ class ImmitationDataSet_hdf5(IterableDataset):
         return self
 
     def __next__(self):
-        # print("GETTING NEXT" + '*' * 50)
+        # get frame
         cam_gripper_idx = next(self.cam_gripper_idx)
-        # print(f"gripper idx: {cam_gripper_idx}")
-        cam_frame = self.all_datasets['cam_gripper_color'][cam_gripper_idx]
-        cam_fix_idx = next(self.cam_fix_idx)
-        # print(f"fix idx: {cam_fix_idx}")
-        cam_fixed_frame =  self.all_datasets['cam_fixed_color'][cam_fix_idx]
-        if self.cam_gripper_idx == StopIteration or self.cam_fix_idx == StopIteration:
+        cam_gripper_frame = self.all_datasets['cam_gripper_color'][cam_gripper_idx]
+        cam_fixed_idx = next(self.cam_fixed_idx)
+        cam_fixed_frame =  self.all_datasets['cam_fixed_color'][cam_fixed_idx]
+        if self.cam_gripper_idx == StopIteration or self.cam_fixed_idx == StopIteration:
             self.idx += 1
             if self.idx == len(self.logs):
                 self.idx = 0
                 self.load_episode(0)
                 raise StopIteration
             self.load_episode(self.idx)
-        cam_frame = torch.as_tensor(cam_frame).permute(2, 0, 1) / 255
+        cam_gripper_frame = torch.as_tensor(cam_gripper_frame).permute(2, 0, 1) / 255
         cam_fixed_frame = torch.as_tensor(cam_fixed_frame).permute(2, 0, 1) / 255
-
+        # data augmentation
         transform = T.Compose([
             T.RandomCrop((self._crop_height, self._crop_width)),
             T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
         ])
-
-        cam_frame = transform(cam_frame)
+        cam_gripper_frame = transform(cam_gripper_frame)
         cam_fixed_frame = transform(cam_fixed_frame)
-        self.framestack_cam.append(cam_frame)
-        self.framestack_fixed_cam.append(cam_fixed_frame)
-        # print('#' * 50, [tuple((idx.start, idx.stop)) for idx in cam_gripper_idx])
+        # stack past frames into the queue
+        self.framestack_cam_gripper.append(cam_gripper_frame)
+        self.framestack_cam_fixed.append(cam_fixed_frame)
         self.stack_idx.append(torch.tensor([tuple((idx.start, idx.stop)) for idx in cam_gripper_idx]))
-
-        if len(self.framestack_cam) >= self.max_len:
-            idx_stack = torch.vstack(tuple(islice(self.stack_idx, 0, None, self.frameskip)))
-            # print('*' * 50, idx_stack)
-            cam_framestack = torch.vstack(tuple(islice(self.framestack_cam, 0, None, self.frameskip)))
-            cam_fixed_framestack = torch.vstack(tuple(islice(self.framestack_fixed_cam, 0, None, self.frameskip)))
+        # return frames from the stack with frameskip
+        if len(self.framestack_cam_gripper) >= self.max_len:
+            skip_idx = torch.vstack(tuple(islice(self.stack_idx, 0, None, self.frameskip)))
+            frameskip_cam_gripper = torch.vstack(tuple(islice(self.framestack_cam_gripper, 0, None, self.frameskip)))
+            frameskip_cam_fixed = torch.vstack(tuple(islice(self.framestack_cam_fixed, 0, None, self.frameskip)))
         else:
-            idx_stack = torch.vstack([self.stack_idx[-1]] * self.num_stack)
-            cam_framestack = torch.vstack(([self.framestack_cam[-1]] * self.num_stack))
-            cam_fixed_framestack = torch.vstack(([self.framestack_fixed_cam[-1]] * self.num_stack))
-
+            skip_idx = torch.vstack([self.stack_idx[-1]] * self.num_stack)
+            frameskip_cam_gripper = torch.vstack(([self.framestack_cam_gripper[-1]] * self.num_stack))
+            frameskip_cam_fixed = torch.vstack(([self.framestack_cam_fixed[-1]] * self.num_stack))
+        # processing actions
         action_c = self.timestamps["action_history"][self.timestep]
         xy_space = {-0.003: 0, 0: 1, 0.003: 2}
         z_space = {-0.0015: 0, 0: 1, 0.0015: 2}
@@ -107,7 +103,7 @@ class ImmitationDataSet_hdf5(IterableDataset):
         z = z_space[action_c[2]]
         action = torch.as_tensor([x, y, z])
         self.timestep += 1
-        return cam_framestack, cam_fixed_framestack, action, idx_stack
+        return frameskip_cam_gripper, frameskip_cam_fixed, action, skip_idx
 
     def load_episode(self, idx):
         # reset timestep
@@ -120,7 +116,7 @@ class ImmitationDataSet_hdf5(IterableDataset):
         # read camera frames
         self.all_datasets = h5py.File(os.path.join(trial, "data.hdf5"), 'r')
         self.cam_gripper_idx = self.all_datasets['cam_gripper_color'].iter_chunks()
-        self.cam_fix_idx = self.all_datasets['cam_fixed_color'].iter_chunks()
+        self.cam_fixed_idx = self.all_datasets['cam_fixed_color'].iter_chunks()
 
 
 class ImmitationDataSet_hdf5_multi(IterableDataset):
