@@ -29,11 +29,11 @@ def baselineLearning_hdf5(args):
         args.val_csv, args.num_stack, args.frameskip, args.crop_height, args.crop_width, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
     val_loader = DataLoader(val_set, 1, num_workers=1)
-    v_encoder = make_vision_encoder(args.embed_dim, args.num_stack * 3 * 2)
+    v_encoder = make_vision_encoder(args.embed_dim) #, args.num_stack * 3 * 2)
 
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
     # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
-    actor = Immitation_Baseline_Actor_Tuning(v_encoder, args.embed_dim, args.action_dim, args.loss_type)
+    actor = Immitation_Baseline_Actor_Tuning(v_encoder, args)
 
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)

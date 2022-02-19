@@ -50,10 +50,11 @@ class ImmitationDataSet_hdf5(IterableDataset):
         self.iter_end = len(self.logs)
         self.idx = 0
         self.load_episode(self.idx)
-        self.stack_idx = deque(maxlen=(num_stack- 1)*frameskip + 1)
-        self.framestack_cam_gripper = deque(maxlen = (num_stack-1) * frameskip + 1)
-        self.framestack_cam_fixed = deque(maxlen = (num_stack-1) * frameskip + 1)
-        self.max_len = (num_stack-1) * frameskip + 1
+        self.max_len = (num_stack - 1) * frameskip + 1
+        self.framestack_cam_gripper = deque(maxlen=self.max_len)
+        self.framestack_cam_fixed = deque(maxlen=self.max_len)
+        self.stack_idx_gripper = deque(maxlen=self.max_len)
+        self.stack_idx_fixed = deque(maxlen=self.max_len)
         self.fps = 10
 
     def __iter__(self):
@@ -74,6 +75,7 @@ class ImmitationDataSet_hdf5(IterableDataset):
             self.load_episode(self.idx)
         cam_gripper_frame = torch.as_tensor(cam_gripper_frame).permute(2, 0, 1) / 255
         cam_fixed_frame = torch.as_tensor(cam_fixed_frame).permute(2, 0, 1) / 255
+
         # data augmentation
         transform = T.Compose([
             T.RandomCrop((self._crop_height, self._crop_width)),
@@ -81,19 +83,28 @@ class ImmitationDataSet_hdf5(IterableDataset):
         ])
         cam_gripper_frame = transform(cam_gripper_frame)
         cam_fixed_frame = transform(cam_fixed_frame)
+
         # stack past frames into the queue
+        '''framestack: list [ frame1 (tensor), frame2 (tensor), ... ]'''
         self.framestack_cam_gripper.append(cam_gripper_frame)
         self.framestack_cam_fixed.append(cam_fixed_frame)
-        self.stack_idx.append(torch.tensor([tuple((idx.start, idx.stop)) for idx in cam_gripper_idx]))
+        self.stack_idx_gripper.append(torch.tensor([tuple((idx.start, idx.stop)) for idx in cam_gripper_idx]))
+        self.stack_idx_fixed.append(torch.tensor([tuple((idx.start, idx.stop)) for idx in cam_fixed_idx]))
+
         # return frames from the stack with frameskip
         if len(self.framestack_cam_gripper) >= self.max_len:
-            skip_idx = torch.vstack(tuple(islice(self.stack_idx, 0, None, self.frameskip)))
-            frameskip_cam_gripper = torch.vstack(tuple(islice(self.framestack_cam_gripper, 0, None, self.frameskip)))
-            frameskip_cam_fixed = torch.vstack(tuple(islice(self.framestack_cam_fixed, 0, None, self.frameskip)))
+            skip_idx_gripper = islice(self.stack_idx_gripper, 0, None, self.frameskip)
+            skip_idx_fixed = islice(self.stack_idx_fixed, 0, None, self.frameskip)
+            frameskip_cam_gripper = islice(self.framestack_cam_gripper, 0, None, self.frameskip)
+            print('\n'.join(['*' * 50 + 'imi_dataset (later)', 'frameskip_cam_gripper:', f'{len(frameskip_cam_gripper), frameskip_cam_gripper[0]}']))
+            frameskip_cam_fixed = islice(self.framestack_cam_fixed, 0, None, self.frameskip)
         else:
-            skip_idx = torch.vstack([self.stack_idx[-1]] * self.num_stack)
-            frameskip_cam_gripper = torch.vstack(([self.framestack_cam_gripper[-1]] * self.num_stack))
-            frameskip_cam_fixed = torch.vstack(([self.framestack_cam_fixed[-1]] * self.num_stack))
+            skip_idx_gripper = [self.stack_idx_gripper[-1]] * self.num_stack
+            skip_idx_fixed = [self.stack_idx_fixed[-1]] * self.num_stack
+            frameskip_cam_gripper = [self.framestack_cam_gripper[-1]] * self.num_stack
+            print('\n'.join(['*' * 50 + 'imi_dataset (not full)', 'frameskip_cam_gripper:', f'{len(frameskip_cam_gripper), frameskip_cam_gripper[0]}']))
+            frameskip_cam_fixed = [self.framestack_cam_fixed[-1]] * self.num_stack
+        
         # processing actions
         action_c = self.timestamps["action_history"][self.timestep]
         xy_space = {-0.003: 0, 0: 1, 0.003: 2}
@@ -103,7 +114,8 @@ class ImmitationDataSet_hdf5(IterableDataset):
         z = z_space[action_c[2]]
         action = torch.as_tensor([x, y, z])
         self.timestep += 1
-        return frameskip_cam_gripper, frameskip_cam_fixed, action, skip_idx
+        print('*' * 50 + f"imi_dataset\nidx_gripper:\n{skip_idx_gripper}\nidx_fixed:\n{skip_idx_fixed}\nidx:\n{skip_idx_gripper + skip_idx_fixed}")
+        return frameskip_cam_gripper, frameskip_cam_fixed, action, skip_idx_gripper + skip_idx_fixed
 
     def load_episode(self, idx):
         # reset timestep
