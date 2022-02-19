@@ -63,16 +63,13 @@ class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
         #     print(img.permute(1, 2, 0).cpu().numpy().shape)
         #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
         #     cv2.waitKey(100)
-        v_embeds = []
         if freeze:
             with torch.no_grad():
-                for i in range(len(v_inp)):
-                    v_embeds.append(self.v_encoder(v_inp[i]).detach())
+                v_embeds = [self.v_encoder(v_inp_i).detach() for v_inp_i in v_inp]
             # print('\n'.join(('*' * 50 + 'imi_models', 'v_embeds:', f'{len(v_embeds)}')))
             # v_embeds = v_embeds.detach()
         else:
-            for i in range(len(v_inp)):
-                v_embeds.append(self.v_encoder(v_inp[i]))
+            v_embeds = [self.v_encoder(v_inp_i) for v_inp_i in v_inp]
         mlp_inp = torch.concat(v_embeds, dim=-1)
         print('\n'.join(['*' * 50 + 'imi_models', 'v_embeds:', f'len = {len(v_embeds)}']))
         action_logits = self.mlp(mlp_inp)

@@ -37,8 +37,6 @@ class ImmiBaselineLearn_Tuning(LightningModule):
     def training_step(self, batch, batch_idx):
         # idx is in the batch for debugging
         v_gripper_inp, v_fixed_inp, keyboard, idx = batch
-        # print("gripper_video", v_gripper_inp)
-        # print("fixed_video", v_fixed_inp)
         # v_input = torch.cat([v_gripper_inp,  v_fixed_inp], dim=1)
         v_input = v_gripper_inp + v_fixed_inp
         print('\n'.join(['*' * 50 + 'imi_engine (train)', 'v_input:', f'{len(v_input), v_input[0].shape}']))
