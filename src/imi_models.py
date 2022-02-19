@@ -1,0 +1,118 @@
+from torch.nn.modules.activation import MultiheadAttention
+from torchvision.models import resnet18
+from torchvision.models.feature_extraction import create_feature_extractor
+import torch
+from torch import nn
+from engine import Future_Prediction
+import cv2
+import numpy as np
+
+class Encoder(torch.nn.Module):
+    def __init__(self, feature_extractor, out_dim):
+        super().__init__()
+        self.feature_extractor = feature_extractor
+        self.projection = nn.Linear(512, out_dim)
+
+    def forward(self, x):
+        feats = self.feature_extractor(x)["avgpool"]
+        feats = feats.squeeze(3).squeeze(2)
+        return self.projection(feats)
+
+# def make_vision_encoder(out_dim, channel):
+def make_vision_encoder(out_dim):
+    vision_extractor = resnet18(pretrained=True)
+    # # change the first conv layer to fit 30 channels
+    # vision_extractor.conv1 = nn.Conv2d(
+    #     channel, 64, kernel_size=7, stride=2, padding=3, bias=False
+    # )
+    vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
+    return Encoder(vision_extractor, out_dim)
+
+class Immitation_Baseline_Actor(torch.nn.Module):
+    def __init__(self, v_gripper_encoder, v_fixed_encoder, embed_dim, action_dim):
+        super().__init__()
+        self.v_gripper_encoder = v_gripper_encoder
+        self.v_fixed_encoder = v_fixed_encoder
+        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 2, 1024),
+                                       torch.nn.ReLU(),
+                                       torch.nn.Linear(1024, 1024),
+                                       torch.nn.ReLU(), torch.nn.Linear(1024, action_dim),torch.nn.Tanh())
+
+    def forward(self, v_gripper_inp, v_fixed_inp, freeze):
+        if freeze:
+            with torch.no_grad():
+                v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
+                v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
+            v_gripper_embed, v_fixed_embed = v_gripper_embed.detach(), v_fixed_embed.detach()
+        else:
+            v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
+            v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
+        mlp_inp = torch.cat([v_gripper_embed, v_fixed_embed], dim=1)
+        action_logits = self.mlp(mlp_inp)
+        return action_logits
+
+class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
+    def __init__(self, v_encoder, embed_dim, action_dim, loss_type):
+        super().__init__()
+        self.v_encoder = v_encoder
+        self.mlp = None
+        if loss_type == 'cce':
+            self.mlp = torch.nn.Sequential(
+                torch.nn.Linear(embed_dim, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, 3 * action_dim)
+            )
+        elif loss_type == 'mse':
+            self.mlp = torch.nn.Sequential(
+                torch.nn.Linear(embed_dim, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, action_dim),
+                torch.nn.Tanh()
+            )
+
+    def forward(self, v_inp, freeze, idx):
+        print(f"\nFORWARD, idx shape: {idx.shape}")
+        print(idx.cpu().numpy())
+        print(v_inp.shape)
+        for i in range(v_inp.shape[1] // 3):
+            img = v_inp[0, 3*i : 3*i+3, :, :]
+            print(img.permute(1, 2, 0).cpu().numpy().shape)
+            cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
+            cv2.waitKey(100)
+        if freeze:
+            with torch.no_grad():
+                v_embed = self.v_encoder(v_inp)
+            v_embed = v_embed.detach()
+        else:
+            v_embed = self.v_encoder(v_inp)
+        mlp_inp = v_embed
+        action_logits = self.mlp(mlp_inp)
+        return action_logits
+
+class Immitation_Pose_Baseline_Actor(torch.nn.Module):
+    def __init__(self, embed_dim, action_dim):
+        super().__init__()
+        self.mlp = torch.nn.Sequential(
+            torch.nn.Linear(3, 64),
+            torch.nn.ReLU(),
+            torch.nn.Linear(64, embed_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(embed_dim, 3 * action_dim),
+            # torch.nn.Linear(embed_dim, action_dim),
+            torch.nn.Tanh()
+        )
+
+    def forward(self, pose_inp, freeze):
+        action_logits = self.mlp(pose_inp)
+        # print("action_logits: {}".format(action_logits))
+        # actions = self.mlp(pose_inp)
+        return action_logits
+
+if __name__ == "__main__":
+    vision_encoder = make_vision_encoder(128)
+    empty_input = torch.zeros((1, 3, 64, 101))
+    print(vision_encoder(empty_input).shape)

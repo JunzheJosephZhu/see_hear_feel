@@ -8,9 +8,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 import cv2
 from imi_dataset import ImmitationDataSet_hdf5
-from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
-    Immitation_Baseline_Actor, Immitation_Baseline_Actor_Tuning_Classify, Immitation_Baseline_Actor_Tuning, Immitation_Baseline_Actor_Tuning
-from engine import ImmiLearn, ImmiBaselineLearn, ImmiBaselineLearn_Tuning_Classify, ImmiBaselineLearn_Tuning
+from imi_models import make_vision_encoder, Immitation_Baseline_Actor_Tuning
+from imi_engine import ImmiBaselineLearn_Tuning
 
 import os
 import yaml
@@ -34,10 +33,7 @@ def baselineLearning_hdf5(args):
 
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
     # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
-    if args.loss_type == 'mse':
-        actor = Immitation_Baseline_Actor_Tuning(v_encoder, args.embed_dim, args.action_dim)
-    elif args.loss_type == 'cce':
-        actor = Immitation_Baseline_Actor_Tuning_Classify(v_encoder, args.embed_dim, args.action_dim)
+    actor = Immitation_Baseline_Actor_Tuning(v_encoder, args.embed_dim, args.action_dim, args.loss_type)
 
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
@@ -49,10 +45,7 @@ def baselineLearning_hdf5(args):
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
         yaml.safe_dump(vars(args), outfile)
     # pl stuff
-    if args.loss_type == 'mse':
-        pl_module = ImmiBaselineLearn_Tuning(actor, optimizer, train_loader, val_loader, scheduler, args)
-    elif args.loss_type == 'cce':
-        pl_module = ImmiBaselineLearn_Tuning_Classify(actor, optimizer, train_loader, val_loader, scheduler, args)
+    pl_module = ImmiBaselineLearn_Tuning(actor, optimizer, train_loader, val_loader, scheduler, args)
 
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
