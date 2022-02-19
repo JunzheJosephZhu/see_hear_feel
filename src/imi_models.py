@@ -28,29 +28,6 @@ def make_vision_encoder(out_dim):
     vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
     return Encoder(vision_extractor, out_dim)
 
-class Immitation_Baseline_Actor(torch.nn.Module):
-    def __init__(self, v_gripper_encoder, v_fixed_encoder, embed_dim, action_dim):
-        super().__init__()
-        self.v_gripper_encoder = v_gripper_encoder
-        self.v_fixed_encoder = v_fixed_encoder
-        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim * 2, 1024),
-                                       torch.nn.ReLU(),
-                                       torch.nn.Linear(1024, 1024),
-                                       torch.nn.ReLU(), torch.nn.Linear(1024, action_dim),torch.nn.Tanh())
-
-    def forward(self, v_gripper_inp, v_fixed_inp, freeze):
-        if freeze:
-            with torch.no_grad():
-                v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
-                v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
-            v_gripper_embed, v_fixed_embed = v_gripper_embed.detach(), v_fixed_embed.detach()
-        else:
-            v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
-            v_fixed_embed = self.v_fixed_encoder(v_fixed_inp)
-        mlp_inp = torch.cat([v_gripper_embed, v_fixed_embed], dim=1)
-        action_logits = self.mlp(mlp_inp)
-        return action_logits
-
 class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
     def __init__(self, v_encoder, embed_dim, action_dim, loss_type):
         super().__init__()
@@ -75,14 +52,15 @@ class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
             )
 
     def forward(self, v_inp, freeze, idx):
-        print(f"\nFORWARD, idx shape: {idx.shape}")
-        print(idx.cpu().numpy())
-        print(v_inp.shape)
-        for i in range(v_inp.shape[1] // 3):
-            img = v_inp[0, 3*i : 3*i+3, :, :]
-            print(img.permute(1, 2, 0).cpu().numpy().shape)
-            cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
-            cv2.waitKey(100)
+        # # debugging dataloader
+        # print(f"\nFORWARD, idx shape: {idx.shape}")
+        # print(idx.cpu().numpy())
+        # print(v_inp.shape)
+        # for i in range(v_inp.shape[1] // 3):
+        #     img = v_inp[0, 3*i : 3*i+3, :, :]
+        #     print(img.permute(1, 2, 0).cpu().numpy().shape)
+        #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
+        #     cv2.waitKey(100)
         if freeze:
             with torch.no_grad():
                 v_embed = self.v_encoder(v_inp)

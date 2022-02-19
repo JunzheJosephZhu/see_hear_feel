@@ -1,4 +1,3 @@
-import itertools
 from argparse import ArgumentParser
 from tkinter.messagebox import NO
 import pandas as pd
@@ -8,6 +7,7 @@ import soundfile as sf
 import torch
 import h5py
 import torchvision.transforms as T
+from itertools import islice
 
 import json
 import cv2
@@ -90,10 +90,10 @@ class ImmitationDataSet_hdf5(IterableDataset):
         self.stack_idx.append(torch.tensor([tuple((idx.start, idx.stop)) for idx in cam_gripper_idx]))
 
         if len(self.framestack_cam) >= self.max_len:
-            idx_stack = torch.vstack(tuple(itertools.islice(self.stack_idx, 0, None, self.frameskip)))
+            idx_stack = torch.vstack(tuple(islice(self.stack_idx, 0, None, self.frameskip)))
             # print('*' * 50, idx_stack)
-            cam_framestack = torch.vstack(tuple(itertools.islice(self.framestack_cam, 0, None, self.frameskip)))
-            cam_fixed_framestack = torch.vstack(tuple(itertools.islice(self.framestack_fixed_cam, 0, None, self.frameskip)))
+            cam_framestack = torch.vstack(tuple(islice(self.framestack_cam, 0, None, self.frameskip)))
+            cam_fixed_framestack = torch.vstack(tuple(islice(self.framestack_fixed_cam, 0, None, self.frameskip)))
         else:
             idx_stack = torch.vstack([self.stack_idx[-1]] * self.num_stack)
             cam_framestack = torch.vstack(([self.framestack_cam[-1]] * self.num_stack))
@@ -186,9 +186,9 @@ class ImmitationDataSet_hdf5_multi(IterableDataset):
         self.framestack_gel.append(gs_frame)
 
         if len(self.framestack_cam) >= self.max_len:
-            cam_framestack = torch.vstack(tuple(itertools.islice(self.framestack_cam, 0, None, self.frameskip)))
-            cam_fixed_framestack = torch.vstack(tuple(itertools.islice(self.framestack_fixed_cam, 0, None, self.frameskip)))
-            gs_framestack = torch.vstack(tuple(itertools.islice(self.framestack_gel, 0, None, self.frameskip)))
+            cam_framestack = torch.vstack(tuple(islice(self.framestack_cam, 0, None, self.frameskip)))
+            cam_fixed_framestack = torch.vstack(tuple(islice(self.framestack_fixed_cam, 0, None, self.frameskip)))
+            gs_framestack = torch.vstack(tuple(islice(self.framestack_gel, 0, None, self.frameskip)))
         else:
             cam_framestack = torch.vstack(([self.framestack_cam[-1]] * self.num_stack))
             cam_fixed_framestack = torch.vstack(([self.framestack_fixed_cam[-1]] * self.num_stack))
@@ -242,16 +242,6 @@ if __name__ == "__main__":
     parser.add_argument("--frameskip", default=2, type=int)
     parser.add_argument("--data_folder", default="data/test_recordings_0208_repeat")
     args = parser.parse_args()
-    # dataset = TripletDataset(args.log_file)
-    # cam_pos, gs_pos, log_spec, cam_neg = dataset[53]
-
-    # dataset = ImmitationDataSet(args.log_file)
-    # loader = DataLoader(dataset, 4, num_workers=1)
-    # for _ in loader:
-    #     pass
-    # dataset = FuturePredDataset("train.csv", 10)
-    # for cam_frames, log_specs, gs_frames, actions in dataset:
-    #     pass
 
     dataset = ImmitationDataSet_hdf5("train.csv")
     # print("dataset", dataset.len)

@@ -2,71 +2,6 @@ from pytorch_lightning import LightningModule
 import torch
 import torch.nn.functional as F
 
-class ImmiBaselineLearn(LightningModule):
-    def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config): #v_center_encoder, v_fix_encoder,
-        super().__init__()
-        # self.v_center_encoder = v_center_encoder
-        # self.v_fix_encoder = v_fix_encoder
-        self.actor = actor
-        self.optimizer = optimizer
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.scheduler = scheduler
-        self.config = config
-        # self.cce = torch.nn.CrossEntropyLoss()
-        self.mse = torch.nn.MSELoss()
-        print("baseline learn")
-
-    def training_step(self, batch, batch_idx):
-        def compute_loss(pred, demo):
-            """
-            pred: # [batch, 3 * action_dims]
-            demo: # [batch, action_dims]
-            """
-            batch_size = pred.size(0)
-            space_dim = demo.size(-1)
-            # [batch, 3, num_dims]
-            pred = pred.reshape(batch_size, space_dim)
-            return self.mse(pred, demo)
-        v_gripper_inp, v_fixed_inp, _, _, keyboard, _ = batch
-        print("gripper_video", v_gripper_inp)
-        keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
-        action_pred = self.actor(v_gripper_inp, v_fixed_inp, self.current_epoch < self.config.freeze_till)
-        print("action", action_pred)
-        print("keyboard", keyboard)
-        loss = compute_loss(action_pred, keyboard)
-        self.log_dict({"train/action_loss": loss})
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        def compute_loss(pred, demo):
-            """
-            pred: # [batch, 3 * action_dims]
-            demo: # [batch, action_dims]
-            """
-            batch_size = pred.size(0)
-            space_dim = demo.size(-1)
-            # [batch, 3, num_dims]
-            pred = pred.reshape(batch_size, space_dim)
-            return self.mse(pred, demo)
-        v_gripper_inp, v_fixed_inp, _, _, keyboard, _ = batch
-        keyboard = (keyboard - 1).type(torch.cuda.FloatTensor)
-        action_pred = self.actor(v_gripper_inp, v_fixed_inp, self.current_epoch < self.config.freeze_till)
-        with torch.no_grad():
-            loss = compute_loss(action_pred, keyboard)
-        self.log_dict({"val/action_loss": loss})
-
-    def train_dataloader(self):
-        """Training dataloader"""
-        return self.train_loader
-
-    def val_dataloader(self):
-        """Validation dataloader"""
-        return self.val_loader
-
-    def configure_optimizers(self):
-        return [self.optimizer], [self.scheduler]
-
 class ImmiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
         super().__init__()
@@ -116,7 +51,7 @@ class ImmiBaselineLearn_Tuning(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        v_gripper_inp, v_fixed_inp, keyboard = batch
+        v_gripper_inp, v_fixed_inp, keyboard, idx = batch
         v_input = torch.cat([v_gripper_inp, v_fixed_inp], dim=1)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
