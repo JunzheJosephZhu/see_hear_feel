@@ -28,7 +28,7 @@ def make_vision_encoder(out_dim):
     vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
     return Encoder(vision_extractor, out_dim)
 
-class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
+class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
     def __init__(self, v_encoder, args):
         super().__init__()
         self.v_encoder = v_encoder
@@ -75,7 +75,7 @@ class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
         action_logits = self.mlp(mlp_inp)
         return action_logits
 
-class Immitation_Pose_Baseline_Actor(torch.nn.Module):
+class Imitation_Pose_Baseline_Actor(torch.nn.Module):
     def __init__(self, embed_dim, action_dim):
         super().__init__()
         self.mlp = torch.nn.Sequential(

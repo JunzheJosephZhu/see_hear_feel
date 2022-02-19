@@ -38,7 +38,7 @@ def clip_audio(audio, audio_start, audio_end):
     )
     return audio_clip
 
-class ImmitationDataSet_hdf5(IterableDataset):
+class ImitationDataSet_hdf5(IterableDataset):
     def __init__(self, log_file=None, num_stack = 5, frameskip = 2, crop_height = 432, crop_width = 576, data_folder="data/test_recordings_0208_repeat"):
         super().__init__()
         self.logs = pd.read_csv(log_file)
@@ -112,6 +112,7 @@ class ImmitationDataSet_hdf5(IterableDataset):
         z = z_space[action_c[2]]
         action = torch.as_tensor([x, y, z])
         self.timestep += 1
+        # print('*' * 50 + f"imi_dataset\nidx_gripper:\n{skip_idx_gripper}\nidx_fixed:\n{skip_idx_fixed}\nidx:\n{skip_idx_gripper + skip_idx_fixed}")
         return frameskip_cam_gripper, frameskip_cam_fixed, action #, skip_idx_gripper + skip_idx_fixed
 
     def load_episode(self, idx):
@@ -128,7 +129,7 @@ class ImmitationDataSet_hdf5(IterableDataset):
         self.cam_fixed_idx = self.all_datasets['cam_fixed_color'].iter_chunks()
 
 
-class ImmitationDataSet_hdf5_multi(IterableDataset):
+class ImitationDataSet_hdf5_multi(IterableDataset):
     def __init__(self, log_file=None, num_stack=5, frameskip=2, crop_height=432, crop_width=576,
                  data_folder="data/test_recordings_0208_repeat"):
         super().__init__()
@@ -248,7 +249,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_folder", default="data/test_recordings_0208_repeat")
     args = parser.parse_args()
 
-    dataset = ImmitationDataSet_hdf5("train.csv")
+    dataset = ImitationDataSet_hdf5("train.csv")
     # print("dataset", dataset.len)
     cnt = 0
     for cam_frame, _, _ in dataset:

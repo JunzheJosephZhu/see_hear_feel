@@ -2,7 +2,7 @@ from pytorch_lightning import LightningModule
 import torch
 import torch.nn.functional as F
 
-class ImmiBaselineLearn_Tuning(LightningModule):
+class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
         super().__init__()
         self.actor = actor
@@ -72,7 +72,7 @@ class ImmiBaselineLearn_Tuning(LightningModule):
     def configure_optimizers(self):
         return [self.optimizer], [self.scheduler]
 
-class ImmiPoseBaselineLearn(LightningModule):
+class ImiPoseBaselineLearn(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
         super().__init__()
         self.actor = actor
