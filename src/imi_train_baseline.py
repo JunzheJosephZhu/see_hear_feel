@@ -25,15 +25,15 @@ def baselineLearning_hdf5(args):
 
     # get pretrained model
     train_set = ImitationDataSet_hdf5(
-        args.train_csv, args.num_stack, args.frameskip, args.crop_height, args.crop_width, args.data_folder)
+        args.train_csv, args.num_stack, args.frameskip, args.resized_height, args.resized_width, args.crop_percent, args.data_folder)
     val_set = ImitationDataSet_hdf5(
-        args.val_csv, args.num_stack, args.frameskip, args.crop_height, args.crop_width, args.data_folder)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
+        args.val_csv, args.num_stack, args.frameskip, args.resized_height, args.resized_width,args.crop_percent, args.data_folder)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
     val_loader = DataLoader(val_set, 1, num_workers=1)
     v_encoder = make_vision_encoder(args.embed_dim) #, args.num_stack * 3 * 2)
 
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
-    # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
+    # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))   
     actor = Imitation_Baseline_Actor_Tuning(v_encoder, args)
 
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
@@ -97,8 +97,9 @@ if __name__ == "__main__":
     p.add("--val_csv", default="val.csv")
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
-    p.add("--crop_height", default=432, type=int)
-    p.add("--crop_width", default=576, type=int)
+    p.add("--resized_height", default= 240, type=int)
+    p.add("--resized_width", default=320, type=int)
+    p.add("--crop_percent", default=0.1, type=int)
     p.add("--data_folder", default='./data/')
 
     args = p.parse_args()

@@ -1,3 +1,8 @@
+
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+
 from argparse import ArgumentParser
 from tkinter.messagebox import NO
 import pandas as pd
@@ -39,12 +44,14 @@ def clip_audio(audio, audio_start, audio_end):
     return audio_clip
 
 class ImitationDataSet_hdf5(IterableDataset):
-    def __init__(self, log_file=None, num_stack = 5, frameskip = 2, crop_height = 432, crop_width = 576, data_folder="data/test_recordings_0208_repeat"):
+    def __init__(self, log_file=None, num_stack = 5, frameskip = 2, resized_height = 240, resized_width = 320, crop_percent = 0.1, data_folder=None):
         super().__init__()
         self.logs = pd.read_csv(log_file)
         self.data_folder = data_folder
-        self._crop_height = crop_height
-        self._crop_width = crop_width
+        self._resized_height = resized_height
+        self._resized_width = resized_width
+        self._crop_height = int(resized_height * (1.0 - crop_percent))
+        self._crop_width = int(resized_width * (1.0 - crop_percent))
         self.num_stack = num_stack
         self.frameskip = frameskip
         self.iter_end = len(self.logs)
@@ -78,11 +85,15 @@ class ImitationDataSet_hdf5(IterableDataset):
 
         # data augmentation
         transform = T.Compose([
+            T.Resize((self._resized_height, self._resized_width)),
             T.RandomCrop((self._crop_height, self._crop_width)),
-            T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
+            T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         ])
         cam_gripper_frame = transform(cam_gripper_frame)
         cam_fixed_frame = transform(cam_fixed_frame)
+        
+        # print(cam_fixed_frame.shape)
+        
 
         # stack past frames into the queue
         '''framestack: list [ frame1 (tensor), frame2 (tensor), ... ]'''
@@ -93,13 +104,13 @@ class ImitationDataSet_hdf5(IterableDataset):
 
         # return frames from the stack with frameskip
         if len(self.framestack_cam_gripper) >= self.max_len:
-            frameskip_cam_gripper = list(islice(self.framestack_cam_gripper, 0, None, self.frameskip))
-            frameskip_cam_fixed = list(islice(self.framestack_cam_fixed, 0, None, self.frameskip))
+            framestack_cam_gripper = list(islice(self.framestack_cam_gripper, 0, None, self.frameskip))
+            framestack_cam_fixed = list(islice(self.framestack_cam_fixed, 0, None, self.frameskip))
             # skip_idx_gripper = list(islice(self.stack_idx_gripper, 0, None, self.frameskip))
             # skip_idx_fixed = list(islice(self.stack_idx_fixed, 0, None, self.frameskip))
         else:
-            frameskip_cam_gripper = [self.framestack_cam_gripper[-1]] * self.num_stack
-            frameskip_cam_fixed = [self.framestack_cam_fixed[-1]] * self.num_stack
+            framestack_cam_gripper = [self.framestack_cam_gripper[-1]] * self.num_stack
+            framestack_cam_fixed = [self.framestack_cam_fixed[-1]] * self.num_stack
             # skip_idx_gripper = [self.stack_idx_gripper[-1]] * self.num_stack
             # skip_idx_fixed = [self.stack_idx_fixed[-1]] * self.num_stack
         
@@ -113,7 +124,7 @@ class ImitationDataSet_hdf5(IterableDataset):
         action = torch.as_tensor([x, y, z])
         self.timestep += 1
         # print('*' * 50 + f"imi_dataset\nidx_gripper:\n{skip_idx_gripper}\nidx_fixed:\n{skip_idx_fixed}\nidx:\n{skip_idx_gripper + skip_idx_fixed}")
-        return frameskip_cam_gripper, frameskip_cam_fixed, action #, skip_idx_gripper + skip_idx_fixed
+        return framestack_cam_gripper, framestack_cam_fixed, action #, skip_idx_gripper + skip_idx_fixed
 
     def load_episode(self, idx):
         # reset timestep
@@ -131,7 +142,7 @@ class ImitationDataSet_hdf5(IterableDataset):
 
 class ImitationDataSet_hdf5_multi(IterableDataset):
     def __init__(self, log_file=None, num_stack=5, frameskip=2, crop_height=432, crop_width=576,
-                 data_folder="data/test_recordings_0208_repeat"):
+                 data_folder="data/test_recordings_0214"):
         super().__init__()
         self.logs = pd.read_csv(log_file)
         self.data_folder = data_folder
@@ -236,20 +247,18 @@ class ImitationDataSet_hdf5_multi(IterableDataset):
         self.cam_fix_idx = self.all_datasets['cam_fixed_color'].iter_chunks()
         self.gs_idx = self.all_datasets['left_gelsight_flow'].iter_chunks()
 
-
-
 if __name__ == "__main__":
     import argparse
     from torch.utils.data import DataLoader
 
     parser = ArgumentParser()
-    parser.add_argument("--log_file", default="train.csv")
-    parser.add_argument("--num_stack", default=5, type=int)
-    parser.add_argument("--frameskip", default=2, type=int)
-    parser.add_argument("--data_folder", default="data/test_recordings_0208_repeat")
+    parser.add_argument("--log_file", default="~/perls2_gelsight/projects/test_close_gripper/svl_project/train.csv")
+    parser.add_argument("--num_stack", default=4, type=int)
+    parser.add_argument("--frameskip", default=3, type=int)
+    parser.add_argument("--data_folder", default="~/perls2_gelsight/projects/test_close_gripper/test_recordings_0214")
     args = parser.parse_args()
 
-    dataset = ImitationDataSet_hdf5("train.csv")
+    dataset = ImitationDataSet_hdf5(args.log_file, args.num_stack, args.frameskip, 240, 320, 0.1, args.data_folder)
     # print("dataset", dataset.len)
     cnt = 0
     for cam_frame, _, _ in dataset:
