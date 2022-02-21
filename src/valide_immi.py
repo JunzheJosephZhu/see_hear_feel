@@ -1,9 +1,12 @@
+# from typing_extensions import Required
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import torch
 import numpy as np
-from dataset import ImmitationDataSet
-from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
-    Immitation_Baseline_Actor_Classify, Immitation_Baseline_Actor, Immitation_Pose_Baseline_Actor
-from engine import ImmiLearn, ImmiBaselineLearn
+from imi_dataset import ImitationDataSet_hdf5
+from imi_models import make_vision_encoder, Imitation_Baseline_Actor_Tuning
+from imi_engine import ImiBaselineLearn_Tuning
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os
@@ -23,14 +26,13 @@ def baselineValidate(args):
         return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
 
     # get pretrained model
-    val_set = ImmitationDataSet(args.val_csv)
+    val_set = ImitationDataSet_hdf5(args.val_csv, args.num_stack, args.frameskip, 432, 576, "data/test_recordings_0208_repeat")
     val_loader = DataLoader(val_set, 1, num_workers=0)
     ckpt_path = "last.ckpt"
-    v_gripper_encoder = make_vision_encoder(args.embed_dim)
-    v_fixed_encoder = make_vision_encoder(args.embed_dim)
+    v_encoder = make_vision_encoder(args.embed_dim)
 
-    actor = Immitation_Baseline_Actor(
-        v_gripper_encoder, v_fixed_encoder, args.embed_dim, args.action_dim)
+    actor = Imitation_Baseline_Actor_Tuning(
+        v_encoder,  args)
     # actor = Immitation_Pose_Baseline_Actor(
     #     v_gripper_encoder, v_fixed_encoder, args.embed_dim, args.action_dim)
     state_dict = strip_sd(torch.load(ckpt_path)['state_dict'], 'actor.')
@@ -47,8 +49,9 @@ def baselineValidate(args):
     real = []
 
     for batch in val_loader:
-        v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
-        action_pred = actor(v_gripper_inp, v_fixed_inp, True).detach().numpy()
+        v_gripper_inp, v_fixed_inp, keyboard = batch
+        v_inp = v_gripper_inp + v_fixed_inp
+        action_pred = actor(v_inp, True).detach().numpy()
         action_pred = action_pred.reshape(3, -1)
         action_pred = (np.argmax(action_pred, axis=1))
         keyboard = keyboard.numpy()
@@ -61,8 +64,8 @@ def baselineValidate(args):
         real.append(keyboard)
 
         cnt += 1
-        # if cnt == 100:
-        #     break
+        if cnt == 100:
+            break
 
     predict = np.asarray(predict)
     real = np.asarray(real).reshape(cnt,3)
@@ -99,14 +102,13 @@ def baselineRegValidate(args):
         return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
 
     # get pretrained model
-    val_set = ImmitationDataSet(args.val_csv)
+    val_set = ImitationDataSet_hdf5(args.val_csv, args.num_stack, args.frameskip, 432, 576, "../test_recordings_0214")
     val_loader = DataLoader(val_set, 1, num_workers=0)
-    ckpt_path = "last.ckpt"
-    v_gripper_encoder = make_vision_encoder(args.embed_dim)
-    v_fixed_encoder = make_vision_encoder(args.embed_dim)
+    ckpt_path = args.pretrained
+    v_encoder = make_vision_encoder(args.embed_dim)
 
-    actor = Immitation_Baseline_Actor(
-        v_gripper_encoder, v_fixed_encoder, args.embed_dim, args.action_dim)
+    actor = Imitation_Baseline_Actor_Tuning(
+        v_encoder, args)
     state_dict = strip_sd(torch.load(ckpt_path)['state_dict'], 'actor.')
     print("Model's state_dict:")
     for param_tensor in state_dict:
@@ -121,8 +123,9 @@ def baselineRegValidate(args):
     real = []
 
     for batch in val_loader:
-        v_gripper_inp, v_fixed_inp, _, _, keyboard, _ = batch
-        action_pred = actor(v_gripper_inp, v_fixed_inp, True).detach().numpy()
+        v_gripper_inp, v_fixed_inp, keyboard = batch
+        v_inp = v_gripper_inp + v_fixed_inp
+        action_pred = actor(v_inp, True).detach().numpy()
         action_pred = action_pred.reshape(3)
         # action_pred = (np.argmax(action_pred, axis=1))
         keyboard = (keyboard.numpy() - 1)
@@ -135,10 +138,9 @@ def baselineRegValidate(args):
         #         wrong[i] += 1
         predict.append(action_pred)
         real.append(keyboard)
-
         cnt += 1
-        # if cnt == 100:
-        #     break
+        if cnt == 150:
+            break
 
     predict = np.asarray(predict)
     real = np.asarray(real).reshape(cnt,3)
@@ -194,7 +196,7 @@ if __name__ == "__main__":
     import configargparse
 
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default="conf/immi_learn.yaml")
+    p.add("-c", "--config", is_config_file=True, default="conf/imi_learn_0218.yaml")
     p.add("--batch_size", default=8)
     p.add("--lr", default=0.001)
     p.add("--gamma", default=0.9)
@@ -211,6 +213,9 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
+    p.add("--num_stack", default=4, type=int)
+    p.add("--frameskip", default=3, type=int)
+    p.add("--loss_type", default="mse")
 
     args = p.parse_args()
     baselineRegValidate(args)

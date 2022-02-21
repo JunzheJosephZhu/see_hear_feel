@@ -35,14 +35,13 @@ class ImiBaselineLearn_Tuning(LightningModule):
         return self.loss_cal(pred, demo)
 
     def training_step(self, batch, batch_idx):
-        # idx is in the batch for debugging
-        v_gripper_inp, v_fixed_inp, keyboard, idx = batch
+        # use idx in batch for debugging
+        v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
         # v_input = torch.cat([v_gripper_inp,  v_fixed_inp], dim=1)
         v_input = v_gripper_inp + v_fixed_inp
-        print('\n'.join(['*' * 50 + 'imi_engine (train)', 'v_input:', f'{len(v_input), v_input[0].shape}']))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till, idx)
+        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
         # print("action", action_pred)
         # print("keyboard", keyboard)
         loss = self.compute_loss(action_pred, keyboard)
@@ -50,13 +49,12 @@ class ImiBaselineLearn_Tuning(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        v_gripper_inp, v_fixed_inp, keyboard, idx = batch
+        v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
         # v_input = torch.cat([v_gripper_inp, v_fixed_inp], dim=1)
         v_input = v_gripper_inp + v_fixed_inp
-        print('\n'.join(['*' * 50 + 'imi_engine (val)', 'v_input:', f'{len(v_input), v_input[0].shape}']))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till, idx)
+        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
         with torch.no_grad():
             loss = self.compute_loss(action_pred, keyboard)
         self.log_dict({"val/action_loss": loss})

@@ -3,7 +3,7 @@ from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 from torch import nn
-from engine import Future_Prediction
+from svl_project.src.engine import Future_Prediction
 import cv2
 import numpy as np
 
@@ -21,9 +21,9 @@ class Encoder(torch.nn.Module):
 def make_vision_encoder(out_dim, channel):
     vision_extractor = resnet18(pretrained=True)
     # change the first conv layer to fit 30 channels
-    vision_extractor.conv1 = nn.Conv2d(
-        channel, 64, kernel_size=7, stride=2, padding=3, bias=False
-    )
+    # vision_extractor.conv1 = nn.Conv2d(
+    #     channel, 64, kernel_size=7, stride=2, padding=3, bias=False
+    # )
     vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
     return Encoder(vision_extractor, out_dim)
 
@@ -128,25 +128,25 @@ class Immitation_Baseline_Actor(torch.nn.Module):
         action_logits = self.mlp(mlp_inp)
         return action_logits
 
-class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
-    def __init__(self, v_encoder, embed_dim, action_dim):
-        super().__init__()
-        self.v_encoder = v_encoder
-        self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim, 1024),
-                                       torch.nn.ReLU(),
-                                       torch.nn.Linear(1024, 1024),
-                                       torch.nn.ReLU(), torch.nn.Linear(1024, action_dim),torch.nn.Tanh())
+# class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
+#     def __init__(self, v_encoder, embed_dim, action_dim):
+#         super().__init__()
+#         self.v_encoder = v_encoder
+#         self.mlp = torch.nn.Sequential(torch.nn.Linear(embed_dim, 1024),
+#                                        torch.nn.ReLU(),
+#                                        torch.nn.Linear(1024, 1024),
+#                                        torch.nn.ReLU(), torch.nn.Linear(1024, action_dim),torch.nn.Tanh())
 
-    def forward(self, v_inp, freeze):
-        if freeze:
-            with torch.no_grad():
-                v_embed = self.v_encoder(v_inp)
-            v_embed = v_embed.detach()
-        else:
-            v_embed = self.v_encoder(v_inp)
-        mlp_inp = v_embed
-        action_logits = self.mlp(mlp_inp)
-        return action_logits
+#     def forward(self, v_inp, freeze):
+#         if freeze:
+#             with torch.no_grad():
+#                 v_embed = self.v_encoder(v_inp)
+#             v_embed = v_embed.detach()
+#         else:
+#             v_embed = self.v_encoder(v_inp)
+#         mlp_inp = v_embed
+#         action_logits = self.mlp(mlp_inp)
+#         return action_logits
 
 class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
     def __init__(self, args, v_encoder, embed_dim, action_dim):

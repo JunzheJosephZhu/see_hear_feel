@@ -33,7 +33,7 @@ def baselineLearning_hdf5(args):
     v_encoder = make_vision_encoder(args.embed_dim) #, args.num_stack * 3 * 2)
 
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
-    # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
+    # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))   
     actor = Imitation_Baseline_Actor_Tuning(v_encoder, args)
 
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
