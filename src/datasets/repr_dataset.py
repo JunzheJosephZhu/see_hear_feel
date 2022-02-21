@@ -31,7 +31,7 @@ class VisionGripperDataset(BaseDataset):
         timestep = torch.randint(high=num_frames, size=()).item()
         return self.load_image(trial, "cam_gripper_color", timestep)
 
-@deprecate
+@DeprecationWarning
 class TripletDataset(Dataset):
     def __init__(self, log_file, sil_ratio=0.2, data_folder="data/test_recordings_0123"):
         """
@@ -130,7 +130,7 @@ class TripletDataset(Dataset):
     def __len__(self):
         return len(self.logs)
 
-@deprecate
+@DeprecationWarning
 class FuturePredDataset(Dataset):
     def __init__(self, log_file, max_len, data_folder="data"):
         """

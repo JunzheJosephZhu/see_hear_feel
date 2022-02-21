@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 from dataset import ImmitationDataSet
-from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
+from models.actors import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
     Immitation_Baseline_Actor_Classify, Immitation_Baseline_Actor, Immitation_Pose_Baseline_Actor
-from engine import ImmiLearn, ImmiBaselineLearn
+from engines.imi_engine import ImmiLearn, ImmiBaselineLearn
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os

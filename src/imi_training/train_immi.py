@@ -1,8 +1,8 @@
 import torch
 from dataset import ImmitationDataSet
-from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
+from models.actors import make_audio_encoder, make_vision_encoder, make_tactile_encoder, Immitation_Actor, \
     Immitation_Baseline_Actor
-from engine import ImmiLearn, ImmiBaselineLearn, ImmiLearn_Reg
+from engines.imi_engine import ImmiLearn, ImmiBaselineLearn, ImmiLearn_Reg
 from torch.utils.data import DataLoader
 import os
 import yaml

@@ -94,20 +94,12 @@ class ResNet_Decoder(nn.Module):
         print(out.shape)
         return out
 
-class Encoder(nn.Module):
-    def __init__(self, feature_extractor, flattened_size, out_dim):
-        super().__init__()
-        self.feature_extractor = feature_extractor
-        self.downsample = nn.MaxPool2d(2, 2)
-        self.conv1x1 = nn.Conv2d(512, 64, 1)
-        self.projection = nn.Linear(flattened_size, out_dim)
+def make_vision_decoder():
+    return ResNet_Decoder(out_channels=3)
 
-    def forward(self, x):
-        feats = self.feature_extractor(x)
-        assert len(feats.values()) == 1
-        feats = list(feats.values())[0]
-        feats = self.downsample(feats)
-        feats = self.conv1x1(feats)
-        feats = feats.flatten(-3, -1)
-        feats = self.projection(feats)
-        return feats
+def make_audio_decoder():
+    return ResNet_Decoder(out_channels=2)
+
+def make_tactile_decoder():
+    return ResNet_Decoder(out_channels=3)
+

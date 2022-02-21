@@ -1,22 +1,17 @@
-from email.policy import default
 import sys
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import torch
+from dataset import ImmitationDataSet
+from models.actors import make_vision_encoder, Immitation_Baseline_Actor
+from engines.imi_engine import ImmiBaselineLearn
 from torch.utils.data import DataLoader
+import os
+import yaml
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-import cv2
-from imi_dataset import ImitationDataSet_hdf5
-from imi_models import make_vision_encoder, Imitation_Baseline_Actor_Tuning
-from imi_engine import ImiBaselineLearn_Tuning
-
-import os
-import yaml
-
-
-def baselineLearning_hdf5(args):
+def main(args):
     def strip_sd(state_dict, prefix):
         """
         strip prefix from state dictionary
@@ -24,30 +19,28 @@ def baselineLearning_hdf5(args):
         return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
 
     # get pretrained model
-    train_set = ImitationDataSet_hdf5(
-        args.train_csv, args.num_stack, args.frameskip, args.crop_height, args.crop_width, args.data_folder)
-    val_set = ImitationDataSet_hdf5(
-        args.val_csv, args.num_stack, args.frameskip, args.crop_height, args.crop_width, args.data_folder)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
-    val_loader = DataLoader(val_set, 1, num_workers=1)
-    v_encoder = make_vision_encoder(args.embed_dim) #, args.num_stack * 3 * 2)
+    train_set = ImmitationDataSet(args.train_csv)
+    val_set = ImmitationDataSet(args.val_csv)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
+    val_loader = DataLoader(val_set, 1, num_workers=0)
+    v_gripper_encoder = make_vision_encoder(args.embed_dim)
+    v_fixed_encoder = make_vision_encoder(args.embed_dim)
 
     # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
     # v_gripper_encoder.load_state_dict(strip_sd(state_dict, "v_model."))
-    actor = Imitation_Baseline_Actor_Tuning(v_encoder, args)
 
+    actor = Immitation_Baseline_Actor(v_gripper_encoder, v_fixed_encoder, args.embed_dim, args.action_dim)
     optimizer = torch.optim.Adam(actor.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
     config_name = os.path.basename(args.config).split(".yaml")[0]
-    exp_dir = os.path.join("exp", config_name)
+    exp_dir = os.path.join("exp_baseline", config_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
         yaml.safe_dump(vars(args), outfile)
     # pl stuff
-    pl_module = ImiBaselineLearn_Tuning(actor, optimizer, train_loader, val_loader, scheduler, args)
-
+    pl_module = ImmiBaselineLearn(actor, optimizer, train_loader, val_loader, scheduler, args)
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename="{epoch}-{step}",
@@ -77,9 +70,9 @@ if __name__ == "__main__":
     import configargparse
 
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default="conf/imi_learn_0218.yaml")
+    p.add("-c", "--config", is_config_file=True, default="conf/immi_learn_pose_baseline.yaml")
     p.add("--batch_size", default=8)
-    p.add("--lr", default=1e-5)
+    p.add("--lr", default=0.001)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
     p.add("--epochs", default=100)
@@ -87,19 +80,13 @@ if __name__ == "__main__":
     p.add("--num_workers", default=4, type=int)
     # model
     p.add("--embed_dim", required=True, type=int)
-    p.add("--pretrained", default=None)
+    p.add("--pretrained", required=True)
     p.add("--freeze_till", required=True, type=int)
     p.add("--action_dim", default=3, type=int)
     p.add("--num_heads", type=int)
-    p.add("--loss_type", default='mse')
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--num_stack", required=True, type=int)
-    p.add("--frameskip", required=True, type=int)
-    p.add("--crop_height", default=432, type=int)
-    p.add("--crop_width", default=576, type=int)
-    p.add("--data_folder", default='./data/')
 
     args = p.parse_args()
-    baselineLearning_hdf5(args)
+    main(args)

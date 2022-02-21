@@ -3,68 +3,11 @@ from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor,get_graph_node_names
 import torch
 from torch import nn
-from engine import Future_Prediction
+from engines.imi_engine import Future_Prediction
 import cv2
 import numpy as np
 
 
-
-def make_vision_encoder(channel):
-    vision_extractor = resnet18(pretrained=True)
-    # change the first conv layer to fit 30 channels
-    vision_extractor.conv1 = nn.Conv2d(
-        channel, 64, kernel_size=7, stride=2, padding=3, bias=False
-    )
-    vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
-    return Encoder(vision_extractor, 4480, 1280)
-
-def make_vision_decoder():
-    vision_decoder = ResNet_Decoder(out_channels=3)
-    return vision_decoder
-
-
-def make_tactile_encoder(out_dim):
-    tactile_extractor = resnet18()
-    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
-    return Encoder(tactile_extractor, out_dim)
-
-def make_audio_encoder(out_dim):
-    audio_extractor = resnet18()
-    audio_extractor.conv1 = nn.Conv2d(
-        2, 64, kernel_size=7, stride=1, padding=3, bias=False
-    )
-    audio_extractor = create_feature_extractor(audio_extractor, ["avgpool"])
-    return Encoder(audio_extractor, out_dim)
-
-class Attention_Fusion(torch.nn.Module):
-    def __init__(self, embed_dim, num_heads):
-        super().__init__()
-        self.embed_dim = embed_dim
-        self.layernorm = torch.nn.LayerNorm(embed_dim)
-        self.mha = MultiheadAttention(embed_dim, num_heads)
-
-    def forward(self, v_inp, a_inp, t_inp):
-        inp = torch.stack([v_inp, a_inp, t_inp], dim=0)
-        sublayer_out, weights = self.mha(inp, inp, inp)
-        out = self.layernorm(sublayer_out + inp)
-        v_out, a_out, t_out = out[:]
-        return v_out, a_out, t_out
-
-class Forward_Model(torch.nn.Module):
-    def __init__(self, embed_dim, action_dim):
-        super().__init__()
-        self.action_encoder = torch.nn.Sequential(torch.nn.Linear(action_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
-        self.mlp_v = torch.nn.Sequential(torch.nn.Linear(embed_dim * 4, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
-        self.mlp_a = torch.nn.Sequential(torch.nn.Linear(embed_dim * 4 , embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
-        self.mlp_t = torch.nn.Sequential(torch.nn.Linear(embed_dim * 4, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim), torch.nn.ReLU(), torch.nn.Linear(embed_dim, embed_dim))
-
-    def forward(self, v_out, a_out, t_out, actions):
-        action_embed = self.action_encoder(actions)
-        fused = torch.cat([v_out, a_out, t_out, action_embed], dim=1)
-        v_pred = self.mlp_v(fused)
-        a_pred = self.mlp_a(fused)
-        t_pred = self.mlp_t(fused)
-        return v_pred, a_pred, t_pred
 
 class Immitation_Actor(torch.nn.Module):
     def __init__(self, v_encoder, a_encoder, t_encoder, embed_dim, num_heads, action_dim):

@@ -3,30 +3,10 @@ from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 from torch import nn
-from engine import Future_Prediction
+from engines.imi_engine import Future_Prediction
 import cv2
 import numpy as np
 
-class Encoder(torch.nn.Module):
-    def __init__(self, feature_extractor, out_dim):
-        super().__init__()
-        self.feature_extractor = feature_extractor
-        self.projection = nn.Linear(512, out_dim)
-
-    def forward(self, x):
-        feats = self.feature_extractor(x)["avgpool"]
-        feats = feats.squeeze(3).squeeze(2)
-        return self.projection(feats)
-
-# def make_vision_encoder(out_dim, channel):
-def make_vision_encoder(out_dim):
-    vision_extractor = resnet18(pretrained=True)
-    # # change the first conv layer to fit 30 channels
-    # vision_extractor.conv1 = nn.Conv2d(
-    #     channel, 64, kernel_size=7, stride=2, padding=3, bias=False
-    # )
-    vision_extractor = create_feature_extractor(vision_extractor, ["avgpool"])
-    return Encoder(vision_extractor, out_dim)
 
 class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
     def __init__(self, v_encoder, args):

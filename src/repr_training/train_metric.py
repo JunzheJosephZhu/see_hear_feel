@@ -1,7 +1,7 @@
 import torch
 from dataset import TripletDataset
-from models import make_audio_encoder, make_vision_encoder, make_tactile_encoder
-from engine import MetricLearn
+from models.actors import make_audio_encoder, make_vision_encoder, make_tactile_encoder
+from engines.imi_engine import MetricLearn
 from torch.utils.data import DataLoader
 import os
 import yaml
