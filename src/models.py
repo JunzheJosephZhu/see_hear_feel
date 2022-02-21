@@ -3,7 +3,7 @@ from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 from torch import nn
-from svl_project.src.engine import Future_Prediction
+from engine import Future_Prediction
 import cv2
 import numpy as np
 
@@ -195,11 +195,11 @@ class Immitation_Pose_Baseline_Actor(torch.nn.Module):
         super().__init__()
         self.mlp = torch.nn.Sequential(
             torch.nn.Linear(3, 64),
-            torch.nn.ReLU(),
+            torch.nn.Tanh(),
             torch.nn.Linear(64, embed_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(embed_dim, 3 * action_dim),
-            # torch.nn.Linear(embed_dim, action_dim),
+            torch.nn.Tanh(),
+            # torch.nn.Linear(embed_dim, 3 * action_dim),
+            torch.nn.Linear(embed_dim, action_dim),
             torch.nn.Tanh()
         )
 

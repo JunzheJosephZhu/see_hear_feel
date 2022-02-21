@@ -100,7 +100,7 @@ if __name__ == "__main__":
     p.add("--resized_height", default= 240, type=int)
     p.add("--resized_width", default=320, type=int)
     p.add("--crop_percent", default=0.1, type=int)
-    p.add("--data_folder", default='./data/')
+    p.add("--data_folder", default='./data/test_recordings_0214')
 
     args = p.parse_args()
     baselineLearning_hdf5(args)

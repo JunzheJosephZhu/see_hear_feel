@@ -18,7 +18,7 @@ def main(args):
     # get pretrained model
     train_set = ImmitationDataSet(args.train_csv)
     val_set = ImmitationDataSet(args.val_csv)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=0)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=12)
     val_loader = DataLoader(val_set, 1, num_workers=0)
 
     actor = Immitation_Pose_Baseline_Actor(args.embed_dim, args.action_dim)
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/immi_learn.yaml")
     p.add("--batch_size", default=8)
-    p.add("--lr", default=1e-3)
+    p.add("--lr", default=1e-4)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
     p.add("--epochs", default=100)
