@@ -73,18 +73,19 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         #     cv2.waitKey(100)
         if freeze:
             with torch.no_grad():
-                # v_embeds = [self.v_encoder(v_inp_i).detach() for v_inp_i in v_inp]
-                v_cat = torch.cat(v_inp, dim=0)
+                v_embeds = [self.v_encoder(v_inp_i).detach() for v_inp_i in v_inp]
+                # v_cat = torch.cat(v_inp, dim=0)
                 # start = time.time()
-                v_embeds = self.v_encoder(v_cat).detach()
+                # v_embeds = self.v_encoder(v_cat).detach()
                 # print('dddddddddd', time.time() - start)
                 # print(v_embeds.shape)
         else:
-            # v_embeds = [self.v_encoder(v_inp_i) for v_inp_i in v_inp]
-            v_cat = torch.cat(v_inp, dim=0)
-            v_embeds = self.v_encoder(v_cat)
+            v_embeds = [self.v_encoder(v_inp_i) for v_inp_i in v_inp]
+            # v_cat = torch.cat(v_inp, dim=0)
+            # v_embeds = self.v_encoder(v_cat)
             # print(v_embeds.shape)
-        mlp_inp = torch.reshape(v_embeds, (-1,))
+        mlp_inp = torch.concat(v_embeds, dim=-1)
+        # mlp_inp = torch.reshape(v_embeds, (-1,))
         action_logits = self.mlp(mlp_inp)
         return action_logits
 
