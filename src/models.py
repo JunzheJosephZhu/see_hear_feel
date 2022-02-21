@@ -4,7 +4,8 @@ from torchvision.models.feature_extraction import create_feature_extractor,get_g
 import torch
 from torch import nn
 from engine import Future_Prediction
-from basic_modules import ResNet_Decoder, Encoder
+import cv2
+import numpy as np
 
 
 
@@ -142,6 +143,48 @@ class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
         action_logits = self.mlp(mlp_inp)
         return action_logits
 
+class Immitation_Baseline_Actor_Tuning(torch.nn.Module):
+    def __init__(self, args, v_encoder, embed_dim, action_dim):
+        super().__init__()
+        self.v_encoder = v_encoder
+        self.mlp = None
+        if args.loss_type == 'cce':
+            self.mlp = torch.nn.Sequential(
+                torch.nn.Linear(embed_dim, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, 3 * action_dim)
+            )
+        elif args.loss_type == 'mse':
+            self.mlp = torch.nn.Sequential(
+                torch.nn.Linear(embed_dim, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, 1024),
+                torch.nn.ReLU(),
+                torch.nn.Linear(1024, action_dim),
+                torch.nn.Tanh()
+            )
+
+    def forward(self, v_inp, freeze, idx):
+        print(f"\nFORWARD, idx shape: {idx.shape}")
+        print(idx.cpu().numpy())
+        print(v_inp.shape)
+        for i in range(v_inp.shape[1] // 3):
+            img = v_inp[0, 3*i : 3*i+3, :, :]
+            print(img.permute(1, 2, 0).cpu().numpy().shape)
+            cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
+            cv2.waitKey(100)
+        if freeze:
+            with torch.no_grad():
+                v_embed = self.v_encoder(v_inp)
+            v_embed = v_embed.detach()
+        else:
+            v_embed = self.v_encoder(v_inp)
+        mlp_inp = v_embed
+        action_logits = self.mlp(mlp_inp)
+        return action_logits
+
 class Immitation_Pose_Baseline_Actor(torch.nn.Module):
     def __init__(self, embed_dim, action_dim):
         super().__init__()
@@ -172,6 +215,10 @@ class Immitation_Baseline_Actor_Classify(torch.nn.Module):
                                        torch.nn.Linear(embed_dim, 3 * action_dim))
 
     def forward(self, v_gripper_inp, v_fixed_inp, freeze):
+        print(v_gripper_inp.shape)
+        for i in range(8):
+            cv2.imshow('input', v_gripper_inp[0,3*i:3*i+3,:,:])
+            cv2.waitKey(1)
         if freeze:
             with torch.no_grad():
                 v_gripper_embed = self.v_gripper_encoder(v_gripper_inp)
