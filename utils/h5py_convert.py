@@ -11,7 +11,7 @@ import soundfile as sf
 
 def convert_episode(data_folder, logs, idx):
     print(idx)
-    format_time = logs.iloc[idx].Time#.replace(":", "_")
+    format_time = logs.iloc[idx].Time.replace(":", "_")
     trial = os.path.join(data_folder, format_time)
     all_datasets = h5py.File(os.path.join(trial, "data.hdf5"), 'r')
     streams = ["cam_gripper_color", "cam_fixed_color", "left_gelsight_flow", "left_gelsight_frame"]

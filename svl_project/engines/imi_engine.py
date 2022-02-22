@@ -37,20 +37,16 @@ class ImiBaselineLearn_Tuning(LightningModule):
     def training_step(self, batch, batch_idx):
         # use idx in batch for debugging
         v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
-        # v_input = torch.cat([v_gripper_inp,  v_fixed_inp], dim=1)
         v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 0)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
-        # print("action", action_pred)
-        # print("keyboard", keyboard)
         loss = self.compute_loss(action_pred, keyboard)
         self.log_dict({"train/action_loss": loss})
         return loss
 
     def validation_step(self, batch, batch_idx):
         v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
-        # v_input = torch.cat([v_gripper_inp, v_fixed_inp], dim=1)
         v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 0)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)

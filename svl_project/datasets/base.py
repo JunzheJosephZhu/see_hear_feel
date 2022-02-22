@@ -37,7 +37,7 @@ class BaseDataset(Dataset):
         if load_audio:
             audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
             audio_hole = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
-            audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))
+            audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))#.float()
         else:
             audio = None
         return trial, timestamps, audio, len(timestamps["action_history"])

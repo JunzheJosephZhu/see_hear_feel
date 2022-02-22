@@ -13,11 +13,11 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         super().__init__()
         self.v_encoder = v_encoder
         self.mlp = None
-        embed_dim = args.embed_dim * args.num_stack * 2
-        print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
+        self.embed_dim = args.embed_dim * args.num_stack * 2
+        # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
             self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(embed_dim, 1024),
+                torch.nn.Linear(self.embed_dim, 1024),
                 torch.nn.ReLU(),
                 torch.nn.Linear(1024, 1024),
                 torch.nn.ReLU(),
@@ -25,7 +25,7 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
             )
         elif args.loss_type == 'mse':
             self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(embed_dim, 1024),
+                torch.nn.Linear(self.embed_dim, 1024),
                 torch.nn.ReLU(),
                 torch.nn.Linear(1024, 1024),
                 torch.nn.ReLU(),
@@ -43,17 +43,13 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         #     print(img.permute(1, 2, 0).cpu().numpy().shape)
         #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
         #     cv2.waitKey(100)
+        print("v_input", len(v_inp))
         if freeze:
             with torch.no_grad():
                 v_embeds = self.v_encoder(v_inp).detach()
-            # print('\n'.join(('*' * 50 + 'imi_models', 'v_embeds:', f'{len(v_embeds)}')))
-            # v_embeds = v_embeds.detach()
         else:
             v_embeds = self.v_encoder(v_inp)
-        print(v_embeds.shape)
-        mlp_inp = v_embeds.view(-1)
-        # mlp_inp = torch.concat(v_embeds, dim=-1)
-        # print('\n'.join(['*' * 50 + 'imi_models', 'v_embeds:', f'len = {len(v_embeds)}']))
+        mlp_inp = torch.reshape(v_embeds, (-1, self.embed_dim))
         action_logits = self.mlp(mlp_inp)
         return action_logits
 

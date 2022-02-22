@@ -42,7 +42,7 @@ class ImitationOverfitDataset(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time
+        format_time = self.logs.iloc[idx].Time.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -77,7 +77,7 @@ class ImitationDatasetFramestack(BaseDataset):
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
 
     def __getitem__(self, idx):
-        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
+        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=False)
         end = torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len
         if start < 0:
@@ -92,8 +92,57 @@ class ImitationDatasetFramestack(BaseDataset):
             [self.load_image(trial, "cam_fixed_color", timestep) for timestep in cam_idx], dim = 0)
 
         keyboard = timestamps["action_history"][end]
+        xy_space = {-.003: 0, 0: 1, .003: 2}
+        z_space = {-.0015: 0, 0: 1, .0015: 2}
+        keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
+
         
         return cam_gripper_framestack, cam_fixed_framestack, keyboard
+
+class ImitationDatasetFramestackMulti(BaseDataset):
+    def __init__(self, log_file, args, data_folder="data/test_recordings_0214"):
+        super().__init__(log_file, data_folder)
+        self.num_stack = args.num_stack
+        self.frameskip = args.frameskip
+        self.max_len = (self.num_stack - 1) * self.frameskip + 1
+        self.fps = 10
+        self.sr = int(16000 * (self.fps / max(self.max_len, 10)))
+        self.resolution = self.sr // 10
+        self.mel = torchaudio.transforms.MelSpectrogram(
+            sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
+        )
+        self.EPS = 1e-8
+
+    def __getitem__(self, idx):
+        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
+
+        # load camera frames
+        end = torch.randint(high=num_frames, size=()).item()
+        start = end - self.max_len
+        if start < 0:
+            cam_idx = [end] * self.num_stack
+        else:
+            cam_idx = list(np.arange(start, end, self.frameskip))
+
+        cam_gripper_framestack = torch.cat(
+            [self.load_image(trial, "cam_gripper_color", timestep) for timestep in cam_idx], dim=0)
+
+        cam_fixed_framestack = torch.cat(
+            [self.load_image(trial, "cam_fixed_color", timestep) for timestep in cam_idx], dim=0)
+
+        # load audio
+        audio_start = end * self.resolution - self.sr // 2 # why self.sr // 2, and start + sr
+        audio_end = audio_start + self.sr
+        audio_clip = self.clip_audio(audio, audio_start, audio_end)
+        spec = self.mel(audio_clip)
+        log_spec = torch.log(spec + EPS)
+
+        keyboard = timestamps["action_history"][end]
+        xy_space = {-.003: 0, 0: 1, .003: 2}
+        z_space = {-.0015: 0, 0: 1, .0015: 2}
+        keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
+
+        return cam_gripper_framestack, cam_fixed_framestack, log_spec, keyboard
 
 
 class ImitationDataSet_hdf5(IterableDataset):
@@ -262,7 +311,7 @@ class ImitationDataSet_hdf5_multi(IterableDataset):
         # audio length is 1 second
         audio_start = self.timestep * resolution - sr // 2
         audio_end = audio_start + sr
-        audio_clip = clip_audio(self.audio, audio_start, audio_end)
+        audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         assert audio_clip.size(1) == sr
         spec = self.mel(audio_clip)
         log_spec = torch.log(spec + EPS)
