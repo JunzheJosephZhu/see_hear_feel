@@ -1,0 +1,6 @@
+embed_dim: 1280
+pretrained: "/exp/metric_learn/checkpoints/last.ckpt"
+freeze_till: 20
+num_stack: 1
+frameskip: 1
+conv_bottleneck: 64

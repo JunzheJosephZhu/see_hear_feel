@@ -3,7 +3,7 @@ from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor
 import torch
 from torch import nn
-from engines.imi_engine import Future_Prediction
+# from engines.imi_engine import Future_Prediction
 import cv2
 import numpy as np
 
@@ -33,7 +33,7 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
                 torch.nn.Tanh()
             )
 
-    def forward(self, v_inp, freeze, idx):
+    def forward(self, v_inp, freeze): #, idx):
         # debugging dataloader
         # print(f"\nFORWARD, idx shape: {len(idx), idx[0].shape}")
         # print(idx[0].cpu().numpy())
@@ -45,13 +45,15 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         #     cv2.waitKey(100)
         if freeze:
             with torch.no_grad():
-                v_embeds = [self.v_encoder(v_inp_i).detach() for v_inp_i in v_inp]
+                v_embeds = self.v_encoder(v_inp).detach()
             # print('\n'.join(('*' * 50 + 'imi_models', 'v_embeds:', f'{len(v_embeds)}')))
             # v_embeds = v_embeds.detach()
         else:
-            v_embeds = [self.v_encoder(v_inp_i) for v_inp_i in v_inp]
-        mlp_inp = torch.concat(v_embeds, dim=-1)
-        print('\n'.join(['*' * 50 + 'imi_models', 'v_embeds:', f'len = {len(v_embeds)}']))
+            v_embeds = self.v_encoder(v_inp)
+        print(v_embeds.shape)
+        mlp_inp = v_embeds.view(-1)
+        # mlp_inp = torch.concat(v_embeds, dim=-1)
+        # print('\n'.join(['*' * 50 + 'imi_models', 'v_embeds:', f'len = {len(v_embeds)}']))
         action_logits = self.mlp(mlp_inp)
         return action_logits
 
@@ -75,6 +77,7 @@ class Imitation_Pose_Baseline_Actor(torch.nn.Module):
         return action_logits
 
 if __name__ == "__main__":
-    vision_encoder = make_vision_encoder(128)
-    empty_input = torch.zeros((1, 3, 64, 101))
-    print(vision_encoder(empty_input).shape)
+    pass
+    # vision_encoder = make_vision_encoder(128)
+    # empty_input = torch.zeros((1, 3, 64, 101))
+    # print(vision_encoder(empty_input).shape)
