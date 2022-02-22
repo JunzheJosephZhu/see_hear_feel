@@ -70,10 +70,12 @@ class ImitationOverfitDataset(BaseDataset):
 
     
 class ImitationDatasetFramestack(BaseDataset):
-    def __init__(self, log_file, args, data_folder="data/test_recordings_0214"):
+    def __init__(self, log_file, args, data_folder="data/test_recordings"):
         super().__init__(log_file, data_folder)
         self.num_stack = args.num_stack
         self.frameskip = args.frameskip
+        self.resized_height = args.resized_height
+        self.resized_width = args.resized_width
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
 
     def __getitem__(self, idx):
@@ -84,19 +86,25 @@ class ImitationDatasetFramestack(BaseDataset):
             cam_idx = [end] * self.num_stack
         else:
             cam_idx = list(np.arange(start, end, self.frameskip))
-        
-        cam_gripper_framestack = torch.cat(
-            [self.load_image(trial, "cam_gripper_color", timestep) for timestep in cam_idx], dim = 0)
 
-        cam_fixed_framestack = torch.cat(
-            [self.load_image(trial, "cam_fixed_color", timestep) for timestep in cam_idx], dim = 0)
+        transform = T.Compose([
+            T.Resize((self.resized_height, self.resized_width)),
+            # T.RandomCrop((self._crop_height, self._crop_width)),
+            T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
+        ])
+
+        cam_gripper_framestack = torch.stack(
+            [transform(self.load_image(trial, "cam_gripper_color", timestep)) for timestep in cam_idx])
+
+        cam_fixed_framestack = torch.stack(
+            [transform(self.load_image(trial, "cam_fixed_color", timestep)) for timestep in cam_idx])
+
+        print("shape", cam_fixed_framestack.shape)
 
         keyboard = timestamps["action_history"][end]
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
-
-        
         return cam_gripper_framestack, cam_fixed_framestack, keyboard
 
 class ImitationDatasetFramestackMulti(BaseDataset):

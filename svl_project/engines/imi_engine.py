@@ -50,6 +50,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
         v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 0)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
+        # print(v_input.shape)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
         with torch.no_grad():
             loss = self.compute_loss(action_pred, keyboard)

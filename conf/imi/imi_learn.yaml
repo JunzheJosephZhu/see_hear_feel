@@ -4,3 +4,5 @@ freeze_till: 20
 num_stack: 1
 frameskip: 1
 conv_bottleneck: 64
+resized_height: 240
+resized_width: 320

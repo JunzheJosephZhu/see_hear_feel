@@ -34,7 +34,7 @@ def convert_episode(data_folder, logs, idx):
         sf.write(os.path.join(trial, track + '.wav'), all_datasets[track], 16000)
 
 if __name__ == "__main__":
-    logs = pd.read_csv("data/episode_times_0214.csv")
+    logs = pd.read_csv("data/episode_times_0220_toy.csv")
     data_folder = "data/test_recordings"
     for idx in range(len(logs)):
         convert_episode(data_folder, logs, idx)

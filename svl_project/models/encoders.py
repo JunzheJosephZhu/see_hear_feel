@@ -4,7 +4,7 @@ import torch
 from torch import nn
 
 class Encoder(nn.Module):
-    def __init__(self, feature_extractor, conv_bottleneck, out_dim, out_shape):
+    def __init__(self, feature_extractor, conv_bottleneck, out_dim, out_shape=(7, 10)):
         super().__init__()
         self.feature_extractor = feature_extractor
         self.downsample = nn.MaxPool2d(2, 2)
@@ -21,11 +21,11 @@ class Encoder(nn.Module):
         feats = self.projection(feats)
         return feats
 
-def make_vision_encoder(conv_bottleneck, out_dim):
+def make_vision_encoder(conv_bottleneck, out_dim, out_shape):
     vision_extractor = resnet18(pretrained=True)
     # change the first conv layer to fit 30 channels
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
-    return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(7, 10))
+    return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape)
 
 @DeprecationWarning
 def make_tactile_encoder(out_dim):

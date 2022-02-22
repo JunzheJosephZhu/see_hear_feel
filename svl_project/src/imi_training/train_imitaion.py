@@ -18,9 +18,11 @@ from svl_project.boilerplate import *
 def main(args):
     train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
+    # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
+    # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=12)
-    val_loader = DataLoader(val_set, 1, num_workers=1)
-    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim)
+    val_loader = DataLoader(val_set, 1, num_workers=12)
+    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (4, 5))
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
@@ -35,7 +37,7 @@ if __name__ == "__main__":
 
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=8)
+    p.add("--batch_size", default=4)
     p.add("--lr", default=0.00001)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
@@ -55,6 +57,8 @@ if __name__ == "__main__":
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
     p.add("--data_folder", default="data/test_recordings")
+    p.add("--resized_height", required=True, type=int)
+    p.add("--resized_width", required=True, type=int)
 
     args = p.parse_args()
     main(args)
