@@ -17,8 +17,8 @@ from svl_project.boilerplate import *
 def main(args):
     train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
-    val_loader = DataLoader(val_set, 1, num_workers=8)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=12)
+    val_loader = DataLoader(val_set, 1, num_workers=12)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim)
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
