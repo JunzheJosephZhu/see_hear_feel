@@ -3,7 +3,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
 import torch
-from svl_project.datasets.imi_dataset import ImitationOverfitDataset
+from svl_project.datasets.imi_dataset import ImitationOverfitDataset, ImitationDatasetFramestack
 from svl_project.models.encoders import make_vision_encoder
 from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
@@ -18,7 +18,7 @@ def main(args):
     train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=12)
-    val_loader = DataLoader(val_set, 1, num_workers=12)
+    val_loader = DataLoader(val_set, 1, num_workers=1)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim)
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)

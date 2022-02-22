@@ -43,7 +43,6 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         #     print(img.permute(1, 2, 0).cpu().numpy().shape)
         #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
         #     cv2.waitKey(100)
-        print("v_input", len(v_inp))
         if freeze:
             with torch.no_grad():
                 v_embeds = self.v_encoder(v_inp).detach()
