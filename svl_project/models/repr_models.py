@@ -30,13 +30,14 @@ class VAE(torch.nn.Module):
         self.encoder = encoder
         self.decoder = decoder
         self.mean_layer = nn.Linear(out_dim, latent_dim)
+        # log variance
         self.scale_layer = nn.Linear(out_dim, latent_dim)
         self.decoder_initial = nn.Linear(latent_dim, out_dim)
 
     def forward(self, inp):
         shared_repr = self.encoder(inp)
         mean = self.mean_layer(shared_repr)
-        scale = torch.exp(self.scale_layer(shared_repr))
+        scale = torch.exp(0.5 * self.scale_layer(shared_repr))
         z_dist = independent_multivariate_normal(mean=mean,
                                                stddev=scale)
         z = z_dist.rsample()
