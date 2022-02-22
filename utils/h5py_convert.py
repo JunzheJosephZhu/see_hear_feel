@@ -8,6 +8,7 @@ import torch
 from tqdm import tqdm
 from time import time
 import soundfile as sf
+import cv2
 
 def convert_episode(data_folder, logs, idx):
     print(idx)
@@ -21,10 +22,9 @@ def convert_episode(data_folder, logs, idx):
         for frame_nb, frame_chunk in enumerate(tqdm(frame_chunks)):
             img = all_datasets[stream][frame_chunk]
             if not stream.endswith("flow"):
-                im = Image.fromarray(img)
                 out_file = os.path.join(trial, stream, str(frame_nb) + ".png")
-                if not os.path.exists(out_file):
-                    im.save(out_file)
+                if not os.path.exists(out_file) or True:
+                    cv2.imwrite(out_file, img)
             else:
                 out_file = os.path.join(trial, stream, str(frame_nb) + ".pt")
                 if not os.path.exists(out_file):
