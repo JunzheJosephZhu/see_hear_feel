@@ -1,5 +1,5 @@
 import torch
-from dataset import TripletDataset
+from svl_project.src.datasets import TripletDataset
 from models.actors import make_audio_encoder, make_vision_encoder, make_tactile_encoder
 from engines.imi_engine import MetricLearn
 from torch.utils.data import DataLoader

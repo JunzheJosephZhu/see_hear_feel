@@ -26,8 +26,8 @@ if __name__ == "__main__":
     argparser.add_argument(
         "--csv_file",
         type=str,
-        help="folder for csv files",
-        default="./episode_times_0214.csv",
+        help="csv file to read in ",
+        default="data/episode_times_0214.csv",
     )
     argparser.add_argument("--output_dir", type=str, default=".")
 

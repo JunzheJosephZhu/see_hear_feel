@@ -51,14 +51,14 @@ class BasicBlock(nn.Module):
             return out
 
 class ResNet_Decoder(nn.Module):
-    def __init__(self, block=BasicBlock, num_blocks=[2, 2, 2, 2], deconv=nn.ConvTranspose2d, out_channels=None, in_shape=(10, 8)):
+    def __init__(self, conv_bottleneck, out_dim, initial_pad, in_shape, block=BasicBlock, num_blocks=[2, 2, 2, 2], deconv=nn.ConvTranspose2d, out_channels=None):
         super(ResNet_Decoder, self).__init__()
         self.in_shape = in_shape
-        self.in_linear = nn.Linear(1280, 64 * in_shape[0]* in_shape[1])
+        self.in_linear = nn.Linear(out_dim, conv_bottleneck * in_shape[0]* in_shape[1])
         self.in_planes = 512
 
         self.deconv = True
-        self.conv1 = nn.ConvTranspose2d(64, 512, kernel_size=3, stride=2, padding=1, output_padding=(1, 0))
+        self.conv1 = nn.ConvTranspose2d(conv_bottleneck, 512, kernel_size=3, stride=2, padding=1, output_padding=initial_pad)
 
 
         self.layer1 = self._make_layer(block, 512, num_blocks[0], stride=2, deconv=deconv)
@@ -81,25 +81,19 @@ class ResNet_Decoder(nn.Module):
         out = out.reshape(x.size(0), 64, self.in_shape[0], self.in_shape[1])
         out = F.relu(self.conv1(out))
         out = F.upsample_bilinear(out, scale_factor=(2, 2))
-        print(out.shape)
         out = self.layer1(out)
-        print(out.shape)
         out = self.layer2(out)
-        print(out.shape)
         out = self.layer3(out)
-        print(out.shape)
         out = self.layer4(out)
-        print(out.shape)
         out = self.out_conv(out)
-        print(out.shape)
         return out
 
-def make_vision_decoder():
-    return ResNet_Decoder(out_channels=3)
+def make_vision_decoder(conv_bottleneck, out_dim):
+    return ResNet_Decoder(conv_bottleneck, out_dim, initial_pad=(0, 1), in_shape=(8, 10), out_channels=3)
 
-def make_audio_decoder():
-    return ResNet_Decoder(out_channels=2)
+def make_audio_decoder(out_dim):
+    return ResNet_Decoder(out_dim, out_channels=2)
 
-def make_tactile_decoder():
-    return ResNet_Decoder(out_channels=3)
+def make_tactile_decoder(out_dim):
+    return ResNet_Decoder(out_dim, out_channels=3)
 

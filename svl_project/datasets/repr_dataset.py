@@ -20,7 +20,7 @@ import math
 from re import L
 from collections import deque
 from torch.nn.utils.rnn import pad_sequence
-from dataset import BaseDataset
+from svl_project.datasets.base import BaseDataset
 import numpy as np
 
 EPS = 1e-8

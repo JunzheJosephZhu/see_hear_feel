@@ -26,6 +26,7 @@ def independent_multivariate_normal(mean, stddev):
 
 class VAE(torch.nn.Module):
     def __init__(self, encoder, decoder, out_dim, latent_dim):
+        super().__init__()
         self.encoder = encoder
         self.decoder = decoder
         self.mean_layer = nn.Linear(out_dim, latent_dim)
@@ -38,7 +39,7 @@ class VAE(torch.nn.Module):
         scale = torch.exp(self.scale_layer(shared_repr))
         z_dist = independent_multivariate_normal(mean=mean,
                                                stddev=scale)
-        z = self.get_vector(z_dist)
+        z = z_dist.rsample()
         decoder_inp = self.decoder_initial(z)
         pixels = self.decoder(decoder_inp)
         return pixels, z_dist

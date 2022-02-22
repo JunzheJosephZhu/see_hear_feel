@@ -9,16 +9,16 @@ class VAELearn(LightningModule):
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.beta = beta  # The relative weight on the KL Divergence/regularization loss, relative to reconstruction
-        self.prior_scale = prior_scale  # The scale parameter used to construct prior used in KLD
         self.optimizer = optimizer
         self.scheduler = scheduler
+        self.prior_scale = prior_scale
 
     def compute_loss(self, predicted_pixels, gt_pixels, encoded_context_dist):
         recon_loss = F.mse_loss(predicted_pixels, gt_pixels)
 
         prior = torch.distributions.Normal(torch.zeros(encoded_context_dist.batch_shape +
                                                        encoded_context_dist.event_shape).to(self.device),
-                                           1)
+                                           self.prior_scale)
         independent_prior = torch.distributions.Independent(prior,
                                                             len(encoded_context_dist.event_shape))
         kld = torch.distributions.kl.kl_divergence(encoded_context_dist, independent_prior)
@@ -35,7 +35,8 @@ class VAELearn(LightningModule):
         self.log('train/loss_kld', torch.mean(kld).item())
         if batch_idx < 10:
             if pixels.size(1) == 3:
-                self.logger.experiment.add_image(f"train/original_{str(batch_idx)}", pixels, global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"train/original_{str(batch_idx)}", batch[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"train/reconstruct_{str(batch_idx)}", pixels[0], global_step=self.current_epoch)
             # TODO: add two channel audio logging
         return loss
 
@@ -48,7 +49,9 @@ class VAELearn(LightningModule):
         self.log('train/loss_recon', recon_loss.item())
         self.log('train/loss_kld', torch.mean(kld).item())
         if batch_idx < 10:
-            self.logger.experiment.add_image(f"train/original_{str(batch_idx)}", pixels, global_step=self.current_epoch)
+            if pixels.size(1) == 3:
+                self.logger.experiment.add_image(f"val/original_{str(batch_idx)}", batch[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"val/reconstruct_{str(batch_idx)}", pixels[0], global_step=self.current_epoch)
 
         return loss
 
