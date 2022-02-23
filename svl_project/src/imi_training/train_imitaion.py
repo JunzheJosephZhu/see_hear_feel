@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=4)
+    p.add("--batch_size", default=8)
     p.add("--lr", default=0.00001)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
