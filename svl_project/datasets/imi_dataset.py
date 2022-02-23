@@ -33,6 +33,9 @@ EPS = 1e-8
 class ImitationOverfitDataset(BaseDataset):
     def __init__(self, log_file, data_folder="data/test_recordings"):
         super().__init__(log_file, data_folder)
+        
+    # def __len__(self):
+    #     return 100#len(self.timestamps["action_history"])
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -42,25 +45,27 @@ class ImitationOverfitDataset(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
-            timestamps = json.load(ts)
+            self.timestamps = json.load(ts)
         if load_audio:
             audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
             audio_hole = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
             audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))
         else:
             audio = None
-        return trial, timestamps, audio, len(timestamps["action_history"])
+        return trial, self.timestamps, audio, len(self.timestamps["action_history"])
 
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
+        
         timestep = torch.randint(high=num_frames, size=()).item()
-
+        # print(timestep)
         cam_gripper_color = self.load_image(trial, "cam_gripper_color", timestep)
         cam_fixed_color = self.load_image(trial, "cam_fixed_color", timestep)
+        # print("gripper", cam_gripper_color.shape)
         keyboard = timestamps["action_history"][timestep]
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}

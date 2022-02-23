@@ -1,3 +1,7 @@
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+
 import os
 import h5py
 import numpy as np
@@ -12,7 +16,7 @@ import cv2
 
 def convert_episode(data_folder, logs, idx):
     print(idx)
-    format_time = logs.iloc[idx].Time.replace(":", "_")
+    format_time = logs.iloc[idx].Time#.replace(":", "_")
     trial = os.path.join(data_folder, format_time)
     all_datasets = h5py.File(os.path.join(trial, "data.hdf5"), 'r')
     streams = ["cam_gripper_color", "cam_fixed_color", "left_gelsight_flow", "left_gelsight_frame"]
@@ -34,7 +38,7 @@ def convert_episode(data_folder, logs, idx):
         sf.write(os.path.join(trial, track + '.wav'), all_datasets[track], 16000)
 
 if __name__ == "__main__":
-    logs = pd.read_csv("data/episode_times_0220_toy.csv")
-    data_folder = "data/test_recordings"
+    logs = pd.read_csv("../data_0220_toy_posneg/episode_times.csv")
+    data_folder = "../data_0220_toy_posneg/test_recordings"
     for idx in range(len(logs)):
         convert_episode(data_folder, logs, idx)

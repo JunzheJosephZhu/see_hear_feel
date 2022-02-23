@@ -33,14 +33,14 @@ class BaseDataset(Dataset):
         format_time = self.logs.iloc[idx].Time.replace(":", "_")
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
-            timestamps = json.load(ts)
+            self.timestamps = json.load(ts)
         if load_audio:
             audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
             audio_hole = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
             audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))#.float()
         else:
             audio = None
-        return trial, timestamps, audio, len(timestamps["action_history"])
+        return trial, self.timestamps, audio, len(self.timestamps["action_history"])
 
     def __getitem__(self, idx):
         raise NotImplementedError
