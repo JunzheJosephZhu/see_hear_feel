@@ -18,7 +18,7 @@ from svl_project.boilerplate import *
 def main(args):
 
     print(sys.getrecursionlimit())
-    sys.setrecursionlimit(3000)
+    sys.setrecursionlimit(8000)
     print(sys.getrecursionlimit())
 
     train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
@@ -26,7 +26,7 @@ def main(args):
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
-    val_loader = DataLoader(val_set, 1, num_workers=0)
+    val_loader = DataLoader(val_set, args.batch_size, num_workers=8)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (4, 5))
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -42,11 +42,11 @@ if __name__ == "__main__":
 
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=8)
-    p.add("--lr", default=0.00001)
+    p.add("--batch_size", default=5)
+    p.add("--lr", default=0.00001, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=500)
+    p.add("--epochs", default=5000)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff

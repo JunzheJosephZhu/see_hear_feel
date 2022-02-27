@@ -27,7 +27,7 @@ def start_training(args, exp_dir, pl_module):
         strategy="dp",
         limit_val_batches=10,
         check_val_every_n_epoch=1,
-        log_every_n_steps=5
+        log_every_n_steps=1
     )
     trainer.fit(
         pl_module,

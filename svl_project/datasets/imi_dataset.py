@@ -59,10 +59,8 @@ class ImitationOverfitDataset(BaseDataset):
         return trial, self.timestamps, audio, len(self.timestamps["action_history"])
 
     def __getitem__(self, idx):
-        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
-        
+        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)        
         timestep = torch.randint(high=num_frames, size=()).item()
-        # print(timestep)
         cam_gripper_color = self.load_image(trial, "cam_gripper_color", timestep)
         cam_fixed_color = self.load_image(trial, "cam_fixed_color", timestep)
         # print("gripper", cam_gripper_color.shape)

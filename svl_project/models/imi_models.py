@@ -50,6 +50,7 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
             v_embeds = self.v_encoder(v_inp)
         mlp_inp = torch.reshape(v_embeds, (-1, self.embed_dim))
         action_logits = self.mlp(mlp_inp)
+        # print(action_logits)
         return action_logits
 
 class Imitation_Pose_Baseline_Actor(torch.nn.Module):
