@@ -31,11 +31,15 @@ EPS = 1e-8
 
 
 class ImitationOverfitDataset(BaseDataset):
-    def __init__(self, log_file, data_folder="data/test_recordings"):
+    def __init__(self, log_file, dataset_idx, data_folder="data/test_recordings"):
         super().__init__(log_file, data_folder)
-        
-    # def __len__(self):
-    #     return 100#len(self.timestamps["action_history"])
+        self.dataset_idx = dataset_idx
+        # method1:get the len of entire dataset and iterate
+        # self.ep_idx = 0
+        _, _, _, self.num_frames = self.get_episode(self.dataset_idx, load_audio=False)
+
+    def __len__(self):
+        return self.num_frames
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -45,7 +49,7 @@ class ImitationOverfitDataset(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -59,9 +63,14 @@ class ImitationOverfitDataset(BaseDataset):
         return trial, self.timestamps, audio, len(self.timestamps["action_history"])
 
     def __getitem__(self, idx):
-        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
-        
-        timestep = torch.randint(high=num_frames, size=()).item()
+
+        trial, timestamps, _, num_frames = self.get_episode(self.dataset_idx, load_audio=False)
+        # if idx == num_frames - 1:
+        #     if self.ep_idx == 10:
+        #         return StopIteration
+        #     self.ep_idx += 1
+        #     _,_,_,self.num_frames = self.get_episode(self.ep_idx, load_audio=False)
+        timestep = idx #torch.randint(high=num_frames, size=()).item()
         # print(timestep)
         cam_gripper_color = self.load_image(trial, "cam_gripper_color", timestep)
         cam_fixed_color = self.load_image(trial, "cam_fixed_color", timestep)

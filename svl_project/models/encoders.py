@@ -7,12 +7,15 @@ class Encoder(nn.Module):
     def __init__(self, feature_extractor, conv_bottleneck, out_dim, out_shape=(7, 10)):
         super().__init__()
         self.feature_extractor = feature_extractor
+        # # self.feature_extractor.fc = nn.Linear(512, out_dim)
+        # self.feature_extractor.fc = Identity()
         self.downsample = nn.MaxPool2d(2, 2)
         self.conv1x1 = nn.Conv2d(512, conv_bottleneck, 1)
         self.projection = nn.Linear(conv_bottleneck * out_shape[0] * out_shape[1], out_dim)
 
     def forward(self, x):
         feats = self.feature_extractor(x)
+        # print("after resnet", feats.shape)
         assert len(feats.values()) == 1
         feats = list(feats.values())[0]
         feats = self.downsample(feats)
