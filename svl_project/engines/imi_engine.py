@@ -42,8 +42,8 @@ class ImiBaselineLearn_Tuning(LightningModule):
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
-        print("keyboard", keyboard)
-        print("pred", action_pred)
+        # print("keyboard", keyboard)
+        # print("pred", action_pred)
         loss = self.compute_loss(action_pred, keyboard)
         self.log_dict({"train/action_loss": loss})
         return loss
@@ -55,9 +55,10 @@ class ImiBaselineLearn_Tuning(LightningModule):
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         # print(v_input.shape)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
-        print("keyboard", keyboard)
-        print("pred", action_pred)
+        # print("keyboard", keyboard)
+        # print("pred", action_pred)
         with torch.no_grad():
+            action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
             loss = self.compute_loss(action_pred, keyboard)
         self.log_dict({"val/action_loss": loss})
 
