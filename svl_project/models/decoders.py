@@ -56,6 +56,7 @@ class ResNet_Decoder(nn.Module):
         self.in_shape = in_shape
         self.in_linear = nn.Linear(out_dim, conv_bottleneck * in_shape[0]* in_shape[1])
         self.in_planes = 512
+        self.conv_bottleneck = conv_bottleneck
 
         self.deconv = True
         self.conv1 = nn.ConvTranspose2d(conv_bottleneck, 512, kernel_size=3, stride=2, padding=1, output_padding=initial_pad)
@@ -78,7 +79,7 @@ class ResNet_Decoder(nn.Module):
 
     def forward(self, x):
         out = self.in_linear(x)
-        out = out.reshape(x.size(0), 64, self.in_shape[0], self.in_shape[1])
+        out = out.reshape(x.size(0), self.conv_bottleneck, self.in_shape[0], self.in_shape[1])
         out = F.relu(self.conv1(out))
         out = F.upsample_bilinear(out, scale_factor=(2, 2))
         out = self.layer1(out)
