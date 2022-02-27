@@ -122,8 +122,8 @@ class ImiPoseBaselineLearn(LightningModule):
             # return self.mse(pred, demo)
 
         _, _, _, _, keyboard, pose = batch
-        action_pred = self.actor(pose, True)
         with torch.no_grad():
+            action_pred = self.actor(pose, True)
             loss = compute_loss(action_pred, keyboard)
         self.log_dict({"val/loss": loss})
         return loss

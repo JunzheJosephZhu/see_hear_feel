@@ -9,6 +9,7 @@ from svl_project.models.encoders import make_vision_encoder
 from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
 from torch.utils.data import DataLoader
+from itertools import cycle
 import os
 import yaml
 from pytorch_lightning import Trainer
@@ -21,8 +22,11 @@ def main(args):
     sys.setrecursionlimit(8000)
     print(sys.getrecursionlimit())
 
-    train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
-    val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
+    train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(10)])
+    val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(10)])
+
+    # train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
+    # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8, shuffle=False)
@@ -42,11 +46,11 @@ if __name__ == "__main__":
 
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=5)
-    p.add("--lr", default=0.00001, type=float)
+    p.add("--batch_size", default=8)
+    p.add("--lr", default=0.0001, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=5000)
+    p.add("--epochs", default=100)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -57,7 +61,7 @@ if __name__ == "__main__":
     p.add("--frameskip", required=True, type=int)
     p.add("--loss_type", default="mse")
     p.add("--pretrained", default=None)
-    p.add("--freeze_till", required = True, type=int)
+    p.add("--freeze_till", required=True, type=int)
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
