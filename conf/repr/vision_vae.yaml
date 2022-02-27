@@ -2,3 +2,4 @@ conv_bottleneck: 64
 embed_dim: 1280
 latent_dim: 512
 beta: 1.0
+lr: 0.0001

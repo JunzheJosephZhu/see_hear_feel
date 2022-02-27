@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch
 
 class VAELearn(LightningModule):
-    def __init__(self, vae, train_loader, val_loader, beta, prior_scale, optimizer, scheduler):
+    def __init__(self, vae, train_loader, val_loader, beta, prior_scale, optimizer, scheduler, config):
         super().__init__()
         self.vae = vae
         self.train_loader = train_loader
@@ -12,6 +12,7 @@ class VAELearn(LightningModule):
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.prior_scale = prior_scale
+        self.save_hyperparameters(vars(config))
 
     def compute_loss(self, predicted_pixels, gt_pixels, encoded_context_dist):
         recon_loss = F.mse_loss(predicted_pixels, gt_pixels)

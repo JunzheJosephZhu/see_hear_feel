@@ -24,7 +24,7 @@ def main(args):
     # save config
     exp_dir = save_config(args)
     # pl stuff
-    pl_module = VAELearn(vae_model, train_loader, val_loader, args.beta, args.prior_scale, optimizer, scheduler)
+    pl_module = VAELearn(vae_model, train_loader, val_loader, args.beta, args.prior_scale, optimizer, scheduler, args)
     start_training(args, exp_dir, pl_module)
 
 if __name__ == "__main__":
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/repr/vision_vae.yaml")
     p.add("--batch_size", default=4)
-    p.add("--lr", default=0.001)
+    p.add("--lr", default=0.001, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
     p.add("--epochs", default=100)
