@@ -38,9 +38,9 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         # debugging dataloader
         # print(f"\nFORWARD, idx shape: {len(idx), idx[0].shape}")
         # print(idx[0].cpu().numpy())
-        # print(len(v_inp), v_inp[0].shape)
-        # for i in range(v_inp.shape[1] // 3):
-        #     img = v_inp[0, 3*i : 3*i+3, :, :]
+        # print(f"{v_inp.shape[0]} imgs found with shape {v_inp[0].shape}")
+        # for i in range(v_inp.shape[0]):
+        #     img = v_inp[i]
         #     print(img.permute(1, 2, 0).cpu().numpy().shape)
         #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
         #     cv2.waitKey(100)

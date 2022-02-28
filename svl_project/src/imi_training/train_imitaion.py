@@ -32,7 +32,7 @@ def main(args):
     # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
-    train_loader= DataLoader(train_set, args.batch_size, num_workers=12, shuffle=False)
+    train_loader= DataLoader(train_set, args.batch_size, num_workers=12, shuffle=True)
     val_loader= DataLoader(val_set, args.batch_size, num_workers=12, shuffle=False)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (4, 5)) # 3,4
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
     p.add("--batch_size", default=8)
-    p.add("--lr", default=0.0001, type=float)
+    p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
     p.add("--epochs", default=150)

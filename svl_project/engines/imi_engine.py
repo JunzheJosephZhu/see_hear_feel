@@ -64,15 +64,15 @@ class ImiBaselineLearn_Tuning(LightningModule):
         # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
         # print(v_gripper_inp.shape)
         # v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 1)
-        print(v_input.shape, keyboard.shape)
+        # print(v_input.shape, keyboard.shape)
         s = v_input.shape
-        print(s)
+        # print(s)
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
-        print(v_input[0])
+        # print(v_input[0])
         # cv2.imshow('cam1', v_input[0].permute(1, 2, 0).cpu().numpy())
         # cv2.imshow('cam2', v_input[1].permute(1, 2, 0).cpu().numpy())
         # cv2.waitKey(1000)
-        print(v_input.shape)
+        # print(v_input.shape)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         elif self.loss_type == 'cce':
