@@ -8,7 +8,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
         super().__init__()
         self.actor = actor
-        print(self.actor.device)
+        # print(self.actor.device)
         self.optimizer = optimizer
         self.train_loader = train_loader
         self.val_loader = val_loader
