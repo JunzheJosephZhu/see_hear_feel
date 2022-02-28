@@ -3,6 +3,8 @@ from tomlkit import key
 import torch
 import torch.nn.functional as F
 
+action_dick={}
+
 class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
         super().__init__()
@@ -32,18 +34,23 @@ class ImiBaselineLearn_Tuning(LightningModule):
             pred = pred.reshape(batch_size, space_dim)
         elif self.loss_type == 'cce':
             # [batch, 3, num_dims]
-            pred = pred.reshape(batch_size, 3, space_dim)
+            pred = pred.reshape(batch_size, 9 * 3)
         return self.loss_cal(pred, demo)
 
     def training_step(self, batch, batch_idx):
         # use idx in batch for debugging
         v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
         v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 0)
+        # v_input = [v_gripper_inp, v_fixed_inp]
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
+        elif self.loss_type == 'cce':
+            keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
+        # print("current", self.current_epoch)
+        # print("freeze till", self.config.freeze_till)
         action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
-        print("keyboard", keyboard)
-        print("pred", action_pred)
+        # print("keyboard", keyboard)
+        # print("pred", action_pred)
         loss = self.compute_loss(action_pred, keyboard)
         self.log_dict({"train/action_loss": loss})
         return loss
@@ -51,13 +58,14 @@ class ImiBaselineLearn_Tuning(LightningModule):
     def validation_step(self, batch, batch_idx):
         v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
         v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 0)
+        # v_input = [v_gripper_inp, v_fixed_inp]
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
+        elif self.loss_type == 'cce':
+            keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
         # print(v_input.shape)
-        action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
-        print("keyboard", keyboard)
-        print("pred", action_pred)
         with torch.no_grad():
+            action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
             loss = self.compute_loss(action_pred, keyboard)
         self.log_dict({"val/action_loss": loss})
 

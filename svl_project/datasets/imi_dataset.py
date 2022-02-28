@@ -53,14 +53,14 @@ class ImitationOverfitDataset(BaseDataset):
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
-            self.timestamps = json.load(ts)
+            timestamps = json.load(ts)
         if load_audio:
             audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
             audio_hole = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
             audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))
         else:
             audio = None
-        return trial, self.timestamps, audio, len(self.timestamps["action_history"])
+        return trial, timestamps, audio, len(timestamps["action_history"])
 
     def __getitem__(self, idx):
 
@@ -375,13 +375,26 @@ if __name__ == "__main__":
     parser.add_argument("--log_file", default="train.csv")
     parser.add_argument("--num_stack", default=5, type=int)
     parser.add_argument("--frameskip", default=2, type=int)
-    parser.add_argument("--data_folder", default="data/test_recordings_0208_repeat")
+    parser.add_argument("--data_folder", default="data/test_recordings_0220_toy")
     args = parser.parse_args()
 
-    dataset = ImitationDataSet_hdf5("train.csv")
+    dataset = ImitationOverfitDataset("train.csv")
     # print("dataset", dataset.len)
     cnt = 0
-    for cam_frame, _, _ in dataset:
-        cnt+=1
-        if cnt >=5:
-            break
+    zero_cnt = 0
+    t_l = []
+    num_frame = 0
+    for _ in range(11800):
+        index = torch.randint(high=10,size=()).item()
+        _, _, _, idx, t, num = dataset.__getitem__(index)
+        if idx == 0:
+            num_frame = num
+            zero_cnt += 1
+            t_l.append(t)
+        cnt += 1
+    mydic = {i:t_l.count(i) for i in t_l}
+    print(zero_cnt)
+    print(num_frame)
+    print(len(mydic))
+
+    print(mydic)

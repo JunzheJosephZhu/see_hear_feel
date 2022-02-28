@@ -21,7 +21,7 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
                 torch.nn.ReLU(),
                 torch.nn.Linear(1024, 1024),
                 torch.nn.ReLU(),
-                torch.nn.Linear(1024, 3 * args.action_dim)
+                torch.nn.Linear(1024, 9 * args.action_dim)
             )
         elif args.loss_type == 'mse':
             self.mlp = torch.nn.Sequential(
@@ -43,12 +43,19 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         #     print(img.permute(1, 2, 0).cpu().numpy().shape)
         #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
         #     cv2.waitKey(100)
+        # print(v_inp.shape)
         if freeze:
+            # print("freezing!!!")
             with torch.no_grad():
                 v_embeds = self.v_encoder(v_inp).detach()
+                # v_embeds = [self.v_encoder(v_inp_i).detach() for v_inp_i in v_inp]
         else:
+            # print("not freezing!!!")
+            # v_embeds = [self.v_encoder(v_inp_i) for v_inp_i in v_inp]
             v_embeds = self.v_encoder(v_inp)
         mlp_inp = torch.reshape(v_embeds, (-1, self.embed_dim))
+        # print(mlp_inp.shape)
+        # mlp_inp = torch.concat(v_embeds, dim=-1)
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
         return action_logits

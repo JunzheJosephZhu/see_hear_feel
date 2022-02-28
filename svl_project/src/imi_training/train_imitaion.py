@@ -9,7 +9,6 @@ from svl_project.models.encoders import make_vision_encoder
 from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
 from torch.utils.data import DataLoader
-from itertools import cycle
 import os
 import yaml
 from pytorch_lightning import Trainer
@@ -22,15 +21,15 @@ def main(args):
     sys.setrecursionlimit(8000)
     print(sys.getrecursionlimit())
 
-    train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(10)])
-    val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(10)])
+    train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
 
     # train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
-    train_loader= DataLoader(train_set, args.batch_size, num_workers=12, shuffle=False)
-    val_loader= DataLoader(val_set, args.batch_size, num_workers=12, shuffle=False)
+    train_loader= DataLoader(train_set, args.batch_size, num_workers=8, shuffle=True)
+    val_loader= DataLoader(val_set, args.batch_size, num_workers=8, shuffle=True)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (4, 5))
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -50,7 +49,7 @@ if __name__ == "__main__":
     p.add("--lr", default=0.0001, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=100)
+    p.add("--epochs", default=150)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -68,6 +67,7 @@ if __name__ == "__main__":
     p.add("--data_folder", default="data/test_recordings")
     p.add("--resized_height", required=True, type=int)
     p.add("--resized_width", required=True, type=int)
+    p.add("--num_episode", required=True, type=int)
 
     args = p.parse_args()
     main(args)
