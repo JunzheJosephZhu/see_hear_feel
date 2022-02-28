@@ -38,10 +38,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
 
     def training_step(self, batch, batch_idx):
         # use idx in batch for debugging
-        v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
-        # v_gripper_inp = torch.reshape(v_gripper_inp, (-1, 3, v_gripper_inp.shape[-2], v_gripper_inp.shape[-1]))
-        # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
-        v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 1)
+        v_input, keyboard = batch #, idx = batch
         s = v_input.shape
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
         if self.loss_type == 'mse':

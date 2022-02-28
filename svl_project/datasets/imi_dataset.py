@@ -90,8 +90,8 @@ class ImitationOverfitDataset(BaseDataset):
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
-        
-        return cam_gripper_color, cam_fixed_color, keyboard
+        v_total = torch.stack((cam_gripper_color, cam_fixed_color))
+        return v_total, keyboard
 
     
 class ImitationDatasetFramestack(BaseDataset):
