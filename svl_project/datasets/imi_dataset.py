@@ -114,7 +114,7 @@ class ImitationDatasetFramestack(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -145,21 +145,22 @@ class ImitationDatasetFramestack(BaseDataset):
         #     T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         # ])
         # transform = T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.05)
-        t_start = time.time()
+        # t_start = time.time()
         cam_gripper_framestack = torch.stack(
             # [T.functional.crop(augment_image(self.load_image(self.trial, "cam_gripper_color", timestep)), i, j, h, w) for timestep in cam_idx], dim=0)
             [T.functional.crop(self.load_image(self.trial, "cam_gripper_color", timestep), i, j, h, w) for timestep in cam_idx], dim=0)
 
         cam_fixed_framestack = torch.stack(
             # [T.functional.crop(augment_image(self.load_image(self.trial, "cam_fixed_color", timestep)), i, j, h ,w) for timestep in cam_idx],dim=0)
-            [T.functional.crop(self.load_image(self.trial, "cam_fixed_color", timestep), i, j, h, w) for timestep in cam_idx],dim=0)
-        print(time.time() - t_start)
+            [T.functional.crop(self.load_image(self.trial, "cam_fixed_color", timestep), i, j, h, w) for timestep in cam_idx], dim=0)
+        # print(time.time() - t_start)
 
         keyboard = self.timestamps["action_history"][end]
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
-        return cam_gripper_framestack, cam_fixed_framestack, keyboard
+        v_total = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
+        return v_total, keyboard
 
 class ImitationDatasetFramestackMulti(BaseDataset):
     def __init__(self, log_file, args, data_folder="data/test_recordings_0214"):

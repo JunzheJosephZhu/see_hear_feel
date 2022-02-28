@@ -22,11 +22,11 @@ def main(args):
     sys.setrecursionlimit(8000)
     print(sys.getrecursionlimit())
 
-    train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
+    # train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
+    # val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
 
-    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
-    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(70 - args.num_episode)])
 
     # train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
@@ -34,7 +34,7 @@ def main(args):
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
     train_loader= DataLoader(train_set, args.batch_size, num_workers=12, shuffle=True)
     val_loader= DataLoader(val_set, args.batch_size, num_workers=12, shuffle=False)
-    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (4, 5)) # 3,4
+    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (3, 4)) # 3,4
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
