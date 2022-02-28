@@ -1,9 +1,8 @@
+import time
 from pytorch_lightning import LightningModule
 from tomlkit import key
 import torch
 import torch.nn.functional as F
-
-action_dick={}
 
 class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
@@ -40,8 +39,11 @@ class ImiBaselineLearn_Tuning(LightningModule):
     def training_step(self, batch, batch_idx):
         # use idx in batch for debugging
         v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
-        v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 0)
-        # v_input = [v_gripper_inp, v_fixed_inp]
+        # v_gripper_inp = torch.reshape(v_gripper_inp, (-1, 3, v_gripper_inp.shape[-2], v_gripper_inp.shape[-1]))
+        # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
+        v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 1)
+        s = v_input.shape
+        v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         elif self.loss_type == 'cce':
@@ -57,13 +59,19 @@ class ImiBaselineLearn_Tuning(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         v_gripper_inp, v_fixed_inp, keyboard = batch #, idx = batch
-        v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 0)
-        # v_input = [v_gripper_inp, v_fixed_inp]
+        # v_gripper_inp = torch.reshape(v_gripper_inp, (-1, 3, v_gripper_inp.shape[-2], v_gripper_inp.shape[-1]))
+        # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
+        # print(v_gripper_inp.shape)
+        v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 1)
+        s = v_input.shape
+        v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         elif self.loss_type == 'cce':
             keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
         # print(v_input.shape)
+        # print("keyboard", keyboard)
+        # print("pred", action_pred)
         with torch.no_grad():
             action_pred = self.actor(v_input, self.current_epoch < self.config.freeze_till) #, idx)
             loss = self.compute_loss(action_pred, keyboard)

@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
+from ast import arg
 from lib2to3.pytree import Base
 from tkinter.messagebox import NO
+from grpc import AuthMetadataContext
 from importlib_metadata import itertools
 import pandas as pd
 from tomlkit import key
@@ -25,10 +27,19 @@ from collections import deque
 from torch.nn.utils.rnn import pad_sequence
 from svl_project.datasets.base import BaseDataset
 import numpy as np
+import random
+
+from PIL import Image, ImageEnhance, ImageOps
 
 EPS = 1e-8
 
 
+def augment_image(image):
+    enhancer = ImageEnhance.Brightness(image)
+    image = enhancer.enhance(random.random()*0.6 + 0.7)
+    enhancer = ImageEnhance.Color(image)
+    image = enhancer.enhance(random.random()*0.6 + 0.7)
+    return image
 
 class ImitationOverfitDataset(BaseDataset):
     def __init__(self, log_file, dataset_idx, data_folder="data/test_recordings"):
@@ -49,7 +60,7 @@ class ImitationOverfitDataset(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -84,38 +95,67 @@ class ImitationOverfitDataset(BaseDataset):
 
     
 class ImitationDatasetFramestack(BaseDataset):
-    def __init__(self, log_file, args, data_folder="data/test_recordings"):
+    def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings"):
         super().__init__(log_file, data_folder)
         self.num_stack = args.num_stack
         self.frameskip = args.frameskip
         self.resized_height = args.resized_height
         self.resized_width = args.resized_width
+        self._crop_height = int(args.resized_height * (1.0 - args.crop_percent))
+        self._crop_width = int(args.resized_width * (1.0 - args.crop_percent))
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
+        self.trial, self.timestamps, _, self.num_frames = self.get_episode(dataset_idx, load_audio=False)
+    
+    def get_episode(self, idx, load_audio=True):
+        """
+        Return:
+            folder for trial
+            logs
+            audio tracks
+            number of frames in episode
+        """
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        # print("override" + '#' * 50)
+        trial = os.path.join(self.data_folder, format_time)
+        with open(os.path.join(trial, "timestamps.json")) as ts:
+            timestamps = json.load(ts)
+        if load_audio:
+            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
+            audio_hole = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
+            audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))
+        else:
+            audio = None
+        return trial, timestamps, audio, len(timestamps["action_history"])
+
+    def __len__(self):
+        return self.num_frames
 
     def __getitem__(self, idx):
-        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=False)
-        end = torch.randint(high=num_frames, size=()).item()
+        end = idx #torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len
         if start < 0:
             cam_idx = [end] * self.num_stack
         else:
             cam_idx = list(np.arange(start, end, self.frameskip))
-
-        transform = T.Compose([
-            T.Resize((self.resized_height, self.resized_width)),
-            # T.RandomCrop((self._crop_height, self._crop_width)),
-            T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
-        ])
-
+        img = self.load_image(self.trial, "cam_gripper_color", end)
+        i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
+        # transform = T.Compose([
+        #     # T.Resize((self.resized_height, self.resized_width)),
+        #     # T.RandomCrop((self._crop_height, self._crop_width)),
+        #     T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
+        # ])
+        # transform = T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.05)
+        t_start = time.time()
         cam_gripper_framestack = torch.stack(
-            [transform(self.load_image(trial, "cam_gripper_color", timestep)) for timestep in cam_idx])
+            # [T.functional.crop(augment_image(self.load_image(self.trial, "cam_gripper_color", timestep)), i, j, h, w) for timestep in cam_idx], dim=0)
+            [T.functional.crop(self.load_image(self.trial, "cam_gripper_color", timestep), i, j, h, w) for timestep in cam_idx], dim=0)
 
         cam_fixed_framestack = torch.stack(
-            [transform(self.load_image(trial, "cam_fixed_color", timestep)) for timestep in cam_idx])
+            # [T.functional.crop(augment_image(self.load_image(self.trial, "cam_fixed_color", timestep)), i, j, h ,w) for timestep in cam_idx],dim=0)
+            [T.functional.crop(self.load_image(self.trial, "cam_fixed_color", timestep), i, j, h, w) for timestep in cam_idx],dim=0)
+        print(time.time() - t_start)
 
-        print("shape", cam_fixed_framestack.shape)
-
-        keyboard = timestamps["action_history"][end]
+        keyboard = self.timestamps["action_history"][end]
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
