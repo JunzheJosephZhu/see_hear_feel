@@ -6,6 +6,7 @@ from torch import nn
 # from engines.imi_engine import Future_Prediction
 import cv2
 import numpy as np
+import time
 
 
 class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
@@ -21,7 +22,7 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
                 torch.nn.ReLU(),
                 torch.nn.Linear(1024, 1024),
                 torch.nn.ReLU(),
-                torch.nn.Linear(1024, 3 * args.action_dim)
+                torch.nn.Linear(1024, 9 * args.action_dim)
             )
         elif args.loss_type == 'mse':
             self.mlp = torch.nn.Sequential(

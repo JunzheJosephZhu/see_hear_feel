@@ -32,4 +32,5 @@ svl_project/__pycache__/*
 last.ckpt
 test_data.hdf5
 
+*.csv
 
