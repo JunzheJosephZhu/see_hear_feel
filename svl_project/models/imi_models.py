@@ -6,6 +6,7 @@ from torch import nn
 # from engines.imi_engine import Future_Prediction
 import cv2
 import numpy as np
+import time
 
 
 class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
@@ -43,11 +44,13 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         #     print(img.permute(1, 2, 0).cpu().numpy().shape)
         #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
         #     cv2.waitKey(100)
+        t0 = time.time()
         if freeze:
             with torch.no_grad():
                 v_embeds = self.v_encoder(v_inp).detach()
         else:
             v_embeds = self.v_encoder(v_inp)
+        # print("foward", time.time() - t0)
         mlp_inp = torch.reshape(v_embeds, (-1, self.embed_dim))
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)

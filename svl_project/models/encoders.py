@@ -15,7 +15,6 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         feats = self.feature_extractor(x)
-        # print("after resnet", feats.shape)
         assert len(feats.values()) == 1
         feats = list(feats.values())[0]
         feats = self.downsample(feats)
