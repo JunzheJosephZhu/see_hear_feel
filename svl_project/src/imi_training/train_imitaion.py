@@ -21,20 +21,22 @@ def main(args):
     print(sys.getrecursionlimit())
     sys.setrecursionlimit(8000)
     print(sys.getrecursionlimit())
+    
+    device = torch.device('cuda')
 
     # train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
     # val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
 
-    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(70 - args.num_episode)])
+    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, device, args.data_folder) for i in range(args.num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i,device, args.data_folder) for i in range(70 - args.num_episode)])
 
     # train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
-    train_loader= DataLoader(train_set, args.batch_size, num_workers=12, shuffle=True)
-    val_loader= DataLoader(val_set, args.batch_size, num_workers=12, shuffle=False)
-    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (3, 4)) # 3,4
+    train_loader= DataLoader(train_set, args.batch_size, num_workers=8, shuffle=True)
+    val_loader= DataLoader(val_set, args.batch_size, num_workers=0, shuffle=False)
+    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (2, 2)) # 3,4/4,5
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
@@ -45,11 +47,12 @@ def main(args):
     start_training(args, exp_dir, pl_module)
 
 if __name__ == "__main__":
+    torch.multiprocessing.set_start_method('spawn')
     import configargparse
 
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=8)
+    p.add("--batch_size", default=4)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)

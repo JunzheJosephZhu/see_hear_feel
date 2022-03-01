@@ -27,12 +27,16 @@ def baselineValidate(args):
         return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
     
     val_csv = pd.read_csv(args.val_csv)
+    # val_set = torch.utils.data.ConcatDataset(
+    #     [ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(len(val_csv))])
     val_set = torch.utils.data.ConcatDataset(
-        [ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(len(val_csv))])
+        [ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(len(val_csv))])
+
+    
     val_loader = DataLoader(val_set, 1, num_workers=0)
     with torch.no_grad():
         # construct model
-        v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (4, 5))#, int(args.num_stack * 3 * 2))
+        v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (3, 4))#, int(args.num_stack * 3 * 2))
         actor = None
         actor = Imitation_Baseline_Actor_Tuning(v_encoder, args)
         # get pretrained parameters
@@ -74,50 +78,50 @@ def baselineValidate(args):
             # print(pred_action)
         elif args.loss_type == 'mse':
             pred_action = pred_action.reshape(-1) # * np.array((.003, .003, .0015))
-        # keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        for i in range(3):
-            if pred_action[i] == keyboard[i]:
-                cor[i] += 1
-            else:
-                wrong[i] += 1
+        keyboard = (keyboard - 1.)#.type(torch.cuda.FloatTensor)
+        # for i in range(3):
+        #     if pred_action[i] == keyboard[i]:
+        #         cor[i] += 1
+        #     else:
+        #         wrong[i] += 1
         predict.append(pred_action)
         real.append(keyboard)
         # print(f"real: {keyboard}, prediction: {pred_action}")
         cnt += 1
-        # if cnt == 100:
-        #     break
-    print(f"{cnt} steps in total.")
+        if cnt == 150:
+            break
+    # print(f"{cnt} steps in total.")
     predict = np.asarray(predict)
     real = np.asarray(real)
-    fig, axs = plt.subplots(3, 1, sharex='col')
-    legends = ['x', 'y', 'z']
-    for i in range(len(legends)):
-        axs[i].plot(real[:, 0], 'b+', label='real')
-        axs[i].plot(predict[:, 0], 'rx', label='predict')
-        axs[i].legend()
-    plt.show()
-    
-    # plt.title("x")
-    # plt.scatter(range(cnt),predict[:,0], s = 0.3)
-    # plt.scatter(range(cnt),real[:, 0], s = 0.3, alpha= 0.5)
-    # plt.xlabel("count of batches")
-    # plt.ylabel("actions(0:move -;1:stay;2:move +")
-    # plt.legend(["pred","real"])
-    # fig = plt.figure(1)
-    # plt.title("y")
-    # plt.scatter(range(cnt), predict[:, 1], s = 0.3)
-    # plt.scatter(range(cnt), real[:, 1],s = 0.3,alpha= 0.5)
-    # plt.xlabel("count of batches")
-    # plt.ylabel("actions(0:move -;1:stay;2:move +")
-    # plt.legend(["pred", "real"])
-    # fig = plt.figure(2)
-    # plt.title("z")
-    # plt.scatter(range(cnt), predict[:, 2],s = 0.3)
-    # plt.scatter(range(cnt), real[:, 2],s = 0.3,alpha=0.5)
-    # plt.xlabel("count of batches")
-    # plt.ylabel("actions(0:move -;1:stay;2:move +")
-    # plt.legend(["pred", "real"])
+    # fig, axs = plt.subplots(3, 1, sharex='col')
+    # legends = ['x', 'y', 'z']
+    # for i in range(len(legends)):
+    #     axs[i].plot(real[:, 0], 'b+', label='real')
+    #     axs[i].plot(predict[:, 0], 'rx', label='predict')
+    #     axs[i].legend()
     # plt.show()
+    fig = plt.figure(0)
+    plt.title("x")
+    plt.scatter(range(cnt),predict[:, 0], s = 0.3)
+    plt.scatter(range(cnt),real[:, 0], s = 0.3, alpha= 0.5)
+    plt.xlabel("count of batches")
+    plt.ylabel("actions(0:move -;1:stay;2:move +")
+    plt.legend(["pred","real"])
+    fig = plt.figure(1)
+    plt.title("y")
+    plt.scatter(range(cnt), predict[:, 1], s = 0.3)
+    plt.scatter(range(cnt), real[:, 1],s = 0.3,alpha= 0.5)
+    plt.xlabel("count of batches")
+    plt.ylabel("actions(0:move -;1:stay;2:move +")
+    plt.legend(["pred", "real"])
+    fig = plt.figure(2)
+    plt.title("z")
+    plt.scatter(range(cnt), predict[:, 2],s = 0.3)
+    plt.scatter(range(cnt), real[:, 2],s = 0.3,alpha=0.5)
+    plt.xlabel("count of batches")
+    plt.ylabel("actions(0:move -;1:stay;2:move +")
+    plt.legend(["pred", "real"])
+    plt.show()
     # acc = cor / (cor + wrong)
     # print(acc)
 
@@ -242,7 +246,7 @@ if __name__ == "__main__":
     p.add("--num_stack", default=4, type=int)
     p.add("--frameskip", default=3, type=int)
     p.add("--conv_bottleneck", required=True, type=int)
-    p.add("--crop_percent", default=.1)
+    p.add("--crop_percent", default=.1, type=float)
     p.add("--resized_height", required=True, type=int)
     p.add("--resized_width", required=True, type=int)    
     p.add("--num_episode", default=10, type=int)
