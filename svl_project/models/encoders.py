@@ -17,7 +17,6 @@ class Encoder(nn.Module):
         feats = list(feats.values())[0]
         feats = self.downsample(feats)
         feats = self.conv1x1(feats)
-        # print(feats.shape)
         feats = feats.flatten(-3, -1)
         feats = self.projection(feats)
         return feats

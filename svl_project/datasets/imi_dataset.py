@@ -103,7 +103,7 @@ class ImitationOverfitDataset(BaseDataset):
 
     
 class ImitationDatasetFramestack(BaseDataset):
-    def __init__(self, log_file, args, dataset_idx, device, data_folder="data/test_recordings"):
+    def __init__(self, log_file, args, dataset_idx, device, data_folder="../data_0214/test_recordings/"):
         super().__init__(log_file, data_folder)
         self.num_stack = args.num_stack
         self.frameskip = args.frameskip
@@ -113,7 +113,6 @@ class ImitationDatasetFramestack(BaseDataset):
         self._crop_width = int(args.resized_width * (1.0 - args.crop_percent))
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.trial, self.timestamps, _, self.num_frames = self.get_episode(dataset_idx, load_audio=False)
-        self.img_set = {}
         self.device = device
     
     def get_episode(self, idx, load_audio=True):
@@ -153,19 +152,18 @@ class ImitationDatasetFramestack(BaseDataset):
             # T.RandomCrop((self._crop_height, self._crop_width)),
             # T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         ])
-            
+
+           
         img = transform(self.load_image(self.trial, "cam_gripper_color", end))
         i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
 
-        # transform = T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.05)
+        transform2 = T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1)
         # t_start = time.time()
         cam_gripper_framestack = torch.stack(
-            [T.functional.crop(transform(self.load_image(self.trial, "cam_gripper_color", timestep)).to(self.device), i, j, h, w) for timestep in cam_idx], dim=0)
-            # [T.functional.crop(self.load_image(self.trial, "cam_gripper_color", timestep), i, j, h, w) for timestep in cam_idx], dim=0)
+            [T.functional.crop(transform2(transform(self.load_image(self.trial, "cam_gripper_color", timestep)).to(self.device)), i, j, h, w) for timestep in cam_idx], dim=0)
 
         cam_fixed_framestack = torch.stack(
-            [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep)).to(self.device), i, j, h ,w) for timestep in cam_idx],dim=0)
-            # [T.functional.crop(self.load_image(self.trial, "cam_fixed_color", timestep), i, j, h, w) for timestep in cam_idx], dim=0)
+            [T.functional.crop(transform2(transform(self.load_image(self.trial, "cam_fixed_color", timestep)).to(self.device)), i, j, h ,w) for timestep in cam_idx],dim=0)
         # print(time.time() - t_start)
 
         keyboard = self.timestamps["action_history"][end]
@@ -175,22 +173,6 @@ class ImitationDatasetFramestack(BaseDataset):
         v_total = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         return v_total, keyboard
     
-    # def load_image(self, trial, stream, timestep):
-    #     """
-    #     Args:
-    #         trial: the folder of the current episode
-    #         stream: ["cam_gripper_color", "cam_fixed_color", "left_gelsight_frame"]
-    #             for "left_gelsight_flow", please add another method to this class using torch.load("xxx.pt")
-    #         timestep: the timestep of frame you want to extract
-    #     """
-        
-    #     img_path = os.path.join(trial, stream, str(timestep) + ".png")
-    #     if img_path in self.img_set:
-    #         return self.img_set[img_path]
-    #     else:
-    #         image = torch.as_tensor(np.array(Image.open(img_path))).float().permute(2, 0, 1) / 255
-    #         self.img_set[img_path] = image
-    #         return image
 
 class ImitationDatasetFramestackMulti(BaseDataset):
     def __init__(self, log_file, args, data_folder="data/test_recordings_0214"):

@@ -62,7 +62,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
         # print(v_gripper_inp.shape)
         # v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 1)
         s = v_input.shape
-        print(s)
+        # print(s)
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
         # cv2.imshow('cam0', v_input[0].permute(1, 2, 0).cpu().numpy())
         # cv2.imshow('cam3', v_input[3].permute(1, 2, 0).cpu().numpy())

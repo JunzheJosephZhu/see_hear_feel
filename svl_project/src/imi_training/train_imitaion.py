@@ -38,6 +38,7 @@ def main(args):
     val_loader= DataLoader(val_set, args.batch_size, num_workers=0, shuffle=False)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (2, 2)) # 3,4/4,5
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
+    imi_model.to(device)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -52,7 +53,7 @@ if __name__ == "__main__":
 
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=4)
+    p.add("--batch_size", default=8)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)

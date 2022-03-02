@@ -16,7 +16,7 @@ import yaml
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 import pandas as pd
-
+from torchvision import transforms as T
 
 
 def baselineValidate(args):
@@ -26,17 +26,18 @@ def baselineValidate(args):
         """
         return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
     
+    device = torch.device('cuda')
+
     val_csv = pd.read_csv(args.val_csv)
     # val_set = torch.utils.data.ConcatDataset(
     #     [ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(len(val_csv))])
     val_set = torch.utils.data.ConcatDataset(
-        [ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(len(val_csv))])
+        [ImitationDatasetFramestack(args.val_csv, args, i, device, args.data_folder) for i in range(len(val_csv))])
 
-    
-    val_loader = DataLoader(val_set, 1, num_workers=0)
+    val_loader = DataLoader(val_set, 1, num_workers=8)
     with torch.no_grad():
         # construct model
-        v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (3, 4))#, int(args.num_stack * 3 * 2))
+        v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (2, 2))#, int(args.num_stack * 3 * 2))
         actor = None
         actor = Imitation_Baseline_Actor_Tuning(v_encoder, args)
         # get pretrained parameters
@@ -45,6 +46,7 @@ def baselineValidate(args):
         for param_tensor in state_dict:
             print(param_tensor, "\t", state_dict[param_tensor].size())
         actor.load_state_dict(state_dict)
+        actor.to(device)
         actor.eval()
 
     cnt = 0
@@ -58,14 +60,15 @@ def baselineValidate(args):
         # v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
         v_total, keyboard = batch
         # print(batch[0])
-        v_total, keyboard = v_total[0], keyboard[0]
-        v_gripper, v_fixed = v_total[0], v_total[1]
-        # cv2.imshow('gripper', v_gripper.permute(1, 2, 0).numpy())
-        # cv2.imshow('fixed', v_fixed.permute(1, 2, 0).numpy())
+        # v_total, keyboard = v_total[0], keyboard[0]
+        # v_gripper, v_fixed = v_total[0], v_total[1]
+        # cv2.imshow('gripper', v_gripper.cpu().permute(1, 2, 0).numpy())
+        # cv2.imshow('after gripper', v_gripper.cpu().permute(1, 2, 0).numpy())
+        # cv2.imshow('fixed', v_fixed.cpu().permute(1, 2, 0).numpy())
         # cv2.waitKey(1)
         keyboard = keyboard.numpy()
         # action_pred = actor(v_gripper_inp, v_fixed_inp, True).detach().numpy()
-        pred_action = actor(v_total, True).detach().numpy()
+        pred_action = actor(v_total, True).detach().cpu().numpy()
         if args.loss_type == 'cce':
             # pred_action = pred_action.reshape(3, -1)
             # pred_action = (np.argmax(pred_action, axis=1) - 1) * np.array((.003, .003, .0015))
@@ -79,49 +82,49 @@ def baselineValidate(args):
         elif args.loss_type == 'mse':
             pred_action = pred_action.reshape(-1) # * np.array((.003, .003, .0015))
         keyboard = (keyboard - 1.)#.type(torch.cuda.FloatTensor)
-        # for i in range(3):
-        #     if pred_action[i] == keyboard[i]:
-        #         cor[i] += 1
-        #     else:
-        #         wrong[i] += 1
-        predict.append(pred_action)
-        real.append(keyboard)
+        for i in range(3):
+            if pred_action[i] == keyboard[i]:
+                cor[i] += 1
+            else:
+                wrong[i] += 1
+        # predict.append(pred_action)
+        # real.append(keyboard)
         # print(f"real: {keyboard}, prediction: {pred_action}")
         cnt += 1
-        if cnt == 150:
-            break
+        # if cnt == 150:
+        #     break
     # print(f"{cnt} steps in total.")
-    predict = np.asarray(predict)
-    real = np.asarray(real)
-    # fig, axs = plt.subplots(3, 1, sharex='col')
-    # legends = ['x', 'y', 'z']
-    # for i in range(len(legends)):
-    #     axs[i].plot(real[:, 0], 'b+', label='real')
-    #     axs[i].plot(predict[:, 0], 'rx', label='predict')
-    #     axs[i].legend()
-    # plt.show()
-    fig = plt.figure(0)
-    plt.title("x")
-    plt.scatter(range(cnt),predict[:, 0], s = 0.3)
-    plt.scatter(range(cnt),real[:, 0], s = 0.3, alpha= 0.5)
-    plt.xlabel("count of batches")
-    plt.ylabel("actions(0:move -;1:stay;2:move +")
-    plt.legend(["pred","real"])
-    fig = plt.figure(1)
-    plt.title("y")
-    plt.scatter(range(cnt), predict[:, 1], s = 0.3)
-    plt.scatter(range(cnt), real[:, 1],s = 0.3,alpha= 0.5)
-    plt.xlabel("count of batches")
-    plt.ylabel("actions(0:move -;1:stay;2:move +")
-    plt.legend(["pred", "real"])
-    fig = plt.figure(2)
-    plt.title("z")
-    plt.scatter(range(cnt), predict[:, 2],s = 0.3)
-    plt.scatter(range(cnt), real[:, 2],s = 0.3,alpha=0.5)
-    plt.xlabel("count of batches")
-    plt.ylabel("actions(0:move -;1:stay;2:move +")
-    plt.legend(["pred", "real"])
+    # predict = np.asarray(predict)
+    # real = np.asarray(real)
+    fig, axs = plt.subplots(3, 1, sharex='col')
+    legends = ['x', 'y', 'z']
+    for i in range(len(legends)):
+        axs[i].plot(real[:, 0], 'b+', label='real')
+        axs[i].plot(predict[:, 0], 'rx', label='predict')
+        axs[i].legend()
     plt.show()
+    # fig = plt.figure(0)
+    # plt.title("x")
+    # plt.scatter(range(cnt),predict[:, 0], s = 0.3)
+    # plt.scatter(range(cnt),real[:, 0], s = 0.3, alpha= 0.5)
+    # plt.xlabel("count of batches")
+    # plt.ylabel("actions(0:move -;1:stay;2:move +")
+    # plt.legend(["pred","real"])
+    # fig = plt.figure(1)
+    # plt.title("y")
+    # plt.scatter(range(cnt), predict[:, 1], s = 0.3)
+    # plt.scatter(range(cnt), real[:, 1],s = 0.3,alpha= 0.5)
+    # plt.xlabel("count of batches")
+    # plt.ylabel("actions(0:move -;1:stay;2:move +")
+    # plt.legend(["pred", "real"])
+    # fig = plt.figure(2)
+    # plt.title("z")
+    # plt.scatter(range(cnt), predict[:, 2],s = 0.3)
+    # plt.scatter(range(cnt), real[:, 2],s = 0.3,alpha=0.5)
+    # plt.xlabel("count of batches")
+    # plt.ylabel("actions(0:move -;1:stay;2:move +")
+    # plt.legend(["pred", "real"])
+    # plt.show()
     # acc = cor / (cor + wrong)
     # print(acc)
 
@@ -253,7 +256,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/test_recordings")
+    p.add("--data_folder", default="../data_0214/test_recordings/")
     
 
 
