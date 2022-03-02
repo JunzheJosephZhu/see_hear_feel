@@ -25,8 +25,8 @@ def main(args):
     # train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
     # val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
 
-    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, device, args.data_folder) for i in range(args.num_episode)])
-    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i,device, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
 
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
     val_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
@@ -48,6 +48,7 @@ def main(args):
     start_training(args, exp_dir, pl_module)
 
 if __name__ == "__main__":
+    torch.multiprocessing.set_sharing_strategy("file_system")
     import configargparse
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
