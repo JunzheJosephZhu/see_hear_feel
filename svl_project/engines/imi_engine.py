@@ -1,9 +1,10 @@
-import cv2
 import time
+import cv2
 from pytorch_lightning import LightningModule
 from tomlkit import key
 import torch
 import torch.nn.functional as F
+from torch.autograd import Variable
 
 class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
@@ -40,6 +41,8 @@ class ImiBaselineLearn_Tuning(LightningModule):
     def training_step(self, batch, batch_idx):
         # use idx in batch for debugging
         v_input, keyboard = batch #, idx = batch
+        v_input = Variable(v_input).cuda()
+        keyboard = Variable(keyboard).cuda()
         s = v_input.shape
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
         if self.loss_type == 'mse':
@@ -60,15 +63,13 @@ class ImiBaselineLearn_Tuning(LightningModule):
         # v_gripper_inp = torch.reshape(v_gripper_inp, (-1, 3, v_gripper_inp.shape[-2], v_gripper_inp.shape[-1]))
         # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
         # print(v_gripper_inp.shape)
-        # v_input = torch.cat((v_gripper_inp, v_fixed_inp), dim = 1)
         s = v_input.shape
         # print(s)
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
-        # cv2.imshow('cam0', v_input[0].permute(1, 2, 0).cpu().numpy())
-        # cv2.imshow('cam3', v_input[3].permute(1, 2, 0).cpu().numpy())
-        # cv2.imshow('cam6', v_input[6].permute(1, 2, 0).cpu().numpy())
-        # cv2.imshow('cam9', v_input[9].permute(1, 2, 0).cpu().numpy())
-        # cv2.waitKey(1000)
+        # for i in range(8):
+        #     cv2.imshow('cam_g' + str(i * 6), v_input[i * 6].permute(1, 2, 0).cpu().numpy())
+        #     cv2.imshow('cam_f' + str(i * 6 + 3), v_input[i * 6 + 3].permute(1, 2, 0).cpu().numpy())
+        # cv2.waitKey(10000)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         elif self.loss_type == 'cce':

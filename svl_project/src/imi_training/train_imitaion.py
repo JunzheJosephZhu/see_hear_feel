@@ -4,7 +4,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-from svl_project.datasets.imi_dataset import ImitationOverfitDataset, ImitationDatasetFramestack
+from svl_project.datasets.imi_dataset import ImitationOverfitDataset, ImitationDatasetFramestack, ImitationDatasetSingleCam
 from svl_project.models.encoders import make_vision_encoder
 from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
@@ -21,24 +21,26 @@ def main(args):
     print(sys.getrecursionlimit())
     sys.setrecursionlimit(8000)
     print(sys.getrecursionlimit())
-    
+
     device = torch.device('cuda')
 
     # train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
     # val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
 
-    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, device, args.data_folder) for i in range(args.num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i,device, args.data_folder) for i in range(70 - args.num_episode)])
+    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, device, args.data_folder) for i in range(args.num_episode)])
+    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i,device, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+
+    train_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.train_csv, args, i, device, args.data_folder) for i in range(args.num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.val_csv, args, i, device, args.data_folder) for i in range(args.total_episode - args.num_episode)])
 
     # train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
     train_loader= DataLoader(train_set, args.batch_size, num_workers=8, shuffle=True)
-    val_loader= DataLoader(val_set, args.batch_size, num_workers=0, shuffle=False)
+    val_loader= DataLoader(val_set, args.batch_size, num_workers=8, shuffle=False)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (2, 2)) # 3,4/4,5
-    imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args)
-    imi_model.to(device)
+    imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args).to(device)
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -48,16 +50,14 @@ def main(args):
     start_training(args, exp_dir, pl_module)
 
 if __name__ == "__main__":
-    torch.multiprocessing.set_start_method('spawn')
     import configargparse
-
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
     p.add("--batch_size", default=8)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=150)
+    p.add("--epochs", default=400)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -77,6 +77,8 @@ if __name__ == "__main__":
     p.add("--resized_width", required=True, type=int)
     p.add("--num_episode", required=True, type=int)
     p.add("--crop_percent", required=True, type=float)
+    p.add("--num_camera", required=True, type=int)
+    p.add("--total_episode", required=True, type=int)
 
 
     args = p.parse_args()
