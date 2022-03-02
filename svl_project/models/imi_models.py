@@ -14,7 +14,7 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         super().__init__()
         self.v_encoder = v_encoder
         self.mlp = None
-        self.embed_dim = args.embed_dim * args.num_stack * 2
+        self.embed_dim = args.embed_dim * args.num_stack * args.num_camera
         # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
             self.mlp = torch.nn.Sequential(

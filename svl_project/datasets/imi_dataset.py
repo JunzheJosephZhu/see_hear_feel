@@ -62,7 +62,7 @@ class ImitationOverfitDataset(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -90,6 +90,7 @@ class ImitationOverfitDataset(BaseDataset):
             # T.RandomCrop((self._crop_height, self._crop_width)),
             # T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         ])
+        trans2 = T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1)
         cam_gripper_color = trans(self.load_image(trial, "cam_gripper_color", timestep))
         cam_fixed_color = trans(self.load_image(trial, "cam_fixed_color", timestep))
 
@@ -100,6 +101,71 @@ class ImitationOverfitDataset(BaseDataset):
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
         v_total = torch.stack((cam_gripper_color, cam_fixed_color))
         return v_total, keyboard
+
+class ImitationDatasetSingleCam(BaseDataset):
+    def __init__(self, log_file, args, dataset_idx,  device, data_folder="data/test_recordings"):
+        super().__init__(log_file, data_folder)
+        self.dataset_idx = dataset_idx
+        # method1:get the len of entire dataset and iterate
+        # self.ep_idx = 0
+        self.device = device
+        self.resized_height = args.resized_height
+        self.resized_width = args.resized_width
+        self._crop_height = int(args.resized_height * (1.0 - args.crop_percent))
+        self._crop_width = int(args.resized_width * (1.0 - args.crop_percent))
+        _, _, _, self.num_frames = self.get_episode(self.dataset_idx, load_audio=False)
+
+    def __len__(self):
+        return self.num_frames
+
+    def get_episode(self, idx, load_audio=True):
+        """
+        Return:
+            folder for trial
+            logs
+            audio tracks
+            number of frames in episode
+        """
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        # print("override" + '#' * 50)
+        trial = os.path.join(self.data_folder, format_time)
+        with open(os.path.join(trial, "timestamps.json")) as ts:
+            timestamps = json.load(ts)
+        if load_audio:
+            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
+            audio_hole = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
+            audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))
+        else:
+            audio = None
+        return trial, timestamps, audio, len(timestamps["action_history"])
+
+    def __getitem__(self, idx):
+
+        trial, timestamps, _, num_frames = self.get_episode(self.dataset_idx, load_audio=False)
+        # if idx == num_frames - 1:
+        #     if self.ep_idx == 10:
+        #         return StopIteration
+        #     self.ep_idx += 1
+        #     _,_,_,self.num_frames = self.get_episode(self.ep_idx, load_audio=False)
+        timestep = idx #torch.randint(high=num_frames, size=()).item()
+        # print(timestep)
+        trans2 = T.Compose([
+            # T.Resize((160, 120)),
+            T.RandomCrop((self._crop_height, self._crop_width)),
+            T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
+        ])
+        trans = T.Resize((self.resized_height, self.resized_width))
+        # cam_gripper_color = trans(self.load_image(trial, "cam_gripper_color", timestep))
+        cam_fixed_color = trans2(trans(self.load_image(trial, "cam_fixed_color", timestep)))
+
+        # print("gripper", cam_gripper_color.shape)
+        keyboard = timestamps["action_history"][timestep]
+        xy_space = {-.003: 0, 0: 1, .003: 2}
+        z_space = {-.0015: 0, 0: 1, .0015: 2}
+        keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
+        # v_total = torch.stack((cam_gripper_color, cam_fixed_color))
+        cam_fixed_color = torch.unsqueeze(cam_fixed_color, 0)
+        return cam_fixed_color, keyboard
 
     
 class ImitationDatasetFramestack(BaseDataset):
@@ -113,7 +179,6 @@ class ImitationDatasetFramestack(BaseDataset):
         self._crop_width = int(args.resized_width * (1.0 - args.crop_percent))
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.trial, self.timestamps, _, self.num_frames = self.get_episode(dataset_idx, load_audio=False)
-        self.img_set = {}
         self.device = device
     
     def get_episode(self, idx, load_audio=True):
@@ -153,7 +218,11 @@ class ImitationDatasetFramestack(BaseDataset):
             # T.RandomCrop((self._crop_height, self._crop_width)),
             # T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         ])
-            
+        # transform2 = T.Compose([
+        #     # T.Resize((self.resized_height, self.resized_width)),
+        #     # T.RandomCrop((self._crop_height, self._crop_width)),
+        #     T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
+        # ])
         img = transform(self.load_image(self.trial, "cam_gripper_color", end))
         i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
 
@@ -164,7 +233,7 @@ class ImitationDatasetFramestack(BaseDataset):
             # [T.functional.crop(self.load_image(self.trial, "cam_gripper_color", timestep), i, j, h, w) for timestep in cam_idx], dim=0)
 
         cam_fixed_framestack = torch.stack(
-            [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep)).to(self.device), i, j, h ,w) for timestep in cam_idx],dim=0)
+            [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep).to(self.device)), i, j, h ,w) for timestep in cam_idx],dim=0)
             # [T.functional.crop(self.load_image(self.trial, "cam_fixed_color", timestep), i, j, h, w) for timestep in cam_idx], dim=0)
         # print(time.time() - t_start)
 
