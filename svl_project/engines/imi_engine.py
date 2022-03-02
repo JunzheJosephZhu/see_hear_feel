@@ -63,6 +63,8 @@ class ImiBaselineLearn_Tuning(LightningModule):
         # v_gripper_inp = torch.reshape(v_gripper_inp, (-1, 3, v_gripper_inp.shape[-2], v_gripper_inp.shape[-1]))
         # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
         # print(v_gripper_inp.shape)
+        v_input = Variable(v_input).cuda()
+        keyboard = Variable(keyboard).cuda()
         s = v_input.shape
         # print(s)
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))

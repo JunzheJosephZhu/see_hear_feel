@@ -25,11 +25,11 @@ def main(args):
     # train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
     # val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
 
-    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, device, args.data_folder) for i in range(args.num_episode)])
-    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i,device, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
 
-    train_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
 
     # train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)

@@ -1,11 +1,11 @@
 embed_dim: 128
 pretrained: "/exp/metric_learn/checkpoints/last.ckpt"
 freeze_till: 0
-num_stack: 1
+num_stack: 4
 frameskip: 3
 crop_percent: 0.1
 conv_bottleneck: 64
 resized_height: 120
 resized_width: 160
-num_camera: 1
+num_camera: 2
 total_episode: 70
