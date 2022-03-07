@@ -58,7 +58,6 @@ class BaseDataset(Dataset):
         image = torch.as_tensor(np.array(Image.open(img_path))).float().permute(2, 0, 1) / 255
         return image
 
-
     @staticmethod
     def clip_audio(audio, audio_start, audio_end):
         left_pad, right_pad = torch.Tensor([]), torch.Tensor([])
@@ -75,3 +74,8 @@ class BaseDataset(Dataset):
 
     def __len__(self):
         return len(self.logs)
+
+    @staticmethod
+    def resize_image(image, scale_factor):
+        assert len(image.size()) == 3 # [3, H, W]
+        return torch.nn.functional.interpolate(image.unsqueeze(0), scale_factor=scale_factor, mode="bilinear").squeeze(0)

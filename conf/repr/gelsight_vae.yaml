@@ -1,0 +1,8 @@
+conv_bottleneck: 128
+embed_dim: 1280
+latent_dim: 1280
+beta: 0
+lr: 0.0001
+period: 1
+gamma: 0.8
+allow_mismatch: True

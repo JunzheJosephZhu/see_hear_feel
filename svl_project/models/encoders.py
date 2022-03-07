@@ -27,11 +27,16 @@ def make_vision_encoder(conv_bottleneck, out_dim):
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
     return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(7, 10))
 
-@DeprecationWarning
-def make_tactile_encoder(out_dim):
+def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
+    vision_extractor = resnet18(pretrained=True)
+    # change the first conv layer to fit 30 channels
+    vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
+    return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(4, 5))
+
+def make_tactile_encoder(conv_bottleneck, out_dim):
     tactile_extractor = resnet18()
-    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
-    return Encoder(tactile_extractor, out_dim)
+    tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
+    return Encoder(tactile_extractor, conv_bottleneck, out_dim, out_shape=(2, 3))
 
 @DeprecationWarning
 def make_audio_encoder(out_dim):

@@ -12,10 +12,13 @@ class VAELearn(LightningModule):
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.prior_scale = prior_scale
+        self.config = config
         self.save_hyperparameters(vars(config))
 
     def compute_loss(self, predicted_pixels, gt_pixels, encoded_context_dist):
-        recon_loss = F.mse_loss(predicted_pixels, gt_pixels)
+        if self.config.allow_mismatch:
+            gt_pixels = gt_pixels[:, :, :predicted_pixels.size(2), :predicted_pixels.size(3)]
+        recon_loss = F.l1_loss(predicted_pixels, gt_pixels)
 
         prior = torch.distributions.Normal(torch.zeros(encoded_context_dist.batch_shape +
                                                        encoded_context_dist.event_shape).to(self.device),
@@ -47,8 +50,6 @@ class VAELearn(LightningModule):
         loss, recon_loss, kld = self.compute_loss(pixels, inp.detach(), prior)
         self.log('val/loss_recon', recon_loss.item())
         self.log('val/loss_kld', torch.mean(kld).item())
-        self.log('train/loss_recon', recon_loss.item())
-        self.log('train/loss_kld', torch.mean(kld).item())
         if batch_idx < 10:
             if pixels.size(1) == 3:
                 self.logger.experiment.add_image(f"val/original_{str(batch_idx)}", batch[0], global_step=self.current_epoch)
