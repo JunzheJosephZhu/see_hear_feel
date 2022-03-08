@@ -25,18 +25,18 @@ def main(args):
     # train_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.train_csv, i, args.data_folder) for i in range(args.num_episode)])
     # val_set = torch.utils.data.ConcatDataset([ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(args.num_episode)])
 
-    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
-    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestack(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
 
-    train_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetSingleCam(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
 
     # train_set = ImitationOverfitDataset(args.train_csv, args.data_folder)
     # val_set = ImitationOverfitDataset(args.val_csv, args.data_folder)
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
-    train_loader= DataLoader(train_set, args.batch_size, num_workers=8, shuffle=True)
-    val_loader= DataLoader(val_set, args.batch_size, num_workers=8, shuffle=False)
+    train_loader= DataLoader(train_set, args.batch_size, num_workers=12, shuffle=True)
+    val_loader= DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (2, 2)) # 3,4/4,5
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -48,7 +48,6 @@ def main(args):
     start_training(args, exp_dir, pl_module)
 
 if __name__ == "__main__":
-    torch.multiprocessing.set_sharing_strategy("file_system")
     import configargparse
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
