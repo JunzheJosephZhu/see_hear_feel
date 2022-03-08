@@ -56,6 +56,7 @@ class ResNet_Decoder(nn.Module):
         self.in_shape = in_shape
         self.in_linear = nn.Linear(out_dim, conv_bottleneck * in_shape[0]* in_shape[1])
         self.in_planes = 512
+        self.conv_bottleneck = conv_bottleneck
 
         self.deconv = True
         self.conv1 = nn.ConvTranspose2d(conv_bottleneck, 512, kernel_size=3, stride=2, padding=1, output_padding=initial_pad)
@@ -66,7 +67,7 @@ class ResNet_Decoder(nn.Module):
         self.layer3 = self._make_layer(block, 128, num_blocks[2], stride=2, deconv=deconv)
         self.layer4 = self._make_layer(block, 64, num_blocks[3], stride=2, deconv=deconv)
 
-        self.out_conv = nn.Conv2d(64, out_channels, 1)
+        self.out_conv = nn.Conv2d(64, out_channels, kernel_size=1)
 
     def _make_layer(self, block, planes, num_blocks, stride, deconv):
         strides = [stride] + [1]*(num_blocks-1)
@@ -78,7 +79,7 @@ class ResNet_Decoder(nn.Module):
 
     def forward(self, x):
         out = self.in_linear(x)
-        out = out.reshape(x.size(0), 64, self.in_shape[0], self.in_shape[1])
+        out = out.reshape(x.size(0), self.conv_bottleneck, self.in_shape[0], self.in_shape[1])
         out = F.relu(self.conv1(out))
         out = F.upsample_bilinear(out, scale_factor=(2, 2))
         out = self.layer1(out)
@@ -91,9 +92,11 @@ class ResNet_Decoder(nn.Module):
 def make_vision_decoder(conv_bottleneck, out_dim):
     return ResNet_Decoder(conv_bottleneck, out_dim, initial_pad=(0, 1), in_shape=(8, 10), out_channels=3)
 
+def make_vision_decoder_downsampled(conv_bottleneck, out_dim):
+    return ResNet_Decoder(conv_bottleneck, out_dim, initial_pad=(0, 0), in_shape=(4, 5), out_channels=3)
+
 def make_audio_decoder(out_dim):
     return ResNet_Decoder(out_dim, out_channels=2)
 
-def make_tactile_decoder(out_dim):
-    return ResNet_Decoder(out_dim, out_channels=3)
-
+def make_tactile_decoder(conv_bottleneck, out_dim):
+    return ResNet_Decoder(conv_bottleneck, out_dim, initial_pad=(1, 0), in_shape=(2, 3), out_channels=3)
