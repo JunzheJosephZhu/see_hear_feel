@@ -80,7 +80,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 torch.nn.ReLU(),
                 torch.nn.Linear(1024, 1024),
                 torch.nn.ReLU(),
-                torch.nn.Linear(1024, 9 * args.action_dim)
+                torch.nn.Linear(1024, pow(3, args.action_dim))
             )
         elif args.loss_type == 'mse':
             self.mlp = torch.nn.Sequential(

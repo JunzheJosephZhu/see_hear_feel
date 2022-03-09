@@ -4,8 +4,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-from svl_project.datasets.imi_dataset import ImitationOverfitDataset, ImitationDatasetFramestack, ImitationDatasetSingleCam, ImitationDatasetFramestackMulti
-from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestack, ImitationDatasetFramestackMulti, ImitationDatasetSingleCam
+from svl_project.models.encoders import make_vision_encoder, make_audio_encoder, make_tactile_encoder
 from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning, Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning, ImiBaselineLearn_Ablation
 from torch.utils.data import DataLoader
@@ -23,14 +23,14 @@ def main(args):
     print(sys.getrecursionlimit())
 
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.num_episode)]) #args.total_episode -
 
     train_loader= DataLoader(train_set, args.batch_size, num_workers=12, shuffle=True)
     val_loader= DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim_v) # 3,4/4,5
     t_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim_t)
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
-    imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
+    imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder,a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -47,14 +47,14 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=300)
+    p.add("--epochs", default=400)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
     p.add("--conv_bottleneck", required=True, type=int)
     p.add("--embed_dim_v", required=True, type=int)
-    p.add("--embed_dim_t", required=True, type=int)
     p.add("--embed_dim_a", required=True, type=int)
+    p.add("--embed_dim_t", required=True, type=int)
     p.add("--action_dim", default=3, type=int)
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
@@ -72,6 +72,7 @@ if __name__ == "__main__":
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
+
 
 
     args = p.parse_args()
