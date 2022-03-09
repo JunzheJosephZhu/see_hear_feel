@@ -65,14 +65,26 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.t_embeds_shape = args.embed_dim_t * args.num_stack
         self.a_embeds_shape = args.embed_dim_a
         self.ablation = args.ablation
+        self.use_vision = False
+        self.use_tactile = False
+        self.use_audio = False
         if self.ablation == 'v_t':
             self.embed_dim = self.v_embeds_shape + self.t_embeds_shape
+            self.use_vision = True
+            self.use_tactile = True
         elif self.ablation == 'v_a':
             self.embed_dim = self.v_embeds_shape + self.a_embeds_shape
+            self.use_vision = True
+            self.use_audio = True
         elif self.ablation == 'v_t_a':
             self.embed_dim = self.v_embeds_shape + self.t_embeds_shape + self.a_embeds_shape
+            self.use_vision = True
+            self.use_tactile = True
+            self.use_audio = True
         elif self.ablation == 'v':
             self.embed_dim = self.v_embeds_shape
+            self.use_vision = True
+
         # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
             self.mlp = torch.nn.Sequential(
@@ -104,16 +116,26 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         #     cv2.waitKey(100)
         if freeze:
             with torch.no_grad():
-                v_embeds = self.v_encoder(v_inp).detach()
-                t_embeds = self.t_encoder(t_inp).detach()
-                a_embeds = self.a_encoder(a_inp).detach()
+                if self.use_vision:
+                    v_embeds = self.v_encoder(v_inp).detach()
+                    v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
+                if self.use_tactile:
+                    t_embeds = self.t_encoder(t_inp).detach()
+                    t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                if self.use_audio:
+                    a_embeds = self.a_encoder(a_inp).detach()
+                    a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
         else:
-            v_embeds = self.v_encoder(v_inp)
-            t_embeds = self.t_encoder(t_inp)
-            a_embeds = self.a_encoder(a_inp)
-        v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
-        t_embeds = torch.reshape(t_embeds,(-1, self.t_embeds_shape))
-        a_embeds = torch.reshape(a_embeds,(-1, self.a_embeds_shape))
+            if self.use_vision:
+                v_embeds = self.v_encoder(v_inp)
+                v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
+            if self.use_tactile:
+                t_embeds = self.t_encoder(t_inp)
+                t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+            if self.use_audio:
+                a_embeds = self.a_encoder(a_inp)
+                a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
+
         if self.ablation == 'v_t':
             mlp_inp = torch.concat((v_embeds,t_embeds), dim=-1)
         elif self.ablation == 'v_a':

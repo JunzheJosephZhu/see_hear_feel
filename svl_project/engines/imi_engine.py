@@ -162,6 +162,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
         v_input, t_input, a_input, keyboard = batch  # , idx = batch
         v_input = Variable(v_input).cuda()
         t_input = Variable(t_input).cuda()
+        a_input = Variable(a_input).cuda()
         keyboard = Variable(keyboard).cuda()
         s_v = v_input.shape
         s_t = t_input.shape
