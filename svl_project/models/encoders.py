@@ -22,10 +22,6 @@ class CoordConv(nn.Module):
         result = torch.cat((x, new_maps_4d_batch), dim=1)
         return result
 
-
-
-
-
 class Encoder(nn.Module):
     def __init__(self, feature_extractor, conv_bottleneck, out_dim, out_shape=(7, 10)):
         super().__init__()
@@ -54,7 +50,7 @@ def make_vision_encoder(conv_bottleneck, out_dim):
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
-    return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape)
+    return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(7, 10))
 
 def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     vision_extractor = resnet18(pretrained=False)

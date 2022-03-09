@@ -233,7 +233,7 @@ class ImitationDatasetFramestack(BaseDataset):
         return v_total, keyboard
 
 class ImitationDatasetFramestackMulti(BaseDataset):
-    def __init__(self, log_file, args, data_folder="data/test_recordings_0214"):
+    def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings_0214"):
         super().__init__(log_file, data_folder)
         self.num_stack = args.num_stack
         self.frameskip = args.frameskip
@@ -245,37 +245,52 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
         )
         self.EPS = 1e-8
+        self.resized_height = args.resized_height
+        self.resized_width = args.resized_width
+        self._crop_height = int(args.resized_height * (1.0 - args.crop_percent))
+        self._crop_width = int(args.resized_width * (1.0 - args.crop_percent))
+        self.trial, self.timestamps, self.audio, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
 
     def __getitem__(self, idx):
-        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
 
-        # load camera frames
-        end = torch.randint(high=num_frames, size=()).item()
+        end = idx  # torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len
         if start < 0:
             cam_idx = [end] * self.num_stack
         else:
             cam_idx = list(np.arange(start, end, self.frameskip))
 
-        cam_gripper_framestack = torch.cat(
-            [self.load_image(trial, "cam_gripper_color", timestep) for timestep in cam_idx], dim=0)
+        # load camera frames
+        transform = T.Compose([
+            T.Resize((self.resized_height, self.resized_width)),
+            T.ColorJitter(brightness=1.0, contrast=0.0, saturation=0.0, hue=0.2),
+        ])
+        img = transform(self.load_image(self.trial, "cam_gripper_color", end))
+        i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
 
-        cam_fixed_framestack = torch.cat(
-            [self.load_image(trial, "cam_fixed_color", timestep) for timestep in cam_idx], dim=0)
+        # t_start = time.time()
+        cam_fixed_framestack = torch.stack(
+            [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep)), i, j, h, w) for
+             timestep in cam_idx], dim=0)
+
+        tactile_framestack = torch.stack(
+            [T.functional.crop(transform(self.load_image(self.trial, "left_gelsight_frame", timestep)), i, j, h, w) for
+             timestep in cam_idx], dim=0)
+        # print(time.time() - t_start)
 
         # load audio
         audio_start = end * self.resolution - self.sr // 2 # why self.sr // 2, and start + sr
         audio_end = audio_start + self.sr
-        audio_clip = self.clip_audio(audio, audio_start, audio_end)
+        audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         spec = self.mel(audio_clip)
         log_spec = torch.log(spec + EPS)
 
-        keyboard = timestamps["action_history"][end]
+        keyboard = self.timestamps["action_history"][end]
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
 
-        return cam_gripper_framestack, cam_fixed_framestack, log_spec, keyboard
+        return cam_fixed_framestack, tactile_framestack, log_spec, keyboard
 
 
 class ImitationDataSet_hdf5(IterableDataset):
