@@ -36,7 +36,7 @@ def main(args):
     # train_set = ImitationDatasetFramestack(args.train_csv, args, args.data_folder)
     # val_set = ImitationDatasetFramestack(args.val_csv, args, args.data_folder)
     train_loader= DataLoader(train_set, args.batch_size, num_workers=8, shuffle=True)
-    val_loader= DataLoader(val_set, args.batch_size, num_workers=8, shuffle=False)
+    val_loader= DataLoader(val_set, args.batch_size, num_workers=0, shuffle=False)
     v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim, (2, 2)) # 3,4/4,5
     imi_model = Imitation_Baseline_Actor_Tuning(v_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
