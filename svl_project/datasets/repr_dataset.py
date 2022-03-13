@@ -22,6 +22,7 @@ from collections import deque
 from torch.nn.utils.rnn import pad_sequence
 from svl_project.datasets.base import BaseDataset
 import numpy as np
+import torch.nn.functional as F
 
 EPS = 1e-8
 
@@ -29,7 +30,20 @@ class VisionGripperDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        return self.load_image(trial, "cam_gripper_color", timestep)
+        return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), scale_factor=(0.5, 0.5))
+
+class VisionFixedDataset(BaseDataset):
+    def __getitem__(self, idx):
+        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
+        timestep = torch.randint(high=num_frames, size=()).item()
+        return self.load_image(trial, "cam_fixed_color", timestep)
+
+class GelsightFrameDataset(BaseDataset):
+    def __getitem__(self, idx):
+        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
+        timestep = torch.randint(high=num_frames, size=()).item()
+        return self.resize_image(self.load_image(trial, "left_gelsight_frame", timestep), scale_factor=(0.5, 0.5))
+
 
 @DeprecationWarning
 class TripletDataset(Dataset):

@@ -8,6 +8,7 @@ svl_project.egg-info/top_level.txt
 svl_project/datasets/__init__.py
 svl_project/datasets/base.py
 svl_project/datasets/imi_dataset.py
+svl_project/datasets/imi_dataset_complex.py
 svl_project/datasets/repr_dataset.py
 svl_project/engines/__init__.py
 svl_project/engines/constrastive.py
@@ -16,6 +17,9 @@ svl_project/engines/imi_engine.py
 svl_project/engines/vae.py
 svl_project/imi_training/__init__.py
 svl_project/imi_training/imi_train_baseline.py
+svl_project/imi_training/train_imitaion.py
+svl_project/imi_training/train_imitaion_Ablation.py
+svl_project/imi_training/train_imitaion_new_dataset.py
 svl_project/imi_training/train_immi.py
 svl_project/imi_training/train_immi_baseline.py
 svl_project/imi_training/train_immi_pose_baseline.py
@@ -26,7 +30,10 @@ svl_project/models/encoders.py
 svl_project/models/fusion_modules.py
 svl_project/models/imi_models.py
 svl_project/models/repr_models.py
+svl_project/models/vae.py
 svl_project/repr_training/__init__.py
 svl_project/repr_training/train_future_prediction.py
+svl_project/repr_training/train_gelsight_vae.py
 svl_project/repr_training/train_metric.py
-svl_project/repr_training/train_vision_vae.py
+svl_project/repr_training/train_vision_vae_fixed.py
+svl_project/repr_training/train_vision_vae_gripper.py
