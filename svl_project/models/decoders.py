@@ -67,7 +67,7 @@ class ResNet_Decoder(nn.Module):
         self.layer3 = self._make_layer(block, 128, num_blocks[2], stride=2, deconv=deconv)
         self.layer4 = self._make_layer(block, 64, num_blocks[3], stride=2, deconv=deconv)
 
-        self.out_conv = nn.Conv2d(64, out_channels, kernel_size=1)
+        self.out_conv = nn.Sequential(nn.Conv2d(64, out_channels, kernel_size=1), nn.Sigmoid())
 
     def _make_layer(self, block, planes, num_blocks, stride, deconv):
         strides = [stride] + [1]*(num_blocks-1)
