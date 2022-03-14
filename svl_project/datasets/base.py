@@ -76,6 +76,6 @@ class BaseDataset(Dataset):
         return len(self.logs)
 
     @staticmethod
-    def resize_image(image, scale_factor):
+    def resize_image(image, size):
         assert len(image.size()) == 3 # [3, H, W]
-        return torch.nn.functional.interpolate(image.unsqueeze(0), scale_factor=scale_factor, mode="bilinear").squeeze(0)
+        return torch.nn.functional.interpolate(image.unsqueeze(0), size=size, mode="bilinear").squeeze(0)

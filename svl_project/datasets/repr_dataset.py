@@ -30,7 +30,7 @@ class VisionGripperDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), scale_factor=(0.5, 0.5))
+        return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
 
 class VisionFixedDataset(BaseDataset):
     def __getitem__(self, idx):

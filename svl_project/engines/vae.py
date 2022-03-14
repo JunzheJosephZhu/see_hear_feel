@@ -18,7 +18,12 @@ class VAELearn(LightningModule):
     def compute_loss(self, predicted_pixels, gt_pixels, encoded_context_dist):
         if self.config.allow_mismatch:
             gt_pixels = gt_pixels[:, :, :predicted_pixels.size(2), :predicted_pixels.size(3)]
-        recon_loss = F.l1_loss(predicted_pixels, gt_pixels)
+        if self.config.loss_type == "l1":
+            recon_loss = F.l1_loss(predicted_pixels, gt_pixels)
+        elif self.config.loss_type == "l2":
+            recon_loss = F.mse_loss(predicted_pixels, gt_pixels)
+        else:
+            raise NotImplementedError
 
         prior = torch.distributions.Normal(torch.zeros(encoded_context_dist.batch_shape +
                                                        encoded_context_dist.event_shape).to(self.device),
@@ -39,8 +44,8 @@ class VAELearn(LightningModule):
         self.log('train/loss_kld', torch.mean(kld).item())
         if batch_idx < 10:
             if pixels.size(1) == 3:
-                self.logger.experiment.add_image(f"train/original_{str(batch_idx)}", batch[0], global_step=self.current_epoch)
-                self.logger.experiment.add_image(f"train/reconstruct_{str(batch_idx)}", pixels[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
             # TODO: add two channel audio logging
         return loss
 
@@ -52,8 +57,8 @@ class VAELearn(LightningModule):
         self.log('val/loss_kld', torch.mean(kld).item())
         if batch_idx < 10:
             if pixels.size(1) == 3:
-                self.logger.experiment.add_image(f"val/original_{str(batch_idx)}", batch[0], global_step=self.current_epoch)
-                self.logger.experiment.add_image(f"val/reconstruct_{str(batch_idx)}", pixels[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"val/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"val/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
 
         return loss
 
