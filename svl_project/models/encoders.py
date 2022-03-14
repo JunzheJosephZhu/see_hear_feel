@@ -22,14 +22,17 @@ class CoordConv(nn.Module):
         result = torch.cat((x, new_maps_4d_batch), dim=1)
         return result
 
+
+
+
+
 class Encoder(nn.Module):
-    def __init__(self, feature_extractor, conv_bottleneck, out_dim, out_shape=(7, 10)):
+    def __init__(self, feature_extractor):
         super().__init__()
         self.feature_extractor = feature_extractor
         self.downsample = nn.MaxPool2d(2, 2)
         self.coord_conv = CoordConv()
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, out_dim)
 
     def forward(self, x):
         x = self.coord_conv(x)
@@ -38,19 +41,15 @@ class Encoder(nn.Module):
         x = list(x.values())[0]
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        x = self.fc(x)
         return x
 
-# def make_vision_encoder(conv_bottleneck, out_dim, out_shape):
-#     vision_extractor = resnet18(pretrained=True)
-#     # change the first conv layer to fit 30 channels
-def make_vision_encoder(conv_bottleneck, out_dim):
+def make_vision_encoder():
     vision_extractor = resnet18(pretrained=False)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
-    return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(7, 10))
+    return Encoder(vision_extractor)
 
 def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     vision_extractor = resnet18(pretrained=False)
