@@ -30,7 +30,7 @@ class BaseDataset(Dataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
             self.timestamps = json.load(ts)
