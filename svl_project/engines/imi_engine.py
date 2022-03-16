@@ -186,17 +186,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]        # print(v_input.shape)
         # print("keyboard", keyboard)
         # print("pred", action_pred)
-<<<<<<< HEAD
-        with torch.no_grad():
-            action_pred = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
-            loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
-            if torch.argmax(action_pred) == keyboard:
-                self.correct += 1
-            else:
-                self.wrong += 1
-        acc = self.correct / (self.correct + self.wrong)
-        self.log_dict({"val/action_loss": loss})
-=======
         # with torch.no_grad(): # torch lightning module does this under the hood
         action_pred = self.actor(v_input, t_input, a_input, True)  # , idx)
         loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
@@ -213,7 +202,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
         acc = cor / total
         # print(f'epoch end ------- len {total}\tepoch acc {acc}')
         self.log_dict({"val/acc": acc})
->>>>>>> c3046d722cdcecaacaa00b42ad78508b86eb58c2
 
     def train_dataloader(self):
         """Training dataloader"""
