@@ -37,9 +37,9 @@ class VisionFixedDataset(BaseDataset):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
         trans = T.Compose([
-            T.Resize((64, 64)),
-            # T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.1),
-            # T.RandomCrop((int(72*0.9), int(72*0.9))),
+            T.Resize((72, 72)),
+            T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.1),
+            T.RandomCrop((int(72*0.9), int(72*0.9))),
         ])
         return trans(self.load_image(trial, "cam_fixed_color", timestep))
 

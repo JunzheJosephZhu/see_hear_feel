@@ -43,6 +43,18 @@ class Encoder(nn.Module):
         x = torch.flatten(x, 1)
         return x
 
+class Audio_Encoder(nn.Module):
+    def __init__(self, feature_extractor, out_dim):
+        super().__init__()
+        self.feature_extractor = feature_extractor
+        self.ln = nn.Linear(512, out_dim)
+
+    def forward(self, x):
+        x = self.feature_extractor(x)["avgpool"]
+        x = x.squeeze(3).squeeze(2)
+        x = self.ln(x)
+        return x
+
 def make_vision_encoder():
     vision_extractor = resnet18(pretrained=False)
     vision_extractor.conv1 = nn.Conv2d(
@@ -64,18 +76,17 @@ def make_tactile_encoder(conv_bottleneck, out_dim):
     tactile_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
-    # tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
-    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
-    return Encoder(tactile_extractor) #, conv_bottleneck, out_dim, out_shape=(2, 3))
+    tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
+    return Encoder(tactile_extractor)
 
 # @DeprecationWarning
 def make_audio_encoder(conv_bottleneck, out_dim):
     audio_extractor = resnet18()
     audio_extractor.conv1 = nn.Conv2d(
-        4, 64, kernel_size=7, stride=1, padding=3, bias=False
+        2, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["avgpool"])
-    return Encoder(audio_extractor) #, conv_bottleneck, out_dim, out_shape=(2, 3))
+    return Audio_Encoder(audio_extractor, out_dim)
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))

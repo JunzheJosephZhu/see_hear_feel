@@ -24,9 +24,8 @@ def main(args):
 
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
     val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
-
-    train_loader= DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
-    val_loader= DataLoader(val_set, 1, num_workers=0, shuffle=False)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
+    val_loader = DataLoader(val_set, args.batch_size, num_workers=4, shuffle=False)
     v_encoder = make_vision_encoder() # 3,4/4,5
     t_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim_t)
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
@@ -44,7 +43,7 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn_ablation.yaml")
     p.add("--batch_size", default=4)
-    p.add("--lr", default=1e-4, type=float)
+    p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
     p.add("--epochs", default=300)
