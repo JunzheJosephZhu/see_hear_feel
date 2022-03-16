@@ -5,6 +5,7 @@ from tomlkit import key
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
+import numpy as np
 
 class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
@@ -153,6 +154,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
         # print("pred", action_pred)
         loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
         self.log_dict({"train/action_loss": loss})
+
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -182,10 +184,22 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]        # print(v_input.shape)
         # print("keyboard", keyboard)
         # print("pred", action_pred)
-        with torch.no_grad():
-            action_pred = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
-            loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
-        self.log_dict({"val/action_loss": loss})
+        # with torch.no_grad(): # torch lightning module does this under the hood
+        action_pred = self.actor(v_input, t_input, a_input, True)  # , idx)
+        loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
+        cor = torch.eq(torch.argmax(action_pred, dim=1), keyboard)
+        self.log("val/action_loss", loss)
+        return {"cor": torch.sum(cor), "total": cor.size()[0]}
+
+    def validation_epoch_end(self, outs):
+        cor = 0
+        total = 0
+        for out in outs:
+            cor += out['cor']
+            total += out['total']
+        acc = cor / total
+        # print(f'epoch end ------- len {total}\tepoch acc {acc}')
+        self.log_dict({"val/acc": acc})
 
     def train_dataloader(self):
         """Training dataloader"""

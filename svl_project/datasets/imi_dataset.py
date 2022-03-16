@@ -239,7 +239,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.frameskip = args.frameskip
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.fps = 10
-        self.sr = int(16000 * (self.fps / max(self.max_len, 10)))
+        self.sr = int(16000 * (max(self.max_len, 10) / self.fps))
         self.resolution = self.sr // 10
         self.mel = torchaudio.transforms.MelSpectrogram(
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
@@ -261,7 +261,6 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             number of frames in episode
         """
         format_time = self.logs.iloc[idx].Time#.replace(":", "_")
-        # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
             timestamps = json.load(ts)
@@ -277,7 +276,6 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         return self.num_frames
 
     def __getitem__(self, idx):
-
         end = idx  # torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len
         if start < 0:
@@ -288,7 +286,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         # load camera frames
         transform = T.Compose([
             T.Resize((self.resized_height, self.resized_width)),
-            T.ColorJitter(brightness=1.0, contrast=0.0, saturation=0.0, hue=0.2),
+            T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
         ])
         img = transform(self.load_image(self.trial, "cam_fixed_color", end))
         i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
@@ -313,7 +311,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         # print(time.time() - t_start)
 
         # load audio
-        audio_start = end * self.resolution - self.sr // 2 # why self.sr // 2, and start + sr
+        audio_start = end * self.resolution - self.sr # why self.sr // 2, and start + sr
         audio_end = audio_start + self.sr
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         spec = self.mel(audio_clip.type(torch.FloatTensor))

@@ -25,7 +25,7 @@ def start_training(args, exp_dir, pl_module):
         default_root_dir=exp_dir,
         gpus=-1,
         strategy="dp",
-        limit_val_batches=10,
+        limit_val_batches=5000,
         check_val_every_n_epoch=1,
         log_every_n_steps=5
     )
