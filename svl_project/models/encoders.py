@@ -64,8 +64,9 @@ def make_tactile_encoder(conv_bottleneck, out_dim):
     tactile_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
-    tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
-    return Encoder(tactile_extractor, conv_bottleneck, out_dim, out_shape=(2, 3))
+    # tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
+    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
+    return Encoder(tactile_extractor) #, conv_bottleneck, out_dim, out_shape=(2, 3))
 
 # @DeprecationWarning
 def make_audio_encoder(conv_bottleneck, out_dim):
@@ -74,7 +75,7 @@ def make_audio_encoder(conv_bottleneck, out_dim):
         4, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["avgpool"])
-    return Encoder(audio_extractor, conv_bottleneck, out_dim, out_shape=(2, 3))
+    return Encoder(audio_extractor) #, conv_bottleneck, out_dim, out_shape=(2, 3))
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))

@@ -186,7 +186,7 @@ class ImitationDatasetFramestack(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -246,10 +246,12 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         )
         self.num_cam = args.num_camera
         self.EPS = 1e-8
-        self.resized_height = args.resized_height
-        self.resized_width = args.resized_width
-        self._crop_height = int(args.resized_height * (1.0 - args.crop_percent))
-        self._crop_width = int(args.resized_width * (1.0 - args.crop_percent))
+        self.resized_height_v = args.resized_height_v
+        self.resized_width_v = args.resized_width_v
+        self.resized_height_t = args.resized_height_t
+        self.resized_width_t = args.resized_width_t
+        self._crop_height = int(self.resized_height_v * (1.0 - args.crop_percent))
+        self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
 
     def get_episode(self, idx, load_audio=True):
@@ -287,15 +289,15 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
         # load camera frames
         transform = T.Compose([
-            T.Resize((self.resized_height, self.resized_width)),
-            T.ColorJitter(brightness=1.0, contrast=0.0, saturation=0.0, hue=0.2),
+            T.Resize((self.resized_height_v, self.resized_width_v)),
+            # T.ColorJitter(brightness=1.0, contrast=0.0, saturation=0.0, hue=0.2),
         ])
         img = transform(self.load_image(self.trial, "cam_fixed_color", end))
         i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
 
         transform_gel = T.Compose([
-            T.Resize((150, 200)),
-            T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
+            T.Resize((self.resized_height_t, self.resized_width_t)),
+            # T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         ])
 
         # t_start = time.time()
@@ -328,7 +330,6 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         else:
             v_framestack = cam_fixed_framestack
-
         return v_framestack, tactile_framestack, log_spec, keyboard
 
 

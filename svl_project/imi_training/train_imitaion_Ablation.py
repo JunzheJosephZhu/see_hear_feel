@@ -25,9 +25,9 @@ def main(args):
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
     val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
 
-    train_loader= DataLoader(train_set, args.batch_size, num_workers=8, shuffle=True)
-    val_loader= DataLoader(val_set, 1, num_workers=8, shuffle=False)
-    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim_v) # 3,4/4,5
+    train_loader= DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
+    val_loader= DataLoader(val_set, 1, num_workers=0, shuffle=False)
+    v_encoder = make_vision_encoder() # 3,4/4,5
     t_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim_t)
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
@@ -65,8 +65,10 @@ if __name__ == "__main__":
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
     p.add("--data_folder", default="data/test_recordings")
-    p.add("--resized_height", required=True, type=int)
-    p.add("--resized_width", required=True, type=int)
+    p.add("--resized_height_v", required=True, type=int)
+    p.add("--resized_width_v", required=True, type=int)
+    p.add("--resized_height_t", required=True, type=int)
+    p.add("--resized_width_t", required=True, type=int)
     p.add("--num_episode", required=True, type=int)
     p.add("--crop_percent", required=True, type=float)
     p.add("--num_camera", required=True, type=int)

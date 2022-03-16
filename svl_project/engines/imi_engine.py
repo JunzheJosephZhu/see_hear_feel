@@ -110,6 +110,8 @@ class ImiBaselineLearn_Ablation(LightningModule):
             self.loss_cal = torch.nn.MSELoss()
         elif self.loss_type == 'cce':
             self.loss_cal = torch.nn.CrossEntropyLoss()
+        self.wrong = 1
+        self.correct = 0
         print("baseline learn")
 
     def compute_loss(self, pred, demo, action_dim):
@@ -185,6 +187,11 @@ class ImiBaselineLearn_Ablation(LightningModule):
         with torch.no_grad():
             action_pred = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
             loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
+            if torch.argmax(action_pred) == keyboard:
+                self.correct += 1
+            else:
+                self.wrong += 1
+        acc = self.correct / (self.correct + self.wrong)
         self.log_dict({"val/action_loss": loss})
 
     def train_dataloader(self):
