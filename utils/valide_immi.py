@@ -32,7 +32,7 @@ def baselineValidate(args):
     # val_set = torch.utils.data.ConcatDataset(
     #     [ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(len(val_csv))])
     val_set = torch.utils.data.ConcatDataset(
-        [ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(len(val_csv))])
+        [ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.num_episode)])
 
     val_loader = DataLoader(val_set, 1, num_workers=8)
     with torch.no_grad():
@@ -41,6 +41,9 @@ def baselineValidate(args):
         t_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim_t)
         a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
         v_encoder.eval()
+        t_encoder.eval()
+        a_encoder.eval()
+
         actor = None
         actor = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args)
         # get pretrained parameters
@@ -66,6 +69,7 @@ def baselineValidate(args):
         v_input, t_input, log_spec, keyboard = batch
         v_input = Variable(v_input).cuda()
         t_input = Variable(t_input).cuda()
+        a_input = Variable(log_spec).cuda()
         s_v = v_input.shape
         # print(s_v)
         s_t = t_input.shape
@@ -80,7 +84,7 @@ def baselineValidate(args):
         # cv2.waitKey(200)
         keyboard = keyboard.numpy()
         # action_pred = actor(v_gripper_inp, v_fixed_inp, True).detach().numpy()
-        pred_action = actor(v_input, t_input, None, True).detach().cpu().numpy()
+        pred_action = actor(v_input, t_input, a_input, True).detach().cpu().numpy()
         if args.loss_type == 'cce':
             # pred_action = pred_action.reshape(3, -1)
             # pred_action = (np.argmax(pred_action, axis=1) - 1) * np.array((.003, .003, .0015))
@@ -172,7 +176,7 @@ if __name__ == "__main__":
     # p.add("--embed_dim", required=True, type=int)
     p.add("--pretrained", required=True)
     p.add("--freeze_till", required=True, type=int)
-    p.add("--num_episode", default=10, type=int)
+    p.add("--num_episode", default=1, type=int)
     p.add("--conv_bottleneck", required=True, type=int)
     p.add("--embed_dim_v", required=True, type=int)
     p.add("--embed_dim_t", required=True, type=int)

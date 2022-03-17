@@ -232,6 +232,7 @@ class ImitationDatasetFramestack(BaseDataset):
         v_total = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         return v_total, keyboard
 
+
 class ImitationDatasetFramestackMulti(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings_0214"):
         super().__init__(log_file, data_folder)
@@ -239,8 +240,9 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.frameskip = args.frameskip
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.fps = 10
-        self.sr = int(16000 * (max(self.max_len, 10) / self.fps))
-        self.resolution = self.sr // 10
+        self.sr = 16000
+        self.resolution = self.sr // self.fps # number of audio samples in one image idx
+        self.audio_len = int(self.resolution * (max(self.max_len, 10)))
         self.mel = torchaudio.transforms.MelSpectrogram(
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
         )
@@ -313,8 +315,8 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         # print(time.time() - t_start)
 
         # load audio
-        audio_start = end * self.resolution - self.sr # why self.sr // 2, and start + sr
-        audio_end = audio_start + self.sr
+        audio_start = end * self.resolution - self.audio_len # why self.sr // 2, and start + sr
+        audio_end = audio_start + self.audio_len
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)

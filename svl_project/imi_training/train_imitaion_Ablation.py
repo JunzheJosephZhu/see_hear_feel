@@ -25,7 +25,7 @@ def main(args):
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
     val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
-    val_loader = DataLoader(val_set, args.batch_size, num_workers=4, shuffle=False)
+    val_loader = DataLoader(val_set, args.batch_size, num_workers=2, shuffle=False)
     v_encoder = make_vision_encoder() # 3,4/4,5
     t_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim_t)
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
