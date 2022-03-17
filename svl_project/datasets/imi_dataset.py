@@ -186,7 +186,7 @@ class ImitationDatasetFramestack(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -232,6 +232,7 @@ class ImitationDatasetFramestack(BaseDataset):
         v_total = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         return v_total, keyboard
 
+
 class ImitationDatasetFramestackMulti(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings_0214"):
         super().__init__(log_file, data_folder)
@@ -239,18 +240,24 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.frameskip = args.frameskip
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.fps = 10
-        self.sr = int(16000 * (max(self.max_len, 10) / self.fps))
-        self.resolution = self.sr // 10
+        self.sr = 16000
+        self.resolution = self.sr // self.fps # number of audio samples in one image idx
+        self.audio_len = int(self.resolution * (max(self.max_len, 10)))
         self.mel = torchaudio.transforms.MelSpectrogram(
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
         )
         self.num_cam = args.num_camera
         self.EPS = 1e-8
-        self.resized_height = args.resized_height
-        self.resized_width = args.resized_width
-        self._crop_height = int(args.resized_height * (1.0 - args.crop_percent))
-        self._crop_width = int(args.resized_width * (1.0 - args.crop_percent))
+        self.resized_height_v = args.resized_height_v
+        self.resized_width_v = args.resized_width_v
+        self.resized_height_t = args.resized_height_t
+        self.resized_width_t = args.resized_width_t
+        self._crop_height = int(self.resized_height_v * (1.0 - args.crop_percent))
+        self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        ## saving initial gelsight frame
+        # self.static_gs = self.load_image(os.path.join(self.data_folder, 'static_gs'), "left_gelsight_frame", 0)
+        self.static_gs = self.load_image(self.trial, "left_gelsight_frame", 0)
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -286,18 +293,17 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
         # load camera frames
         transform = T.Compose([
-            T.Resize((self.resized_height, self.resized_width)),
+            T.Resize((self.resized_height_v, self.resized_width_v)),
             T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
         ])
         img = transform(self.load_image(self.trial, "cam_fixed_color", end))
         i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
 
         transform_gel = T.Compose([
-            T.Resize((150, 200)),
-            T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
+            T.Resize((self.resized_height_t, self.resized_width_t)),
+            # T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         ])
 
-        # t_start = time.time()
         if self.num_cam == 2:
             cam_gripper_framestack = torch.stack(
                 [T.functional.crop(transform(self.load_image(self.trial, "cam_gripper_color", timestep)), i, j, h, w) for timestep in cam_idx], dim=0)
@@ -307,13 +313,17 @@ class ImitationDatasetFramestackMulti(BaseDataset):
              timestep in cam_idx], dim=0)
 
         tactile_framestack = torch.stack(
-            [transform_gel(self.load_image(self.trial, "left_gelsight_frame", timestep)) for
+            [transform_gel(
+                self.load_image(self.trial, "left_gelsight_frame", timestep)
+                ## input difference between current frame and initial (static) frame instead of the frame itself
+                - self.static_gs
+                ) for
              timestep in cam_idx], dim=0)
         # print(time.time() - t_start)
 
         # load audio
-        audio_start = end * self.resolution - self.sr # why self.sr // 2, and start + sr
-        audio_end = audio_start + self.sr
+        audio_end = end * self.resolution
+        audio_start = audio_end - self.audio_len # why self.sr // 2, and start + sr
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)
@@ -327,7 +337,6 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         else:
             v_framestack = cam_fixed_framestack
-
         return v_framestack, tactile_framestack, log_spec, keyboard
 
 

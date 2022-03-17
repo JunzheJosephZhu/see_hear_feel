@@ -84,9 +84,13 @@ def make_audio_encoder(conv_bottleneck, out_dim):
     audio_extractor = resnet18()
     audio_extractor.conv1 = nn.Conv2d(
         2, 64, kernel_size=7, stride=1, padding=3, bias=False
+        ## vae_vision model is trained with 4 in channels
+        # 4, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["avgpool"])
     return Audio_Encoder(audio_extractor, out_dim)
+    ## vae_vision model is trained with Encoder
+    # return Encoder(audio_extractor)
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))

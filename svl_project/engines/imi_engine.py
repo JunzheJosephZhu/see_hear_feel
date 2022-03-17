@@ -111,6 +111,9 @@ class ImiBaselineLearn_Ablation(LightningModule):
             self.loss_cal = torch.nn.MSELoss()
         elif self.loss_type == 'cce':
             self.loss_cal = torch.nn.CrossEntropyLoss()
+        self.wrong = 1
+        self.correct = 0
+        self.total = 0
         print("baseline learn")
         self.correct = 0
         self.total = 0
@@ -194,6 +197,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
             self.correct = 0
             self.total = 0
         cor = torch.eq(torch.argmax(action_pred, dim=1), keyboard)
+
         self.correct += torch.sum(cor)
         self.total += cor.size()[0]
         metrics_val = {"val/action_loss": loss, "val/acc": self.correct / self.total}
@@ -209,6 +213,19 @@ class ImiBaselineLearn_Ablation(LightningModule):
     #     acc = cor / total
     #     # print(f'epoch end ------- len {total}\tepoch acc {acc}')
     #     self.log_dict({"val/acc": acc})
+
+    # def validation_epoch_end(self, outs):
+    #     # cor = 0
+    #     # total = 0
+    #     # for out in outs:
+    #     #     cor += out['cor']
+    #     #     total += out['total']
+    #     # acc = cor / total
+    #     # acc = self.correct / self.total
+    #     self.correct, self.total = 0, 0
+    #     # print(f'epoch end ------- reset len to {self.total}\tepoch acc {acc}')
+    #     # self.log_dict({"val/acc": acc})
+>>>>>>> 1748735884b1440395cf9f5c9576c75c26fdf6c8
 
     def train_dataloader(self):
         """Training dataloader"""

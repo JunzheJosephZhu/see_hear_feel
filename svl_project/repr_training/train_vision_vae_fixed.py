@@ -1,3 +1,6 @@
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import torch
 from svl_project.datasets.repr_dataset import VisionFixedDataset
 from svl_project.models.decoders import make_vision_decoder
@@ -55,6 +58,7 @@ if __name__ == "__main__":
     p.add("--val_csv", default="val.csv")
     p.add("--data_folder", default="data/test_recordings_0214")
     p.add("--loss_type", required=True)
+    
 
     args = p.parse_args()
     main(args)
