@@ -11,5 +11,5 @@ resized_height: 120
 resized_width: 160
 num_camera: 1
 total_episode: 70
-ablation: v_t
+ablation: v_a
 gamma: 0.9

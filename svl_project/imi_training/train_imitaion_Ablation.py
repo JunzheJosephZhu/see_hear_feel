@@ -24,6 +24,9 @@ def main(args):
 
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
     val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    # train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(2)])
+    # val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(2)])
+    # print(f"train len {len(train_set)} val len {len(val_set)}")
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=4, shuffle=False)
     v_encoder = make_vision_encoder() # 3,4/4,5

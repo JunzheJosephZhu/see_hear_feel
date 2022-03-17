@@ -270,6 +270,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             audio = torch.as_tensor(np.stack([audio_gripper, audio_holebase], 0))
         else:
             audio = None
+        print(f"trial {trial} len {len(timestamps['action_history'])}")
         return trial, timestamps, audio, len(timestamps["action_history"])
 
     def __len__(self):
