@@ -255,6 +255,9 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self._crop_height = int(self.resized_height_v * (1.0 - args.crop_percent))
         self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        ## saving initial gelsight frame
+        # self.static_gs = self.load_image(os.path.join(self.data_folder, 'static_gs'), "left_gelsight_frame", 0)
+        self.static_gs = self.load_image(self.trial, "left_gelsight_frame", 0)
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -290,7 +293,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         # load camera frames
         transform = T.Compose([
             T.Resize((self.resized_height_v, self.resized_width_v)),
-            # T.ColorJitter(brightness=1.0, contrast=0.0, saturation=0.0, hue=0.2),
+            T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
         ])
         img = transform(self.load_image(self.trial, "cam_fixed_color", end))
         i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
@@ -300,7 +303,6 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             # T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
         ])
 
-        # t_start = time.time()
         if self.num_cam == 2:
             cam_gripper_framestack = torch.stack(
                 [T.functional.crop(transform(self.load_image(self.trial, "cam_gripper_color", timestep)), i, j, h, w) for timestep in cam_idx], dim=0)
@@ -310,7 +312,11 @@ class ImitationDatasetFramestackMulti(BaseDataset):
              timestep in cam_idx], dim=0)
 
         tactile_framestack = torch.stack(
-            [transform_gel(self.load_image(self.trial, "left_gelsight_frame", timestep)) for
+            [transform_gel(
+                self.load_image(self.trial, "left_gelsight_frame", timestep)
+                ## input difference between current frame and initial (static) frame instead of the frame itself
+                - self.static_gs
+                ) for
              timestep in cam_idx], dim=0)
         # print(time.time() - t_start)
 
