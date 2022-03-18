@@ -56,7 +56,7 @@ class Audio_Encoder(nn.Module):
         return x
 
 def make_vision_encoder():
-    vision_extractor = resnet18(pretrained=False)
+    vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
@@ -72,7 +72,7 @@ def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(4, 5))
 
 def make_tactile_encoder(conv_bottleneck, out_dim):
-    tactile_extractor = resnet18()
+    tactile_extractor = resnet18(pretrained=True)
     tactile_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
@@ -83,14 +83,14 @@ def make_tactile_encoder(conv_bottleneck, out_dim):
 def make_audio_encoder(conv_bottleneck, out_dim):
     audio_extractor = resnet18()
     audio_extractor.conv1 = nn.Conv2d(
-        2, 64, kernel_size=7, stride=1, padding=3, bias=False
+        # 2, 64, kernel_size=7, stride=1, padding=3, bias=False
         ## vae_vision model is trained with 4 in channels
-        # 4, 64, kernel_size=7, stride=1, padding=3, bias=False
+        4, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["avgpool"])
-    return Audio_Encoder(audio_extractor, out_dim)
+    # return Audio_Encoder(audio_extractor, out_dim)
     ## vae_vision model is trained with Encoder
-    # return Encoder(audio_extractor)
+    return Encoder(audio_extractor)
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))

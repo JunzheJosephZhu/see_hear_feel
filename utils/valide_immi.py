@@ -32,7 +32,12 @@ def baselineValidate(args):
     # val_set = torch.utils.data.ConcatDataset(
     #     [ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(len(val_csv))])
     val_set = torch.utils.data.ConcatDataset(
-        [ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.num_episode)])
+        [ImitationDatasetFramestackMulti(args.val_csv,
+                                         args,
+                                         i,
+                                         args.data_folder,
+                                         train=False)
+         for i in range(min(args.num_episode, len(val_csv)))])
 
     val_loader = DataLoader(val_set, 1, num_workers=8)
     with torch.no_grad():
@@ -176,7 +181,7 @@ if __name__ == "__main__":
     # p.add("--embed_dim", required=True, type=int)
     p.add("--pretrained", required=True)
     p.add("--freeze_till", required=True, type=int)
-    p.add("--num_episode", default=1, type=int)
+    p.add("--num_episode", default=20, type=int)
     p.add("--conv_bottleneck", required=True, type=int)
     p.add("--embed_dim_v", required=True, type=int)
     p.add("--embed_dim_t", required=True, type=int)
