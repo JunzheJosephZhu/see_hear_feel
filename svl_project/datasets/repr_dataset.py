@@ -36,14 +36,17 @@ class VisionFixedDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        return self.load_image(trial, "cam_fixed_color", timestep)
+        return self.resize_image(self.load_image(trial, "cam_fixed_color", timestep), (64, 64))
 
 class GelsightFrameDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        return self.resize_image(self.load_image(trial, "left_gelsight_frame", timestep), scale_factor=(0.5, 0.5))
-
+        original_img = self.load_image(trial, "left_gelsight_frame", timestep)
+        img =  self.resize_image(original_img - self.gelsight_offset, (64, 64)) + 0.5
+        img = img.clamp(0, 1)
+        # img = img.mean(0, keepdim=True).expand(3, 64, 64)
+        return img
 
 @DeprecationWarning
 class TripletDataset(Dataset):
