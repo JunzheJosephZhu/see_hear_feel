@@ -68,22 +68,37 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_vision = False
         self.use_tactile = False
         self.use_audio = False
-        if self.ablation == 'v_t':
-            self.embed_dim = self.v_embeds_shape + self.t_embeds_shape
-            self.use_vision = True
-            self.use_tactile = True
-        elif self.ablation == 'v_a':
-            self.embed_dim = self.v_embeds_shape + self.a_embeds_shape
-            self.use_vision = True
-            self.use_audio = True
-        elif self.ablation == 'v_t_a':
-            self.embed_dim = self.v_embeds_shape + self.t_embeds_shape + self.a_embeds_shape
-            self.use_vision = True
-            self.use_tactile = True
-            self.use_audio = True
-        elif self.ablation == 'v':
-            self.embed_dim = self.v_embeds_shape
-            self.use_vision = True
+        
+        # if self.ablation == 'v_t':
+        #     self.embed_dim = self.v_embeds_shape + self.t_embeds_shape
+        #     self.use_vision = True
+        #     self.use_tactile = True
+        # elif self.ablation == 'v_a':
+        #     self.embed_dim = self.v_embeds_shape + self.a_embeds_shape
+        #     self.use_vision = True
+        #     self.use_audio = True
+        # elif self.ablation == 'v_t_a':
+        #     self.embed_dim = self.v_embeds_shape + self.t_embeds_shape + self.a_embeds_shape
+        #     self.use_vision = True
+        #     self.use_tactile = True
+        #     self.use_audio = True
+        # elif self.ablation == 'v':
+        #     self.embed_dim = self.v_embeds_shape
+        #     self.use_vision = True
+        
+        ## to enable more combinations
+        self.modalities = self.ablation.split('_')
+        print(f"Using modalities: {self.modalities}")
+        self.embed_dim = 0
+        self.use_vision = 'v' in self.modalities
+        self.use_tactile = 't' in self.modalities
+        self.use_audio =  'a' in self.modalities
+        if self.use_vision:
+            self.embed_dim += self.v_embeds_shape
+        if self.use_tactile:
+            self.embed_dim += self.t_embeds_shape
+        if self.use_audio:
+            self.embed_dim += self.a_embeds_shape
 
         # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
@@ -135,15 +150,26 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             if self.use_audio:
                 a_embeds = self.a_encoder(a_inp)
                 a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
-
-        if self.ablation == 'v_t':
-            mlp_inp = torch.concat((v_embeds,t_embeds), dim=-1)
-        elif self.ablation == 'v_a':
-            mlp_inp = torch.concat((v_embeds, a_embeds), dim=-1)
-        elif self.ablation == 'v_t_a':
-            mlp_inp = torch.concat((v_embeds, t_embeds, a_embeds), dim=-1)
-        elif self.ablation == 'v':
-            mlp_inp = v_embeds
+        
+        # if self.ablation == 'v_t':
+        #     mlp_inp = torch.concat((v_embeds,t_embeds), dim=-1)
+        # elif self.ablation == 'v_a':
+        #     mlp_inp = torch.concat((v_embeds, a_embeds), dim=-1)
+        # elif self.ablation == 'v_t_a':
+        #     mlp_inp = torch.concat((v_embeds, t_embeds, a_embeds), dim=-1)
+        # elif self.ablation == 'v':
+        #     mlp_inp = v_embeds
+        
+        ## to enable more combinations
+        embeds = []
+        if self.use_vision:
+            embeds.append(v_embeds)
+        if self.use_tactile:
+            embeds.append(t_embeds)
+        if self.use_audio:
+            embeds.append(a_embeds)
+        mlp_inp = torch.concat(embeds, dim=-1)
+        
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
         return action_logits

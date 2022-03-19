@@ -15,15 +15,24 @@ import yaml
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
+import pandas as pd
 
 def main(args):
 
     print(sys.getrecursionlimit())
     sys.setrecursionlimit(8000)
     print(sys.getrecursionlimit())
-
-    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(args.num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(args.total_episode - args.num_episode)])
+    
+    train_csv = pd.read_csv(args.train_csv)
+    val_csv = pd.read_csv(args.val_csv)
+    if args.num_episode is None:
+        train_num_episode = len(train_csv)
+        val_num_episode = len(val_csv)
+    else:
+        train_num_episode = args.num_episode
+        val_num_episode = args.num_episode
+    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(val_num_episode)])
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=2, shuffle=False)
     # train_loader = DataLoader(train_set, 1, num_workers=0, shuffle=False)
@@ -70,7 +79,7 @@ if __name__ == "__main__":
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
     p.add("--resized_width_t", required=True, type=int)
-    p.add("--num_episode", required=True, type=int)
+    p.add("--num_episode", default=None, type=int)
     p.add("--crop_percent", required=True, type=float)
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
