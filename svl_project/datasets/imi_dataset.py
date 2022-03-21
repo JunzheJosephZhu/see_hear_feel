@@ -192,8 +192,8 @@ class ImitationDatasetFramestack(BaseDataset):
         with open(os.path.join(trial, "timestamps.json")) as ts:
             timestamps = json.load(ts)
         if load_audio:
-            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
-            audio_holebase = sf.read(os.path.join(trial, 'audio_holebase.wav'))[0]
+            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
+            audio_holebase = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
             audio = torch.as_tensor(np.stack([audio_gripper, audio_holebase], 0))
         else:
             audio = None
@@ -255,8 +255,12 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
         ## saving initial gelsight frame
-        self.static_gs = self.load_image(os.path.join(self.data_folder, 'static_gs'), "left_gelsight_frame", 0)
-        # self.static_gs = self.load_image(self.trial, "left_gelsight_frame", 0)
+        # self.static_gs = self.load_image(os.path.join(self.data_folder, 'static_gs'), "left_gelsight_frame", 0)
+        #self.static_gs = self.load_image(self.trial, "left_gelsight_frame", 0)
+        # saving the offset
+        self.gelsight_offset = torch.as_tensor(
+            np.array(Image.open(os.path.join(self.data_folder, 'gs_offset.png')))).float().permute(2, 0,
+                                                                                                   1) / 255
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -266,13 +270,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time.replace(":", "_")
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
             timestamps = json.load(ts)
         if load_audio:
-            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
-            audio_holebase = sf.read(os.path.join(trial, 'audio_holebase.wav'))[0]
+            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
+            audio_holebase = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
             audio = torch.as_tensor(np.stack([audio_gripper, audio_holebase], 0))
         else:
             audio = None
@@ -333,11 +337,11 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                 for timestep in cam_idx], dim=0)
 
         tactile_framestack = torch.stack(
-            [transform_gel(
+            [(transform_gel(
                 self.load_image(self.trial, "left_gelsight_frame", timestep)
                 ## input difference between current frame and initial (static) frame instead of the frame itself
-                - self.static_gs
-                ) for
+                - self.gelsight_offset
+                ) + 0.5).clamp(0, 1) for
              timestep in cam_idx], dim=0)
 
         # load audio

@@ -15,10 +15,10 @@ def main(args):
     train_set = GelsightFrameDataset(args.train_csv, args.data_folder)
     val_set = GelsightFrameDataset(args.val_csv, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
-    val_loader = DataLoader(val_set, 1, num_workers=8)
-    v_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim)
-    v_decoder = make_tactile_decoder(args.conv_bottleneck, args.embed_dim)
-    vae_model = VAE(v_encoder, v_decoder, args.embed_dim, args.latent_dim)
+    val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=True)
+    t_encoder = make_tactile_encoder()
+    t_decoder = make_tactile_decoder(args.latent_dim)
+    vae_model = VAE(t_encoder, t_decoder, 512, args.latent_dim)
     optimizer = torch.optim.Adam(vae_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -40,12 +40,11 @@ if __name__ == "__main__":
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # VAE stuff
-    p.add("--conv_bottleneck", required=True, type=int)
-    p.add("--embed_dim", required=True, type=int)
     p.add("--latent_dim", required=True, type=int)
     p.add("--beta", required=True, type=float)
     p.add("--prior_scale", default=1.0, type=float)
     p.add("--allow_mismatch", default=False, type=bool)
+    p.add("--loss_type", required=True, type=str)
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")

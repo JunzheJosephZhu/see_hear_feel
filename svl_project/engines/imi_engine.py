@@ -187,6 +187,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]        # print(v_input.shape)
         # with torch.no_grad(): # torch lightning module does this under the hood
         action_logits = self.actor(v_input, t_input, a_input, True)  # , idx)
+        # print(f"action logits shape {action_logits.shape}")
         loss = self.compute_loss(action_logits, keyboard, self.config.action_dim)
         action_pred = torch.argmax(action_logits, dim=1)
         cor = torch.eq(action_pred, keyboard)
