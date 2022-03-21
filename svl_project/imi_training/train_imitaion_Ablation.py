@@ -32,13 +32,13 @@ def main(args):
         train_num_episode = args.num_episode
         val_num_episode = args.num_episode
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder) for i in range(val_num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
-    val_loader = DataLoader(val_set, args.batch_size, num_workers=2, shuffle=False)
+    val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
     # train_loader = DataLoader(train_set, 1, num_workers=0, shuffle=False)
     # val_loader = DataLoader(val_set, 1, num_workers=0, shuffle=False)
     v_encoder = make_vision_encoder() # 3,4/4,5
-    t_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim_t)
+    t_encoder = make_tactile_encoder()
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)

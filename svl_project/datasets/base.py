@@ -21,6 +21,8 @@ class BaseDataset(Dataset):
             sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
         )
         self.streams = ["cam_gripper_color", "cam_fixed_color", "left_gelsight_flow", "left_gelsight_frame"]
+        self.gelsight_offset = torch.as_tensor(np.array(Image.open("gelsight_offset.png"))).float().permute(2, 0, 1) / 255
+        pass
 
     def get_episode(self, idx, load_audio=True):
         """

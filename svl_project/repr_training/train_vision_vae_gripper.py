@@ -1,7 +1,7 @@
 import torch
 from svl_project.datasets.repr_dataset import VisionGripperDataset
-from svl_project.models.decoders import make_vision_decoder, make_vision_decoder_downsampled
-from svl_project.models.encoders import make_vision_encoder, make_vision_encoder_downsampled
+from svl_project.models.decoders import make_vision_decoder
+from svl_project.models.encoders import make_vision_encoder
 from svl_project.models.repr_models import VAE
 from svl_project.engines.vae import VAELearn
 from torch.utils.data import DataLoader

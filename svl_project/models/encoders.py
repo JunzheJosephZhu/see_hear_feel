@@ -71,7 +71,7 @@ def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
     return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(4, 5))
 
-def make_tactile_encoder(conv_bottleneck, out_dim):
+def make_tactile_encoder():
     tactile_extractor = resnet18(pretrained=True)
     tactile_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False

@@ -72,11 +72,8 @@ class ResNet_Decoder(nn.Module):
 def make_vision_decoder(latent_dim):
     return ResNet_Decoder(latent_dim=latent_dim, out_channels=3)
 
-def make_vision_decoder_downsampled(conv_bottleneck, out_dim):
-    return ResNet_Decoder(conv_bottleneck, out_dim, initial_pad=(0, 0), in_shape=(4, 5), out_channels=3)
-
 def make_audio_decoder(out_dim):
     return ResNet_Decoder(out_dim, out_channels=2)
 
-def make_tactile_decoder(conv_bottleneck, out_dim):
-    return ResNet_Decoder(conv_bottleneck, out_dim, initial_pad=(1, 0), in_shape=(2, 3), out_channels=3)
+def make_tactile_decoder(latent_dim):
+    return ResNet_Decoder(latent_dim=latent_dim, out_channels=3)
