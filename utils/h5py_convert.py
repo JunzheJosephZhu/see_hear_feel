@@ -36,5 +36,7 @@ def convert_episode(data_folder, logs, idx):
 if __name__ == "__main__":
     logs = pd.read_csv("data/data_0307_new_examples/episode_times.csv")
     data_folder = "data/data_0307_new_examples/test_recordings"
+    # logs = pd.read_csv("../data_0318/episode_times.csv")
+    # data_folder = "../data_0318/test_recordings"
     for idx in range(len(logs)):
         convert_episode(data_folder, logs, idx)

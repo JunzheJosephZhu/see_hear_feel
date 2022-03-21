@@ -115,8 +115,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
         self.correct = 0
         self.total = 0
         print("baseline learn")
-        self.correct = 0
-        self.total = 0
 
     def compute_loss(self, pred, demo, action_dim):
         """
@@ -187,45 +185,28 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]        # print(v_input.shape)
-        # print("keyboard", keyboard)
-        # print("pred", action_pred)
         # with torch.no_grad(): # torch lightning module does this under the hood
-        action_pred = self.actor(v_input, t_input, a_input, True)  # , idx)
-        loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
-        ## log accuracy
-        if batch_idx == 0:
+        action_logits = self.actor(v_input, t_input, a_input, True)  # , idx)
+        loss = self.compute_loss(action_logits, keyboard, self.config.action_dim)
+        action_pred = torch.argmax(action_logits, dim=1)
+        cor = torch.eq(action_pred, keyboard)
+        if batch_idx == 0 and self.total > 0:
+            acc = self.correct / self.total
+            self.log('val/acc', acc)
             self.correct = 0
             self.total = 0
-        cor = torch.eq(torch.argmax(action_pred, dim=1), keyboard)
-
         self.correct += torch.sum(cor)
         self.total += cor.size()[0]
-        metrics_val = {"val/action_loss": loss, "val/acc": self.correct / self.total}
-        self.log_dict(metrics_val)
-        # return {"cor": torch.sum(cor), "total": cor.size()[0]}
+        # self.log('val/acc', self.correct / self.total, on_step=True, on_epoch=False)
+        self.log("val/action_loss", loss.item())
+        return loss
 
     # def validation_epoch_end(self, outs):
-    #     cor = 0
-    #     total = 0
-    #     for out in outs:
-    #         cor += out['cor']
-    #         total += out['total']
-    #     acc = cor / total
-    #     # print(f'epoch end ------- len {total}\tepoch acc {acc}')
-    #     self.log_dict({"val/acc": acc})
-
-    # def validation_epoch_end(self, outs):
-    #     # cor = 0
-    #     # total = 0
-    #     # for out in outs:
-    #     #     cor += out['cor']
-    #     #     total += out['total']
-    #     # acc = cor / total
-    #     # acc = self.correct / self.total
-    #     self.correct, self.total = 0, 0
-    #     # print(f'epoch end ------- reset len to {self.total}\tepoch acc {acc}')
-    #     # self.log_dict({"val/acc": acc})
->>>>>>> 1748735884b1440395cf9f5c9576c75c26fdf6c8
+    #     mean_loss = torch.mean(torch.stack(outs))
+    #     self.log('val/action_loss', mean_loss)
+    #     self.log('val/acc', self.correct / self.total)
+    #     self.correct = 0
+    #     self.total = 0
 
     def train_dataloader(self):
         """Training dataloader"""
