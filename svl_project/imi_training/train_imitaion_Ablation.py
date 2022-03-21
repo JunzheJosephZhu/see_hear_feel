@@ -84,6 +84,7 @@ if __name__ == "__main__":
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
+    p.add("--num_heads", required=True, type=int)
 
 
     args = p.parse_args()
