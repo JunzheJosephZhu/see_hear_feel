@@ -1,5 +1,5 @@
 embed_dim_v: 512
-embed_dim_t: 512
+embed_dim_t: 64
 embed_dim_a: 128
 pretrained: None # "/exp/metric_learn/checkpoints/last.ckpt"
 freeze_till: 0
@@ -9,10 +9,11 @@ crop_percent: 0.1
 conv_bottleneck: 128
 resized_height_v: 120
 resized_width_v: 160
-resized_height_t: 150
-resized_width_t: 200
+resized_height_t: 30
+resized_width_t: 40
 num_camera: 1
 total_episode: 70
 ablation: v_t
 gamma: 0.9
 num_heads: 8
+use_flow: True

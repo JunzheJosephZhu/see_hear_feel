@@ -254,6 +254,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self._crop_height = int(self.resized_height_v * (1.0 - args.crop_percent))
         self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        self.use_flow = args.use_flow
         ## saving initial gelsight frame
         # self.static_gs = self.load_image(os.path.join(self.data_folder, 'static_gs'), "left_gelsight_frame", 0)
         #self.static_gs = self.load_image(self.trial, "left_gelsight_frame", 0)
@@ -336,13 +337,18 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                 [transform(self.load_image(self.trial, "cam_fixed_color", timestep))
                 for timestep in cam_idx], dim=0)
 
-        tactile_framestack = torch.stack(
-            [(transform_gel(
-                self.load_image(self.trial, "left_gelsight_frame", timestep)
-                ## input difference between current frame and initial (static) frame instead of the frame itself
-                - self.gelsight_offset
-                ) + 0.5).clamp(0, 1) for
-             timestep in cam_idx], dim=0)
+        if self.use_flow == False:
+            tactile_framestack = torch.stack(
+                [(transform_gel(
+                    self.load_image(self.trial, "left_gelsight_frame", timestep)
+                    ## input difference between current frame and initial (static) frame instead of the frame itself
+                    - self.gelsight_offset
+                    ) + 0.5).clamp(0, 1) for
+                 timestep in cam_idx], dim=0)
+        else:
+            tactile_framestack = torch.stack(
+                [torch.from_numpy(torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(torch.FloatTensor)
+                 for timestep in cam_idx], dim=0)
 
         # load audio
         audio_end = end * self.resolution

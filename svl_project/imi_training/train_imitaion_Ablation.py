@@ -5,7 +5,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import torch
 
 from svl_project.datasets.imi_dataset import ImitationOverfitDataset, ImitationDatasetFramestack, ImitationDatasetSingleCam, ImitationDatasetFramestackMulti
-from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder
+from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning, Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning, ImiBaselineLearn_Ablation
 from torch.utils.data import DataLoader
@@ -38,7 +38,7 @@ def main(args):
     # train_loader = DataLoader(train_set, 1, num_workers=0, shuffle=False)
     # val_loader = DataLoader(val_set, 1, num_workers=0, shuffle=False)
     v_encoder = make_vision_encoder() # 3,4/4,5
-    t_encoder = make_tactile_encoder()
+    t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=300)
+    p.add("--epochs", default=30)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
     p.add("--num_heads", required=True, type=int)
+    p.add("--use_flow", required=True, type=bool)
 
 
     args = p.parse_args()
