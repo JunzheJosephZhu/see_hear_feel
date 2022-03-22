@@ -55,6 +55,19 @@ class Audio_Encoder(nn.Module):
         x = self.ln(x)
         return x
 
+class Tactile_Encoder(nn.Module):
+    def __init__(self, feature_extractor, out_dim):
+        super().__init__()
+        self.feature_extractor = feature_extractor
+        self.ln = nn.Linear(512, out_dim)
+
+    def forward(self, x):
+        x = x[:, 2:-1, :, :] - x[:, 0:2, :, :]
+        x = self.feature_extractor(x)["avgpool"]
+        x = x.squeeze(3).squeeze(2)
+        x = self.ln(x)
+        return x
+
 def make_vision_encoder():
     vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
@@ -78,6 +91,14 @@ def make_tactile_encoder():
     )
     tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
     return Encoder(tactile_extractor)
+
+def make_tactile_flow_encoder(out_dim):
+    tactile_extractor = resnet18(pretrained=True)
+    tactile_extractor.conv1 = nn.Conv2d(
+        2, 64, kernel_size=7, stride=1, padding=3, bias=False
+    )
+    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
+    return Tactile_Encoder(tactile_extractor, out_dim)
 
 # @DeprecationWarning
 def make_audio_encoder(conv_bottleneck, out_dim):

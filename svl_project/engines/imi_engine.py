@@ -142,7 +142,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
         s_t = t_input.shape
         s_a = a_input.shape
         v_input = torch.reshape(v_input, (s_v[-4] * s_v[-5], 3, s_v[-2], s_v[-1]))
-        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], 3, s_t[-2], s_t[-1]))
+        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         elif self.loss_type == 'cce':
@@ -173,7 +173,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
         s_t = t_input.shape
         s_a = a_input.shape
         v_input = torch.reshape(v_input, (s_v[-4] * s_v[-5], 3, s_v[-2], s_v[-1]))
-        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], 3, s_t[-2], s_t[-1]))
+        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
         # for i in range(8):
         #     cv2.imshow('cam_g' + str(i * 6), v_input[i * 6].permute(1, 2, 0).cpu().numpy())
         #     cv2.imshow('cam_f' + str(i * 6 + 3), v_input[i * 6 + 3].permute(1, 2, 0).cpu().numpy())

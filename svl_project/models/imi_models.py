@@ -101,11 +101,9 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         if self.use_audio:
             self.embed_dim += self.a_embeds_shape
 
-        self.num_heads = args.num_heads
-
-        self.embed_dim = self.embed_dim
-        self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
-        self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
+        # self.num_heads = args.num_heads
+        # self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
+        # self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
 
         # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
@@ -176,16 +174,19 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             embeds.append(t_embeds)
         if self.use_audio:
             embeds.append(a_embeds)
+
+        mlp_inp = torch.concat(embeds, dim=-1)
+
         # print(embeds[0].shape)
-        mlp_inp = torch.stack(embeds, dim=0)
+        # mlp_inp = torch.stack(embeds, dim=0)
         # print(mlp_inp.shape)
 
-        sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
-        out = self.layernorm(sublayer_out + mlp_inp)
-        ## option 1: average
-        # mlp_inp = torch.mean(out, dim=0)
-        ## option 2: concat
-        mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+        # sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
+        # out = self.layernorm(sublayer_out + mlp_inp)
+        # ## option 1: average
+        # # mlp_inp = torch.mean(out, dim=0)
+        # ## option 2: concat
+        # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
         
         # print(f"mlp inp shape {mlp_inp.shape}")
         action_logits = self.mlp(mlp_inp)
