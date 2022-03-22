@@ -1,3 +1,6 @@
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove()
 import os
 import h5py
 import numpy as np
