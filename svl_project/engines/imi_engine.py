@@ -150,8 +150,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
-        # print("current", self.current_epoch)
-        # print("freeze till", self.config.freeze_till)
         action_pred = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
         # print("keyboard", keyboard)
         # print("pred", action_pred)

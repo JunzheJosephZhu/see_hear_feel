@@ -9,11 +9,12 @@ crop_percent: 0.1
 conv_bottleneck: 128
 resized_height_v: 120
 resized_width_v: 160
-resized_height_t: 30 #75 #150
-resized_width_t: 40 #100 #200
+resized_height_t: 60 #75 #150
+resized_width_t: 80 #100 #200
 num_camera: 1
 total_episode: 70
 ablation: v_t
 gamma: 0.9
-num_heads: 8
-use_flow: True
+num_heads: 1
+# use_flow: True
+epochs: 15

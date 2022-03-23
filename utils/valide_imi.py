@@ -6,7 +6,7 @@ import cv2
 import torch
 import numpy as np
 from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationOverfitDataset, ImitationDatasetFramestack
-from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder
+from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_tactile_flow_encoder, make_audio_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
 from torch.utils.data import DataLoader
@@ -21,6 +21,7 @@ from torch.autograd import Variable
 
 
 def baselineValidate(args):
+    print(args.use_flow)
     def strip_sd(state_dict, prefix):
         """
         strip prefix from state dictionary
@@ -43,7 +44,10 @@ def baselineValidate(args):
     with torch.no_grad():
         # construct model
         v_encoder = make_vision_encoder()
-        t_encoder = make_tactile_encoder()
+        if args.use_flow:
+            t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
+        else:
+            t_encoder = make_tactile_encoder(args.embed_dim_t)
         a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
         v_encoder.eval()
         t_encoder.eval()
@@ -75,12 +79,16 @@ def baselineValidate(args):
         v_input = Variable(v_input).cuda()
         t_input = Variable(t_input).cuda()
         a_input = Variable(log_spec).cuda()
+        
         s_v = v_input.shape
-        # print(s_v)
+        # print(f"s_v {s_v}")
         s_t = t_input.shape
-        # print(batch[0])
-        v_input = torch.reshape(v_input, (s_v[-4]*s_v[-5], 3, s_v[-2], s_v[-1]))
-        t_input = torch.reshape(t_input, (s_t[-4]*s_t[-5], 3, s_t[-2], s_t[-1]))
+        # print(f"s_t {s_t}")
+        v_input.squeeze_(0)
+        t_input.squeeze_(0)
+        # v_input = torch.reshape(v_input, (s_v[-4]*s_v[-5], 3, s_v[-2], s_v[-1]))
+        # t_input = torch.reshape(t_input, (s_t[-4]*s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
+        
         # v_total, keyboard = v_total[0], keyboard[0]
         # v_gripper, v_fixed = v_total[0], v_total[1]
         # cv2.imshow('gripper', v_gripper.cpu().permute(1, 2, 0).numpy())
@@ -191,6 +199,7 @@ if __name__ == "__main__":
     p.add("--frameskip", required=True, type=int)
     p.add("--loss_type", default="cce")
     p.add("--num_heads", default=8, type=int)
+    p.add("--use_flow", default=False, type=bool)
     
     # data
     p.add("--crop_percent", default=.1, type=float)

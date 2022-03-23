@@ -7,6 +7,7 @@ from torch import nn
 import cv2
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 
 class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
@@ -68,7 +69,6 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_vision = False
         self.use_tactile = False
         self.use_audio = False
-
         
         # if self.ablation == 'v_t':
         #     self.embed_dim = self.v_embeds_shape + self.t_embeds_shape
@@ -101,9 +101,9 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         if self.use_audio:
             self.embed_dim += self.a_embeds_shape
 
-        # self.num_heads = args.num_heads
-        # self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
-        # self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
+        self.num_heads = args.num_heads
+        self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
+        self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
 
         # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
@@ -174,21 +174,29 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             embeds.append(t_embeds)
         if self.use_audio:
             embeds.append(a_embeds)
-
-        mlp_inp = torch.concat(embeds, dim=-1)
+        # mlp_inp = torch.concat(embeds, dim=-1)
 
         # print(embeds[0].shape)
-        # mlp_inp = torch.stack(embeds, dim=0)
-        # print(mlp_inp.shape)
-
-        # sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
-        # out = self.layernorm(sublayer_out + mlp_inp)
+        # plt.plot(v_embeds.cpu().detach().numpy()[0], 'b')
+        # plt.plot(t_embeds.cpu().detach().numpy()[0], 'r')
+        
+        mlp_inp = torch.stack(embeds, dim=0)
+        sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
+        out = self.layernorm(sublayer_out + mlp_inp)
         # ## option 1: average
         # # mlp_inp = torch.mean(out, dim=0)
         # ## option 2: concat
-        # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+        mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
         
         # print(f"mlp inp shape {mlp_inp.shape}")
+        # mlp_temp = mlp_inp.cpu().detach().numpy()
+        # plt.figure()
+        # plt.plot(mlp_temp[0])
+        # # plt.figure()
+        # mha_temp = weights.cpu().detach().numpy()
+        # print(f"mha {mha_temp[0]}")
+        # plt.show()
+        
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
         return action_logits
