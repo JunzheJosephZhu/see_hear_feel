@@ -44,9 +44,11 @@ class Encoder(nn.Module):
         return x
 
 class Vision_Encoder(Encoder):
-    def __init__(self, feature_extractor, out_dim):
+    def __init__(self, feature_extractor, out_dim=None):
         super().__init__(feature_extractor)
-        self.ln = nn.Linear(512, out_dim)
+        self.fc = None
+        if out_dim is not None:
+            self.fc = nn.Linear(512, out_dim)
 
     def forward(self, x):
         x = self.coord_conv(x)
@@ -55,7 +57,8 @@ class Vision_Encoder(Encoder):
         x = list(x.values())[0]
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        x = self.ln(x)
+        if self.fc is not None:
+            x = self.fc(x)
         return x
 
 class Audio_Encoder(nn.Module):
@@ -98,7 +101,7 @@ class Tactile_Flow_Encoder(nn.Module):
         x = self.ln(x)
         return x
 
-def make_vision_encoder(out_dim):
+def make_vision_encoder(out_dim=None):
     vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
@@ -120,8 +123,8 @@ def make_tactile_encoder(out_dim):
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
-    return Encoder(tactile_extractor)
-    # return Tactile_RGB_Encoder(tactile_extractor, out_dim)
+    # return Encoder(tactile_extractor)
+    return Tactile_RGB_Encoder(tactile_extractor, out_dim)
 
 def make_tactile_flow_encoder(out_dim):
     tactile_extractor = resnet18(pretrained=True)
