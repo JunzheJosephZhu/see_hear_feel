@@ -43,6 +43,21 @@ class Encoder(nn.Module):
         x = torch.flatten(x, 1)
         return x
 
+class Vision_Encoder(Encoder):
+    def __init__(self, feature_extractor, out_dim):
+        super().__init__(feature_extractor)
+        self.ln = nn.Linear(512, out_dim)
+
+    def forward(self, x):
+        x = self.coord_conv(x)
+        x = self.feature_extractor(x)
+        assert len(x.values()) == 1
+        x = list(x.values())[0]
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.ln(x)
+        return x
+
 class Audio_Encoder(nn.Module):
     def __init__(self, feature_extractor, out_dim):
         super().__init__()
@@ -68,13 +83,13 @@ class Tactile_Encoder(nn.Module):
         x = self.ln(x)
         return x
 
-def make_vision_encoder():
+def make_vision_encoder(out_dim):
     vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
-    return Encoder(vision_extractor)
+    return Vision_Encoder(vision_extractor, out_dim)
 
 def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     vision_extractor = resnet18(pretrained=False)

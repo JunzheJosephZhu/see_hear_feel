@@ -37,8 +37,11 @@ def main(args):
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
     # train_loader = DataLoader(train_set, 1, num_workers=0, shuffle=False)
     # val_loader = DataLoader(val_set, 1, num_workers=0, shuffle=False)
-    v_encoder = make_vision_encoder() # 3,4/4,5
-    t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
+    v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
+    if args.use_flow:
+        t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
+    else:
+        t_encoder = make_tactile_encoder()
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -57,7 +60,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=30)
+    p.add("--epochs", default=50)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -85,7 +88,7 @@ if __name__ == "__main__":
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
     p.add("--num_heads", required=True, type=int)
-    p.add("--use_flow", required=True, type=bool)
+    p.add("--use_flow", type=bool)
 
 
     args = p.parse_args()

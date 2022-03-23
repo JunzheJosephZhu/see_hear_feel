@@ -305,7 +305,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                # T.ColorJitter(brightness=0.1, contrast=0.0, saturation=0.0, hue=0.1),
+                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.05),
             ])
 
             if self.num_cam == 2:
@@ -361,6 +361,16 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
+        if keyboard.equal(torch.tensor([1, 1, 1])):
+            tmp = np.random.uniform(0, 4)
+            if tmp >= 0 and tmp < 1:
+                keyboard = torch.tensor([2, 1, 1])
+            elif tmp >= 1 and tmp < 2:
+                keyboard = torch.tensor([0, 1, 1])
+            elif tmp >= 2 and tmp < 3:
+                keyboard = torch.tensor([1, 2, 1])
+            else:
+                keyboard = torch.tensor([1, 0, 1])
 
         if self.num_cam == 2:
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
