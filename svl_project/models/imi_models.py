@@ -90,6 +90,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         ## to enable more combinations
         self.modalities = self.ablation.split('_')
         print(f"Using modalities: {self.modalities}")
+        print(f"Using tactile flow: {args.use_flow}")
         self.embed_dim = 0
         self.use_vision = 'v' in self.modalities
         self.use_tactile = 't' in self.modalities
