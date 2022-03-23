@@ -37,7 +37,7 @@ def main(args):
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
     # train_loader = DataLoader(train_set, 1, num_workers=0, shuffle=False)
     # val_loader = DataLoader(val_set, 1, num_workers=0, shuffle=False)
-    v_encoder = make_vision_encoder() # 3,4/4,5
+    v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
     if args.use_flow:
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     else:
@@ -74,6 +74,7 @@ if __name__ == "__main__":
     p.add("--loss_type", default="cce")
     p.add("--pretrained", default=None)
     p.add("--freeze_till", required=True, type=int)
+    p.add("--use_mha", default=False)
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")

@@ -69,6 +69,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_vision = False
         self.use_tactile = False
         self.use_audio = False
+        self.use_mha = args.use_mha
         
         # if self.ablation == 'v_t':
         #     self.embed_dim = self.v_embeds_shape + self.t_embeds_shape
@@ -94,17 +95,20 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.embed_dim = 0
         self.use_vision = 'v' in self.modalities
         self.use_tactile = 't' in self.modalities
-        self.use_audio =  'a' in self.modalities
+        self.use_audio = 'a' in self.modalities
         if self.use_vision:
             self.embed_dim += self.v_embeds_shape
         if self.use_tactile:
             self.embed_dim += self.t_embeds_shape
         if self.use_audio:
             self.embed_dim += self.a_embeds_shape
-
-        self.num_heads = args.num_heads
-        self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
-        self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
+        if not self.use_mha:
+            print("NO MHA")
+            self.layernorm = nn.LayerNorm(self.embed_dim)
+        else:
+            self.num_heads = args.num_heads
+            self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
+            self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
 
         # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
@@ -175,20 +179,22 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             embeds.append(t_embeds)
         if self.use_audio:
             embeds.append(a_embeds)
-        # mlp_inp = torch.concat(embeds, dim=-1)
+        mlp_inp = torch.concat(embeds, dim=-1)
+        if not self.use_mha:
+            mlp_inp = self.layernorm(mlp_inp)
+        else:
+            mlp_inp = torch.stack(embeds, dim=0)
+            sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
+            out = self.layernorm(sublayer_out + mlp_inp)
+            # ## option 1: average
+            # # mlp_inp = torch.mean(out, dim=0)
+            # ## option 2: concat
+            mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
 
         # print(embeds[0].shape)
         # plt.plot(v_embeds.cpu().detach().numpy()[0], 'b')
         # plt.plot(t_embeds.cpu().detach().numpy()[0], 'r')
-        
-        mlp_inp = torch.stack(embeds, dim=0)
-        sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
-        out = self.layernorm(sublayer_out + mlp_inp)
-        # ## option 1: average
-        # # mlp_inp = torch.mean(out, dim=0)
-        # ## option 2: concat
-        mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
-        
+
         # print(f"mlp inp shape {mlp_inp.shape}")
         # mlp_temp = mlp_inp.cpu().detach().numpy()
         # plt.figure()

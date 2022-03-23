@@ -239,7 +239,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.frameskip = args.frameskip
         self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.fps = 10
-        self.sr = 16000
+        self.sr = 44100
         self.resolution = self.sr // self.fps # number of audio samples in one image idx
         self.audio_len = int(self.resolution * (max(self.max_len, 10)))
         self.mel = torchaudio.transforms.MelSpectrogram(
@@ -271,7 +271,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time.replace(":", "_")
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
             timestamps = json.load(ts)
@@ -307,7 +307,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.05),
+                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
             ])
 
             if self.num_cam == 2:
@@ -339,7 +339,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                 [transform(self.load_image(self.trial, "cam_fixed_color", timestep))
                 for timestep in cam_idx], dim=0)
 
-        if self.use_flow == False:
+        if not self.use_flow:
             tactile_framestack = torch.stack(
                 [(transform_gel(
                     self.load_image(self.trial, "left_gelsight_frame", timestep)
@@ -347,6 +347,8 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                     - self.gelsight_offset
                     ) + 0.5).clamp(0, 1) for
                  timestep in cam_idx], dim=0)
+            # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
+            # cv2.waitKey(100)
         else:
             tactile_framestack = torch.stack(
                 [torch.from_numpy(torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(torch.FloatTensor)
@@ -363,16 +365,16 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         xy_space = {-.003: 0, 0: 1, .003: 2}
         z_space = {-.0015: 0, 0: 1, .0015: 2}
         keyboard = torch.as_tensor([xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
-        if keyboard.equal(torch.tensor([1, 1, 1])):
-            tmp = np.random.uniform(0, 4)
-            if tmp >= 0 and tmp < 1:
-                keyboard = torch.tensor([2, 1, 1])
-            elif tmp >= 1 and tmp < 2:
-                keyboard = torch.tensor([0, 1, 1])
-            elif tmp >= 2 and tmp < 3:
-                keyboard = torch.tensor([1, 2, 1])
-            else:
-                keyboard = torch.tensor([1, 0, 1])
+        # if keyboard.equal(torch.tensor([1, 1, 1])):
+        #     tmp = np.random.uniform(0, 4)
+        #     if tmp >= 0 and tmp < 1:
+        #         keyboard = torch.tensor([2, 1, 1])
+        #     elif tmp >= 1 and tmp < 2:
+        #         keyboard = torch.tensor([0, 1, 1])
+        #     elif tmp >= 2 and tmp < 3:
+        #         keyboard = torch.tensor([1, 2, 1])
+        #     else:
+        #         keyboard = torch.tensor([1, 0, 1])
 
         if self.num_cam == 2:
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
