@@ -184,8 +184,12 @@ class Imitation_Actor_Ablation(torch.nn.Module):
 
         # sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
         # out = self.layernorm(sublayer_out + mlp_inp)
-        # out = torch.mean(out, dim=0)
-
+        # ## option 1: average
+        # # mlp_inp = torch.mean(out, dim=0)
+        # ## option 2: concat
+        # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+        
+        # print(f"mlp inp shape {mlp_inp.shape}")
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
         return action_logits

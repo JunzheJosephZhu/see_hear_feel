@@ -43,7 +43,7 @@ def baselineValidate(args):
     with torch.no_grad():
         # construct model
         v_encoder = make_vision_encoder()
-        t_encoder = make_tactile_encoder(args.conv_bottleneck, args.embed_dim_t)
+        t_encoder = make_tactile_encoder()
         a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
         v_encoder.eval()
         t_encoder.eval()
@@ -190,7 +190,8 @@ if __name__ == "__main__":
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
     p.add("--loss_type", default="cce")
-
+    p.add("--num_heads", default=8, type=int)
+    
     # data
     p.add("--crop_percent", default=.1, type=float)
     p.add("--resized_height_v", required=True, type=int)
@@ -199,7 +200,7 @@ if __name__ == "__main__":
     p.add("--resized_width_t", required=True, type=int)
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0214/test_recordings/")
+    p.add("--data_folder", default="../data_0318/test_recordings/")
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
