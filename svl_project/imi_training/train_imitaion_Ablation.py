@@ -4,10 +4,10 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-from svl_project.datasets.imi_dataset import ImitationOverfitDataset, ImitationDatasetFramestack, ImitationDatasetSingleCam, ImitationDatasetFramestackMulti
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
-from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning, Imitation_Actor_Ablation
-from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning, ImiBaselineLearn_Ablation
+from svl_project.models.imi_models import Imitation_Actor_Ablation
+from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
 from torch.utils.data import DataLoader
 from itertools import cycle
 import os
@@ -35,8 +35,6 @@ def main(args):
     val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
-    # train_loader = DataLoader(train_set, 1, num_workers=0, shuffle=False)
-    # val_loader = DataLoader(val_set, 1, num_workers=0, shuffle=False)
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
     if args.use_flow:
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
