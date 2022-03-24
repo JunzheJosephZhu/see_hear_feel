@@ -173,6 +173,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         
         ## to enable more combinations
         embeds = []
+        print(f"v_embeds {v_embeds}")
         if self.use_vision:
             embeds.append(v_embeds)
         if self.use_tactile:
@@ -199,10 +200,14 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         # mlp_temp = mlp_inp.cpu().detach().numpy()
         # plt.figure()
         # plt.plot(mlp_temp[0])
-        # # plt.figure()
+        
+        ## MHA debugging
+        # plt.figure()
         # mha_temp = weights.cpu().detach().numpy()
         # print(f"mha {mha_temp[0]}")
-        # plt.show()
+        # plt.imshow(mha_temp[0])
+        
+        plt.show()
         
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
