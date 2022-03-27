@@ -17,8 +17,8 @@ from svl_project.boilerplate import *
 def main(args):
     train_set = GelsightFrameDataset(args.train_csv, args.data_folder)
     val_set = GelsightFrameDataset(args.val_csv, args.data_folder)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
-    val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=True)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
+    val_loader = DataLoader(val_set, 1, num_workers=1, shuffle=True)
     t_encoder = make_tactile_encoder(64)
     t_decoder = make_tactile_decoder(args.latent_dim)
     vae_model = VAE(t_encoder, t_decoder, 64, args.latent_dim)

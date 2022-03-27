@@ -262,6 +262,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.gelsight_offset = torch.as_tensor(
             np.array(Image.open(os.path.join(self.data_folder, 'gs_offset.png')))).float().permute(2, 0,
                                                                                                    1) / 255
+        self.ablation = args.ablation
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -289,6 +290,11 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         return self.num_frames
 
     def __getitem__(self, idx):
+        # tactile and audio only
+        # if idx < self.num_frames / 2 and (self.ablation == 't' or self.ablation == 'a'):
+        #     print("only use data that contact the surface")
+        #     return self.__getitem__(torch.randint(low = int(self.num_frames/2), high=int(self.num_frames),size=()).numpy())
+
         end = idx  # torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len
         if start < 0:
@@ -380,6 +386,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         else:
             v_framestack = cam_fixed_framestack
+
         return v_framestack, tactile_framestack, log_spec, keyboard
 
 

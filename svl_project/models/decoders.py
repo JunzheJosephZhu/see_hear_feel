@@ -73,7 +73,7 @@ def make_vision_decoder(latent_dim):
     return ResNet_Decoder(latent_dim=latent_dim, out_channels=3)
 
 def make_audio_decoder(out_dim):
-    return ResNet_Decoder(out_dim, out_channels=2)
+    return ResNet_Decoder(latent_dim=out_dim, out_channels=2)
 
 def make_tactile_decoder(latent_dim):
     return ResNet_Decoder(latent_dim=latent_dim, out_channels=3)

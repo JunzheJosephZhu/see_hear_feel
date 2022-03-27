@@ -129,7 +129,7 @@ def make_tactile_encoder(out_dim):
     return Tactile_RGB_Encoder(tactile_extractor, out_dim)
 
 def make_tactile_flow_encoder(out_dim):
-    tactile_extractor = resnet18(pretrained=True)
+    tactile_extractor = resnet18(pretrained=False)
     tactile_extractor.conv1 = nn.Conv2d(
         2, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
@@ -137,8 +137,8 @@ def make_tactile_flow_encoder(out_dim):
     return Tactile_Flow_Encoder(tactile_extractor, out_dim)
 
 # @DeprecationWarning
-def make_audio_encoder(conv_bottleneck, out_dim):
-    audio_extractor = resnet18()
+def make_audio_encoder(out_dim):
+    audio_extractor = resnet18(pretrained=True)
     audio_extractor.conv1 = nn.Conv2d(
         2, 64, kernel_size=7, stride=1, padding=3, bias=False
         ## vae_vision model is trained with 4 in channels
