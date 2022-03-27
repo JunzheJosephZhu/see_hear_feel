@@ -291,9 +291,9 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
     def __getitem__(self, idx):
         # tactile and audio only
-        if idx < self.num_frames / 2 and (self.ablation == 't' or self.ablation == 'a'):
-            print("only use data that contact the surface")
-            return self.__getitem__(torch.randint(low = int(self.num_frames/2), high=int(self.num_frames),size=()).numpy())
+        # if idx < self.num_frames / 2 and (self.ablation == 't' or self.ablation == 'a'):
+        #     print("only use data that contact the surface")
+        #     return self.__getitem__(torch.randint(low = int(self.num_frames/2), high=int(self.num_frames),size=()).numpy())
 
         end = idx  # torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len

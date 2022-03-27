@@ -94,7 +94,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=100, type=int)
+    p.add("--epochs", default=60, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -129,4 +129,18 @@ if __name__ == "__main__":
 
 
     args = p.parse_args()
+    # v_a
     main(args)
+    args.ablation = 'v_t_a'
+    main(args)
+    args.ablation = 't'
+    main(args)
+    args.ablation = 'a'
+    main(args)
+
+    args.use_flow = True
+    args.ablation = 't'
+    main(args)
+    args.ablation = 'v_t_a'
+    main(args)
+
