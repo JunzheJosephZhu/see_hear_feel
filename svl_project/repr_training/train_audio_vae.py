@@ -1,7 +1,7 @@
 import torch
-from svl_project.datasets.repr_dataset import GelsightFrameDataset
-from svl_project.models.decoders import make_tactile_decoder
-from svl_project.models.encoders import make_tactile_encoder
+from svl_project.datasets.repr_dataset import AudioDataset
+from svl_project.models.decoders import make_audio_decoder
+from svl_project.models.encoders import make_audio_encoder
 from svl_project.models.repr_models import VAE
 from svl_project.engines.vae import VAELearn
 from torch.utils.data import DataLoader
@@ -12,13 +12,13 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
 
 def main(args):
-    train_set = GelsightFrameDataset(args.train_csv, args.data_folder)
-    val_set = GelsightFrameDataset(args.val_csv, args.data_folder)
+    train_set = AudioDataset(args.train_csv, args.data_folder)
+    val_set = AudioDataset(args.val_csv, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
     val_loader = DataLoader(val_set, 1, num_workers=1, shuffle=True)
-    t_encoder = make_tactile_encoder(64)
-    t_decoder = make_tactile_decoder(args.latent_dim)
-    vae_model = VAE(t_encoder, t_decoder, 64, args.latent_dim)
+    a_encoder = make_audio_encoder(64)
+    a_decoder = make_audio_decoder(args.latent_dim)
+    vae_model = VAE(a_encoder, a_decoder, 64, args.latent_dim)
     optimizer = torch.optim.Adam(vae_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config

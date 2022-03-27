@@ -53,6 +53,30 @@ class GelsightFrameDataset(BaseDataset):
         # img = img.mean(0, keepdim=True).expand(3, 64, 64)
         return img
 
+class AudioDataset(BaseDataset):
+    def __init__(self,log_file, data_folder="data/test_recordings_0214"):
+        super().__init__(log_file, data_folder)
+        self.fps = 10
+        self.sr = 44100
+        self.resolution = self.sr // self.fps  # number of audio samples in one image idx
+        self.audio_len = self.sr
+        self.mel = torchaudio.transforms.MelSpectrogram(
+            sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
+        )
+        self.EPS = 1e-8
+
+    def __getitem__(self, idx):
+        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
+        timestep = torch.randint(high=num_frames, size=()).item()
+        # load audio
+        audio_start = timestep * self.resolution
+        audio_end = audio_start + self.audio_len  # why self.sr // 2, and start + sr
+        audio_clip = self.clip_audio(audio, audio_start, audio_end)
+        spec = self.mel(audio_clip.type(torch.FloatTensor))
+        log_spec = torch.log(spec + EPS)
+        # img = img.mean(0, keepdim=True).expand(3, 64, 64)
+        return log_spec
+
 @DeprecationWarning
 class TripletDataset(Dataset):
     def __init__(self, log_file, sil_ratio=0.2, data_folder="data/test_recordings_0123"):

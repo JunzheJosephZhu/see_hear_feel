@@ -6,6 +6,7 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
+import torchvision
 
 class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
@@ -48,7 +49,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type == 'fl':
             keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
         # print("current", self.current_epoch)
         # print("freeze till", self.config.freeze_till)
@@ -75,7 +76,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
         # cv2.waitKey(10000)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type == 'fl':
             keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
         # print(v_input.shape)
         # print("keyboard", keyboard)
@@ -111,6 +112,8 @@ class ImiBaselineLearn_Ablation(LightningModule):
             self.loss_cal = torch.nn.MSELoss()
         elif self.loss_type == 'cce':
             self.loss_cal = torch.nn.CrossEntropyLoss()
+        elif self.loss_type == 'fl':
+            self.loss_cal = torchvision.ops.focal_loss()
         self.wrong = 1
         self.correct = 0
         self.total = 0
@@ -145,7 +148,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
         t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type =='fl':
             if self.config.action_dim == 4:
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:
@@ -178,7 +181,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
         # cv2.waitKey(10000)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type =='fl':
             if self.config.action_dim == 4:
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:

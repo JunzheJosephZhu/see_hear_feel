@@ -1,8 +1,8 @@
 embed_dim_v: 512
 embed_dim_t: 64
 embed_dim_a: 64
-pretrained: None # "/exp/metric_learn/checkpoints/last.ckpt"
-freeze_till: 0
+#pretrained: None # "/exp/metric_learn/checkpoints/last.ckpt"
+freeze_till: 5
 num_stack: 3
 frameskip: 3
 crop_percent: 0.1
@@ -16,5 +16,7 @@ total_episode: 70
 ablation: v_t
 gamma: 0.9
 num_heads: 8
+use_holebase: True
+action_dim: 4
 #use_flow: True
 #use_mha: True

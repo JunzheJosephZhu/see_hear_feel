@@ -4,7 +4,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
@@ -16,6 +16,14 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
 import pandas as pd
+import numpy as np
+
+
+def strip_sd(state_dict, prefix):
+    """
+    strip prefix from state dictionary
+    """
+    return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
 
 def main(args):
 
@@ -31,16 +39,44 @@ def main(args):
     else:
         train_num_episode = args.num_episode
         val_num_episode = args.num_episode
+
+    train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
     train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
     val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
+
+    # create weighted sampler to balance samples
+    train_label = []
+    for keyboard in train_label_set:
+        if args.action_dim == 4:
+            keyboard = keyboard[0] * 27 + keyboard[1] * 9 + keyboard[2] * 3 + keyboard[3]
+        elif args.action_dim == 3:
+            keyboard = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
+        train_label.append(keyboard)
+
+    class_sample_count = np.zeros(pow(3, args.action_dim))
+    for t in np.unique(train_label):
+        class_sample_count[t] = len(np.where(train_label == t)[0])
+
+    weight = 1. / (class_sample_count + 1e-5)
+    samples_weight = np.array([weight[t] for t in train_label])
+
+    samples_weight = torch.from_numpy(samples_weight)
+    sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
+
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=4, sampler=sampler)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
+
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
+    state_dict_v = torch.load(args.pretrained_v, map_location="cpu")["state_dict"]
+    v_encoder.load_state_dict(strip_sd(state_dict_v, "vae.encoder."))
+
     if args.use_flow:
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     else:
         t_encoder = make_tactile_encoder(args.embed_dim_t)
-    a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
+        state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
+        t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
+    a_encoder = make_audio_encoder(args.embed_dim_a)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
@@ -58,7 +94,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=50, type=int)
+    p.add("--epochs", default=100, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -70,7 +106,8 @@ if __name__ == "__main__":
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
     p.add("--loss_type", default="cce")
-    p.add("--pretrained", default=None)
+    p.add("--pretrained_v", default=None)
+    p.add("--pretrained_t", default=None)
     p.add("--freeze_till", required=True, type=int)
     p.add("--use_mha", default=False)
     # data
@@ -88,6 +125,7 @@ if __name__ == "__main__":
     p.add("--ablation", required=True)
     p.add("--num_heads", required=True, type=int)
     p.add("--use_flow", default=False, type=bool)
+    p.add("--use_holebase", default=False, type=bool)
 
 
     args = p.parse_args()
