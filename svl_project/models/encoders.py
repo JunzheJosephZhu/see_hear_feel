@@ -46,7 +46,7 @@ class Encoder(nn.Module):
 class Vision_Encoder(Encoder):
     def __init__(self, feature_extractor, out_dim=None):
         super().__init__(feature_extractor)
-        self.fc = None
+        self.ln = None
         if out_dim is not None:
             self.fc = nn.Linear(512, out_dim)
 
@@ -102,7 +102,7 @@ class Tactile_Flow_Encoder(nn.Module):
         return x
 
 def make_vision_encoder(out_dim=None):
-    vision_extractor = resnet18(pretrained=True)
+    vision_extractor = resnet18(pretrained=False)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
@@ -119,7 +119,7 @@ def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(4, 5))
 
 def make_tactile_encoder(out_dim):
-    tactile_extractor = resnet18(pretrained=True)
+    tactile_extractor = resnet18(pretrained=False)
     tactile_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )

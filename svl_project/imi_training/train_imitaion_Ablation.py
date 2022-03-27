@@ -17,6 +17,12 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
 import pandas as pd
 
+def strip_sd(state_dict, prefix):
+    """
+    strip prefix from state dictionary
+    """
+    return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
+
 def main(args):
 
     print(sys.getrecursionlimit())
@@ -36,10 +42,15 @@ def main(args):
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, shuffle=True)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
+    state_dict_v = torch.load(args.pretrained_v, map_location="cpu")["state_dict"]
+    v_encoder.load_state_dict(strip_sd(state_dict_v, "vae.encoder."))
+    
     if args.use_flow:
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     else:
         t_encoder = make_tactile_encoder(args.embed_dim_t)
+        state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
+        t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     a_encoder = make_audio_encoder(args.conv_bottleneck, args.embed_dim_a)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -58,7 +69,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=50, type=int)
+    p.add("--epochs", default=15, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -70,7 +81,8 @@ if __name__ == "__main__":
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
     p.add("--loss_type", default="cce")
-    p.add("--pretrained", default=None)
+    p.add("--pretrained_v", default=None)
+    p.add("--pretrained_t", default=None)
     p.add("--freeze_till", required=True, type=int)
     p.add("--use_mha", default=False)
     # data
@@ -88,6 +100,8 @@ if __name__ == "__main__":
     p.add("--ablation", required=True)
     p.add("--num_heads", required=True, type=int)
     p.add("--use_flow", default=False, type=bool)
+    p.add("--use_holebase", default=False, type=bool)
+    
 
 
     args = p.parse_args()

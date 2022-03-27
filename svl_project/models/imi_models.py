@@ -16,7 +16,6 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         self.v_encoder = v_encoder
         self.mlp = None
         self.embed_dim = args.embed_dim * args.num_stack * args.num_camera
-        # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
             self.mlp = torch.nn.Sequential(
                 torch.nn.Linear(self.embed_dim, 1024),
@@ -52,7 +51,6 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
             v_embeds = self.v_encoder(v_inp)
         mlp_inp = torch.reshape(v_embeds, (-1, self.embed_dim))
         action_logits = self.mlp(mlp_inp)
-        # print(action_logits)
         return action_logits
 
 class Imitation_Actor_Ablation(torch.nn.Module):
@@ -70,25 +68,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_tactile = False
         self.use_audio = False
         self.use_mha = args.use_mha
-        
-        # if self.ablation == 'v_t':
-        #     self.embed_dim = self.v_embeds_shape + self.t_embeds_shape
-        #     self.use_vision = True
-        #     self.use_tactile = True
-        # elif self.ablation == 'v_a':
-        #     self.embed_dim = self.v_embeds_shape + self.a_embeds_shape
-        #     self.use_vision = True
-        #     self.use_audio = True
-        # elif self.ablation == 'v_t_a':
-        #     self.embed_dim = self.v_embeds_shape + self.t_embeds_shape + self.a_embeds_shape
-        #     self.use_vision = True
-        #     self.use_tactile = True
-        #     self.use_audio = True
-        # elif self.ablation == 'v':
-        #     self.embed_dim = self.v_embeds_shape
-        #     self.use_vision = True
-        
-        ## to enable more combinations
+                
+        ## load models
         self.modalities = self.ablation.split('_')
         print(f"Using modalities: {self.modalities}")
         print(f"Using tactile flow: {args.use_flow}")
@@ -103,15 +84,16 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         if self.use_audio:
             self.embed_dim += self.a_embeds_shape
         if not self.use_mha:
-            print("NO MHA")
+            print("mha: False")
             self.layernorm = nn.LayerNorm(self.embed_dim)
         else:
+            print("mha: True")
             self.num_heads = args.num_heads
             self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
             self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
 
-        # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
+            print("loss: cce")
             self.mlp = torch.nn.Sequential(
                 torch.nn.Linear(self.embed_dim, 1024),
                 # torch.nn.Linear(self.v_embeds_shape, 1024),
@@ -121,6 +103,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 torch.nn.Linear(1024, pow(3, args.action_dim))
             )
         elif args.loss_type == 'mse':
+            print("loss: mse")
             self.mlp = torch.nn.Sequential(
                 torch.nn.Linear(self.embed_dim, 1024),
                 torch.nn.ReLU(),
@@ -173,7 +156,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         
         ## to enable more combinations
         embeds = []
-        print(f"v_embeds {v_embeds}")
+        # print(f"v_embeds {v_embeds}")
         if self.use_vision:
             embeds.append(v_embeds)
         if self.use_tactile:

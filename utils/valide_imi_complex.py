@@ -1,12 +1,13 @@
-from email.policy import default
 import sys
+
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
 import cv2
 import torch
 import numpy as np
-from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationOverfitDataset, ImitationDatasetFramestack
+# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_tactile_flow_encoder, make_audio_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
@@ -58,22 +59,25 @@ def baselineValidate(args):
         actor = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args)
         # get pretrained parameters
         state_dict = strip_sd(torch.load(args.pretrained)['state_dict'], 'actor.')
-        print("Model's state_dict:")
-        for param_tensor in state_dict:
-            print(param_tensor, "\t", state_dict[param_tensor].size())
+        # print("Model's state_dict:")
+        # for param_tensor in state_dict:
+        #     print(param_tensor, "\t", state_dict[param_tensor].size())
         actor.load_state_dict(state_dict)
         actor.cuda()
         actor.eval()
 
     cnt = 0
-    cor = np.array([0, 0, 0])
-    wrong = np.array([0, 0, 0])
+    cor = np.zeros(args.action_dim)
+    wrong = np.zeros(args.action_dim)
     total_wrong = 0
     total_cor = 0
 
     predict = []
     real = []
-
+    predict_label = []
+    real_label = []
+    
+    debug_info = True
     for batch in val_loader:
         # v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
         v_input, t_input, log_spec, keyboard = batch
@@ -81,15 +85,14 @@ def baselineValidate(args):
         t_input = Variable(t_input).cuda()
         a_input = Variable(log_spec).cuda()
         
-        s_v = v_input.shape
-        # print(f"s_v {s_v}")
-        s_t = t_input.shape
-        # print(f"s_t {s_t}")
         v_input.squeeze_(0)
         t_input.squeeze_(0)
+        # s_v = v_input.shape
+        # s_t = t_input.shape
         # v_input = torch.reshape(v_input, (s_v[-4]*s_v[-5], 3, s_v[-2], s_v[-1]))
         # t_input = torch.reshape(t_input, (s_t[-4]*s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
         
+        ## debugging
         # v_total, keyboard = v_total[0], keyboard[0]
         # v_gripper, v_fixed = v_total[0], v_total[1]
         # cv2.imshow('gripper', v_gripper.cpu().permute(1, 2, 0).numpy())
@@ -97,24 +100,30 @@ def baselineValidate(args):
         # cv2.imshow('fixed', v_input.squeeze().cpu().permute(1, 2, 0).numpy())
         # cv2.waitKey(200)
         keyboard = keyboard.numpy()
-        # action_pred = actor(v_gripper_inp, v_fixed_inp, True).detach().numpy()
-        pred_action = actor(v_input, t_input, a_input, True).detach().cpu().numpy()
+        action_logits = actor(v_input, t_input, a_input, True).detach().cpu().numpy()
         if args.loss_type == 'cce':
-            # pred_action = pred_action.reshape(3, -1)
-            # pred_action = (np.argmax(pred_action, axis=1) - 1) * np.array((.003, .003, .0015))
-            x = np.argmax(pred_action) // 9
-            y = (np.argmax(pred_action) - x * 9) // 3
-            z = int(np.argmax(pred_action) - x * 9 - y * 3)
-            # print((x, y, z))
-            # pred_action = (np.array((x, y, z)) - 1.) * np.array((.003, .003, .0015))
-            pred_action = np.array((x, y, z))
-            # print(pred_action)
+            pred = np.argmax(action_logits)
+            gt_label = 0
+            pred_temp = pred
+            pred_action = np.zeros(args.action_dim)
+            for d in range(args.action_dim):
+                gt_label += 3 ** d * keyboard[0][args.action_dim - d - 1]
+                pred_action[args.action_dim - d - 1] = pred_temp % 3
+                pred_temp //= 3
+            # print(f"keyboard {keyboard}, label {gt_label}")
+            # print(f"pred_action {pred_action}, label {pred}")
         elif args.loss_type == 'mse':
             pred_action = pred_action.reshape(-1) # * np.array((.003, .003, .0015))
         # keyboard = (keyboard - 1.)#.type(torch.cuda.FloatTensor)
-        # print(keyboard.shape)
+        ## debugging
+        if debug_info:
+            print(f"model output shape {action_logits.shape}")
+            print(f"keyboard shape {keyboard.shape}, value {keyboard}")
+            print(f"pred shape {pred_action.shape}, value {pred_action}")
+            debug_info = False
+        ## test exact match
         match = True
-        for i in range(3):
+        for i in range(args.action_dim):
             if pred_action[i] != keyboard[0][i]:
                 match = False
                 break
@@ -122,18 +131,19 @@ def baselineValidate(args):
             total_cor += 1
         else:
             total_wrong += 1
-        for i in range(3):
+        ## test partial match
+        for i in range(args.action_dim):
             if pred_action[i] == keyboard[0][i]:
                 cor[i] += 1
             else:
                 wrong[i] += 1
         predict.append(pred_action)
         real.append(keyboard)
+        predict_label.append(pred)
+        real_label.append(gt_label)
         # print(f"real: {keyboard}, prediction: {pred_action}")
         cnt += 1
-        # if cnt == 150:
-        #     break
-    # print(f"{cnt} steps in total.")
+
     ## accuracy summary
     acc = cor / (cor + wrong)
     print(f"each direction acc: {acc}")
@@ -141,38 +151,24 @@ def baselineValidate(args):
     print(f"EM = {acc}")
     predict = np.asarray(predict)
     real = np.asarray(real)
-    fig, axs = plt.subplots(3, 1, sharex='col')
-    # print(real.shape)
-    legends = ['x', 'y', 'z']
-    for i in range(len(legends)):
-        axs[i].plot(real[:, 0, i], 'b+', label='real')
-        axs[i].plot(predict[:, i], 'rx', label='predict')
+    
+    ## plot distribution
+    fig, axs = plt.subplots(args.action_dim + 1, 1, figsize=(15, 10), sharex='col')
+    titles = ['labels', 'x', 'y', 'z']
+    if args.action_dim == 4:
+        titles.append('dz')
+    for i in range(len(titles)):
+        if i < 1:
+            axs[i].plot(real_label, 'b+', label='real')
+            axs[i].plot(predict_label, 'r.', label='predict')
+        else:
+            axs[i].plot(real[:, 0, i-1], 'b+', label='real')
+            axs[i].plot(predict[:, i-1], 'r.', label='predict')
+        axs[i].title.set_text(titles[i])
         axs[i].legend()
+    print(args.pretrained.split('/')[:-1] + ['validation.png'])
+    plt.savefig('/'.join(args.pretrained.split('/')[:-1] + ['validation.png']))
     plt.show()
-    # fig = plt.figure(0)
-    # plt.title("x")
-    # plt.scatter(range(cnt),predict[:, 0], s = 0.3)
-    # plt.scatter(range(cnt),real[:, 0], s = 0.3, alpha= 0.5)
-    # plt.xlabel("count of batches")
-    # plt.ylabel("actions(0:move -;1:stay;2:move +")
-    # plt.legend(["pred","real"])
-    # fig = plt.figure(1)
-    # plt.title("y")
-    # plt.scatter(range(cnt), predict[:, 1], s = 0.3)
-    # plt.scatter(range(cnt), real[:, 1],s = 0.3,alpha= 0.5)
-    # plt.xlabel("count of batches")
-    # plt.ylabel("actions(0:move -;1:stay;2:move +")
-    # plt.legend(["pred", "real"])
-    # fig = plt.figure(2)
-    # plt.title("z")
-    # plt.scatter(range(cnt), predict[:, 2],s = 0.3)
-    # plt.scatter(range(cnt), real[:, 2],s = 0.3,alpha=0.5)
-    # plt.xlabel("count of batches")
-    # plt.ylabel("actions(0:move -;1:stay;2:move +")
-    # plt.legend(["pred", "real"])
-    # plt.show()
-
-
 
 if __name__ == "__main__":
     import configargparse
@@ -202,6 +198,7 @@ if __name__ == "__main__":
     p.add("--num_heads", default=8, type=int)
     p.add("--use_flow", default=False, type=bool)
     p.add("--use_mha", default=False)
+    p.add("--use_holebase", default=False)
     # data
     p.add("--crop_percent", default=.1, type=float)
     p.add("--resized_height_v", required=True, type=int)
@@ -210,7 +207,7 @@ if __name__ == "__main__":
     p.add("--resized_width_t", required=True, type=int)
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0318/test_recordings/")
+    p.add("--data_folder", default="../data_0322/test_recordings/")
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)

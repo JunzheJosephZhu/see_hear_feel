@@ -1,3 +1,6 @@
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import torch
 from svl_project.datasets.repr_dataset import GelsightFrameDataset
 from svl_project.models.decoders import make_tactile_decoder
@@ -16,9 +19,9 @@ def main(args):
     val_set = GelsightFrameDataset(args.val_csv, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
     val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=True)
-    t_encoder = make_tactile_encoder()
+    t_encoder = make_tactile_encoder(64)
     t_decoder = make_tactile_decoder(args.latent_dim)
-    vae_model = VAE(t_encoder, t_decoder, 512, args.latent_dim)
+    vae_model = VAE(t_encoder, t_decoder, 64, args.latent_dim)
     optimizer = torch.optim.Adam(vae_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -36,7 +39,7 @@ if __name__ == "__main__":
     p.add("--lr", default=0.001, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3, type=int)
-    p.add("--epochs", default=100, type=int)
+    p.add("--epochs", default=200, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # VAE stuff
@@ -48,7 +51,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/test_recordings_0214")
+    p.add("--data_folder", default="../data_0322/test_recordings")
 
     args = p.parse_args()
     main(args)
