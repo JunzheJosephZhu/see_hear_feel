@@ -132,8 +132,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
         elif self.loss_type == 'cce':
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, pow(3, action_dim))
-            print(f"pred shape {pred.shape}")
-            print(f"demo shape {demo.shape}")
         return self.loss_cal(pred, demo)
 
     def training_step(self, batch, batch_idx):

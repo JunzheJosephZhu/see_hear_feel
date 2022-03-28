@@ -231,6 +231,45 @@ class ImitationDatasetFramestack(BaseDataset):
         return v_total, keyboard
 
 
+class ImitationDatasetLabelCount(BaseDataset):
+    def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings_0214", train=True):
+        super().__init__(log_file, data_folder)
+        self.trial, self.timestamps, _, self.num_frames = self.get_episode(
+            dataset_idx, load_audio=False)
+
+    def __len__(self):
+        return self.num_frames
+
+    def __getitem__(self, idx):
+        keyboard = self.timestamps["action_history"][idx]
+        xy_space = {-.003: 0, 0: 1, .003: 2}
+        z_space = {-.0015: 0, 0: 1, .0015: 2}
+        keyboard = torch.as_tensor(
+            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
+        return keyboard
+
+    def get_episode(self, idx, load_audio=False):
+        """
+        Return:
+            folder for trial
+            logs
+            audio tracks
+            number of frames in episode
+        """
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        # print("override" + '#' * 50)
+        trial = os.path.join(self.data_folder, format_time)
+        with open(os.path.join(trial, "timestamps.json")) as ts:
+            timestamps = json.load(ts)
+        if load_audio:
+            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
+            audio_holebase = sf.read(os.path.join(trial, 'audio_holebase.wav'))[0]
+            audio = torch.as_tensor(np.stack([audio_gripper, audio_holebase], 0))
+        else:
+            audio = None
+        return trial, timestamps, audio, len(timestamps["action_history"])
+
+
 class ImitationDatasetFramestackMulti(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings_0214", train=True):
         super().__init__(log_file, data_folder)

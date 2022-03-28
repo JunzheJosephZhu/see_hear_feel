@@ -68,6 +68,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_tactile = False
         self.use_audio = False
         self.use_mha = args.use_mha
+        self.use_layernorm = args.use_layernorm
                 
         ## load models
         self.modalities = self.ablation.split('_')
@@ -83,14 +84,19 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             self.embed_dim += self.t_embeds_shape
         if self.use_audio:
             self.embed_dim += self.a_embeds_shape
-        if not self.use_mha:
-            print("mha: False")
-            self.layernorm = nn.LayerNorm(self.embed_dim)
-        else:
+        if self.use_layernorm:
+            print("mha: False; layernorm: True")
+            self.layernorm = nn.LayerNorm(self.v_embeds_shape)
+            self.t_pool = nn.MaxPool1d(self.v_embeds_shape // self.t_embeds_shape)
+            # self.a_pool = nn.AvgPool1d(self.v_embeds_shape // self.a_embeds_shape)
+            # self.t_fc = nn.Linear(self.v_embeds_shape, self.t_embeds_shape)
+        elif self.use_mha:
             print("mha: True")
             self.num_heads = args.num_heads
             self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
             self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
+        else:
+            print("mha: False; layernorm: False")
 
         if args.loss_type == 'cce':
             print("loss: cce")
@@ -130,7 +136,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
                 if self.use_tactile:
                     t_embeds = self.t_encoder(t_inp).detach()
-                    t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                    t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                    # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
                 if self.use_audio:
                     a_embeds = self.a_encoder(a_inp).detach()
                     a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
@@ -140,7 +147,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
             if self.use_tactile:
                 t_embeds = self.t_encoder(t_inp)
-                t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
             if self.use_audio:
                 a_embeds = self.a_encoder(a_inp)
                 a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
@@ -162,16 +170,32 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             embeds.append(t_embeds)
         if self.use_audio:
             embeds.append(a_embeds)
-        mlp_inp = torch.concat(embeds, dim=-1)
-        if not self.use_mha:
-            mlp_inp = self.layernorm(mlp_inp)
-        else:
+        # mlp_inp = torch.concat(embeds, dim=-1)
+        if self.use_layernorm:
+            out = torch.stack(embeds, dim=0)
+            out = self.layernorm(out)
+            # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+            ## adding pooling layer to downsample
+            v_out = out[0]
+            outs = [v_out]
+            if self.use_tactile:
+                t_out = self.t_pool(out[1])
+                outs.append(t_out)
+            if self.use_audio:
+                a_out = self.a_pool(out[-1])
+                outs.append(a_out)
+            mlp_inp = torch.concat(outs, 1)
+        elif self.use_mha:
             mlp_inp = torch.stack(embeds, dim=0)
             sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
             out = self.layernorm(sublayer_out + mlp_inp)
             # ## option 1: average
             # # mlp_inp = torch.mean(out, dim=0)
             # ## option 2: concat
+            mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+        else:
+            out = torch.stack(embeds, dim=0)
+            out = self.layernorm(out)
             mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
 
         # print(embeds[0].shape)
@@ -180,8 +204,9 @@ class Imitation_Actor_Ablation(torch.nn.Module):
 
         # print(f"mlp inp shape {mlp_inp.shape}")
         # mlp_temp = mlp_inp.cpu().detach().numpy()
-        # plt.figure()
+        # # plt.figure()
         # plt.plot(mlp_temp[0])
+        # plt.show()
         
         ## MHA debugging
         # plt.figure()

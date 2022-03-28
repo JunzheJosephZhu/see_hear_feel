@@ -2,6 +2,7 @@ from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor,get_graph_node_names
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class CoordConv(nn.Module):
     """Add coordinates in [0,1] to an image, like CoordConv paper."""
@@ -59,6 +60,8 @@ class Vision_Encoder(Encoder):
         x = torch.flatten(x, 1)
         if self.fc is not None:
             x = self.fc(x)
+            ## adding relu
+            x = F.relu(x)
         return x
 
 class Audio_Encoder(nn.Module):
@@ -69,8 +72,11 @@ class Audio_Encoder(nn.Module):
 
     def forward(self, x):
         x = self.feature_extractor(x)["avgpool"]
+        print(x.shape)
         x = x.squeeze(3).squeeze(2)
         x = self.ln(x)
+        ## adding relu
+        x = F.relu(x)
         return x
 
 class Tactile_RGB_Encoder(Encoder):
@@ -86,6 +92,8 @@ class Tactile_RGB_Encoder(Encoder):
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
+        ## adding relu
+        x = F.relu(x)
         return x
 
 class Tactile_Flow_Encoder(nn.Module):
@@ -102,7 +110,7 @@ class Tactile_Flow_Encoder(nn.Module):
         return x
 
 def make_vision_encoder(out_dim=None):
-    vision_extractor = resnet18(pretrained=False)
+    vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
@@ -119,7 +127,7 @@ def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     return Encoder(vision_extractor, conv_bottleneck, out_dim, out_shape=(4, 5))
 
 def make_tactile_encoder(out_dim):
-    tactile_extractor = resnet18(pretrained=False)
+    tactile_extractor = resnet18(pretrained=True)
     tactile_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )

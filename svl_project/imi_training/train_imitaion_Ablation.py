@@ -4,7 +4,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+# from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
@@ -19,11 +20,6 @@ import pandas as pd
 import numpy as np
 
 
-def strip_sd(state_dict, prefix):
-    """
-    strip prefix from state dictionary
-    """
-    return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
 
 def strip_sd(state_dict, prefix):
     """
@@ -71,17 +67,27 @@ def main(args):
 
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, sampler=sampler)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
-
+    
+    ## v encoder
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
-    state_dict_v = torch.load(args.pretrained_v, map_location="cpu")["state_dict"]
-    v_encoder.load_state_dict(strip_sd(state_dict_v, "vae.encoder."))
+    if args.pretrained_v is not None:
+        print("loading pretrained v...")
+        state_dict_v = torch.load(args.pretrained_v, map_location="cpu")["state_dict"]
+        v_encoder.load_state_dict(strip_sd(state_dict_v, "vae.encoder."))
+    ## t encoder
     if args.use_flow:
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     else:
-        t_encoder = make_tactile_encoder(args.embed_dim_t)
-        state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
-        t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
-    a_encoder = make_audio_encoder(args.embed_dim_a)
+        # t_encoder = make_tactile_encoder(args.embed_dim_t)
+        t_encoder = make_tactile_encoder(args.embed_dim_v)
+        if args.pretrained_t is not None:
+            print("loading pretrained t...")
+            state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
+            t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
+    ## a encoder
+    # a_encoder = make_audio_encoder(args.embed_dim_a)
+    a_encoder = make_audio_encoder(args.embed_dim_v)
+    
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
@@ -99,7 +105,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=60, type=int)
+    p.add("--epochs", default=40, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -115,9 +121,10 @@ if __name__ == "__main__":
     p.add("--pretrained_t", default=None)
     p.add("--freeze_till", required=True, type=int)
     p.add("--use_mha", default=False)
+    p.add("--use_layernorm", default=False)
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
+    p.add("--train_csv", default="train_0318.csv")
+    p.add("--val_csv", default="val_0318.csv")
     p.add("--data_folder", default="data/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
@@ -134,18 +141,14 @@ if __name__ == "__main__":
 
 
     args = p.parse_args()
-    # v_a
+    # v_t
     main(args)
-    args.ablation = 'v_t_a'
-    main(args)
-    args.ablation = 't'
-    main(args)
-    args.ablation = 'a'
-    main(args)
+    # args.ablation = 'a'
+    # main(args)
 
-    args.use_flow = True
-    args.ablation = 't'
-    main(args)
-    args.ablation = 'v_t_a'
-    main(args)
+    # args.use_flow = True
+    # args.ablation = 't'
+    # main(args)
+    # args.ablation = 'v_t_a'
+    # main(args)
 
