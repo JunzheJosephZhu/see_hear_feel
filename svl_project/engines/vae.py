@@ -47,6 +47,11 @@ class VAELearn(LightningModule):
                 self.logger.experiment.add_image(f"train/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
                 self.logger.experiment.add_image(f"train/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
             # TODO: add two channel audio logging
+            elif pixels.size(1) == 2 and pixels.size(2) == 64:
+                batch = torch.cat([batch, torch.zeros_like(batch)[:, :1]], dim=1)
+                pixels = torch.cat([pixels, torch.zeros_like(pixels)[:, :1]], dim=1)
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -59,7 +64,11 @@ class VAELearn(LightningModule):
             if pixels.size(1) == 3:
                 self.logger.experiment.add_image(f"val/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
                 self.logger.experiment.add_image(f"val/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
-
+            elif pixels.size(1) == 2 and pixels.size(2) == 64:
+                batch = torch.cat([batch, torch.zeros_like(batch)[:, :1]], dim=1)
+                pixels = torch.cat([pixels, torch.zeros_like(pixels)[:, :1]], dim=1)
+                self.logger.experiment.add_image(f"val/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
+                self.logger.experiment.add_image(f"val/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
         return loss
 
     def train_dataloader(self):

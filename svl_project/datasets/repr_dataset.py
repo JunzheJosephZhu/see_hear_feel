@@ -38,6 +38,20 @@ class VisionFixedDataset(BaseDataset):
         timestep = torch.randint(high=num_frames, size=()).item()
         return self.resize_image(self.load_image(trial, "cam_fixed_color", timestep), (64, 64))
 
+class AudioDataset(BaseDataset):
+    def __getitem__(self, idx):
+        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
+        timestep = torch.randint(high=num_frames, size=()).item()
+        resolution = 1600
+        audio_seq_len = 10480
+        audio_start = timestep * resolution - audio_seq_len
+        audio_end = audio_start + audio_seq_len
+        audio_pos = self.clip_audio(audio, audio_start, audio_end)
+        assert audio_pos.size(1) == audio_seq_len, (audio_start, audio_pos.size())
+        spec = self.mel(audio_pos.float())
+        log_spec = torch.log(spec + EPS)
+        return log_spec
+
 class GelsightFrameDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
@@ -47,6 +61,15 @@ class GelsightFrameDataset(BaseDataset):
         img = img.clamp(0, 1)
         # img = img.mean(0, keepdim=True).expand(3, 64, 64)
         return img
+
+class GelsightFlowDataset(BaseDataset):
+    def __getitem__(self, idx):
+        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
+        timestep = torch.randint(high=num_frames, size=()).item()
+        flow = self.load_flow(trial, "left_gelsight_flow", timestep)
+        flow = flow[2:] - flow[:2]
+        return flow
+
 
 @DeprecationWarning
 class TripletDataset(Dataset):

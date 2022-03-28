@@ -26,7 +26,12 @@ svl_project/models/encoders.py
 svl_project/models/fusion_modules.py
 svl_project/models/imi_models.py
 svl_project/models/repr_models.py
+svl_project/models/vae(deprecated).py
 svl_project/repr_training/__init__.py
+svl_project/repr_training/train_audio_vae.py
 svl_project/repr_training/train_future_prediction.py
+svl_project/repr_training/train_gelflow_vae.py
+svl_project/repr_training/train_gelsight_vae.py
 svl_project/repr_training/train_metric.py
-svl_project/repr_training/train_vision_vae.py
+svl_project/repr_training/train_vision_vae_fixed.py
+svl_project/repr_training/train_vision_vae_gripper.py
