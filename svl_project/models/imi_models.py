@@ -7,6 +7,7 @@ from torch import nn
 import cv2
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 
 class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
@@ -15,7 +16,6 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         self.v_encoder = v_encoder
         self.mlp = None
         self.embed_dim = args.embed_dim * args.num_stack * args.num_camera
-        # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
             self.mlp = torch.nn.Sequential(
                 torch.nn.Linear(self.embed_dim, 1024),
@@ -51,7 +51,6 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
             v_embeds = self.v_encoder(v_inp)
         mlp_inp = torch.reshape(v_embeds, (-1, self.embed_dim))
         action_logits = self.mlp(mlp_inp)
-        # print(action_logits)
         return action_logits
 
 class Imitation_Actor_Ablation(torch.nn.Module):
@@ -68,33 +67,49 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_vision = False
         self.use_tactile = False
         self.use_audio = False
-        if self.ablation == 'v_t':
-            self.embed_dim = self.v_embeds_shape + self.t_embeds_shape
-            self.use_vision = True
-            self.use_tactile = True
-        elif self.ablation == 'v_a':
-            self.embed_dim = self.v_embeds_shape + self.a_embeds_shape
-            self.use_vision = True
-            self.use_audio = True
-        elif self.ablation == 'v_t_a':
-            self.embed_dim = self.v_embeds_shape + self.t_embeds_shape + self.a_embeds_shape
-            self.use_vision = True
-            self.use_tactile = True
-            self.use_audio = True
-        elif self.ablation == 'v':
-            self.embed_dim = self.v_embeds_shape
-            self.use_vision = True
+        self.use_mha = args.use_mha
+        self.use_layernorm = args.use_layernorm
+                
+        ## load models
+        self.modalities = self.ablation.split('_')
+        print(f"Using modalities: {self.modalities}")
+        print(f"Using tactile flow: {args.use_flow}")
+        self.embed_dim = 0
+        self.use_vision = 'v' in self.modalities
+        self.use_tactile = 't' in self.modalities
+        self.use_audio = 'a' in self.modalities
+        if self.use_vision:
+            self.embed_dim += self.v_embeds_shape
+        if self.use_tactile:
+            self.embed_dim += self.t_embeds_shape
+        if self.use_audio:
+            self.embed_dim += self.a_embeds_shape
+        if self.use_layernorm:
+            print("mha: False; layernorm: True")
+            self.layernorm = nn.LayerNorm(self.v_embeds_shape)
+            self.t_pool = nn.MaxPool1d(self.v_embeds_shape // self.t_embeds_shape)
+            # self.a_pool = nn.AvgPool1d(self.v_embeds_shape // self.a_embeds_shape)
+            # self.t_fc = nn.Linear(self.v_embeds_shape, self.t_embeds_shape)
+        elif self.use_mha:
+            print("mha: True")
+            self.num_heads = args.num_heads
+            self.layernorm = torch.nn.LayerNorm(self.v_embeds_shape)
+            self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
+        else:
+            print("mha: False; layernorm: False")
 
-        # print('\n'.join(['*' * 50 + 'imi_models', 'embed_dim:', f'{args.embed_dim} * {args.num_stack} = {embed_dim}']))
         if args.loss_type == 'cce':
+            print("loss: cce")
             self.mlp = torch.nn.Sequential(
                 torch.nn.Linear(self.embed_dim, 1024),
+                # torch.nn.Linear(self.v_embeds_shape, 1024),
                 torch.nn.ReLU(),
                 torch.nn.Linear(1024, 1024),
                 torch.nn.ReLU(),
                 torch.nn.Linear(1024, pow(3, args.action_dim))
             )
         elif args.loss_type == 'mse':
+            print("loss: mse")
             self.mlp = torch.nn.Sequential(
                 torch.nn.Linear(self.embed_dim, 1024),
                 torch.nn.ReLU(),
@@ -121,7 +136,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
                 if self.use_tactile:
                     t_embeds = self.t_encoder(t_inp).detach()
-                    t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                    t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                    # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
                 if self.use_audio:
                     a_embeds = self.a_encoder(a_inp).detach()
                     a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
@@ -131,19 +147,73 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
             if self.use_tactile:
                 t_embeds = self.t_encoder(t_inp)
-                t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
             if self.use_audio:
                 a_embeds = self.a_encoder(a_inp)
                 a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
+        
+        # if self.ablation == 'v_t':
+        #     mlp_inp = torch.concat((v_embeds,t_embeds), dim=-1)
+        # elif self.ablation == 'v_a':
+        #     mlp_inp = torch.concat((v_embeds, a_embeds), dim=-1)
+        # elif self.ablation == 'v_t_a':
+        #     mlp_inp = torch.concat((v_embeds, t_embeds, a_embeds), dim=-1)
+        # elif self.ablation == 'v':
+        #     mlp_inp = v_embeds
+        
+        ## to enable more combinations
+        embeds = []
+        if self.use_vision:
+            embeds.append(v_embeds)
+        if self.use_tactile:
+            embeds.append(t_embeds)
+        if self.use_audio:
+            embeds.append(a_embeds)
+        # mlp_inp = torch.concat(embeds, dim=-1)
+        if self.use_layernorm:
+            out = torch.stack(embeds, dim=0)
+            out = self.layernorm(out)
+            # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+            ## adding pooling layer to downsample
+            v_out = out[0]
+            outs = [v_out]
+            if self.use_tactile:
+                t_out = self.t_pool(out[1])
+                outs.append(t_out)
+            if self.use_audio:
+                a_out = self.a_pool(out[-1])
+                outs.append(a_out)
+            mlp_inp = torch.concat(outs, 1)
+        elif self.use_mha:
+            mlp_inp = torch.stack(embeds, dim=0)
+            sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
+            out = self.layernorm(sublayer_out + mlp_inp)
+            # ## option 1: average
+            # # mlp_inp = torch.mean(out, dim=0)
+            # ## option 2: concat
+            mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+        else:
+            out = torch.stack(embeds, dim=0)
+            out = self.layernorm(out)
+            mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
 
-        if self.ablation == 'v_t':
-            mlp_inp = torch.concat((v_embeds,t_embeds), dim=-1)
-        elif self.ablation == 'v_a':
-            mlp_inp = torch.concat((v_embeds, a_embeds), dim=-1)
-        elif self.ablation == 'v_t_a':
-            mlp_inp = torch.concat((v_embeds, t_embeds, a_embeds), dim=-1)
-        elif self.ablation == 'v':
-            mlp_inp = v_embeds
+        # print(embeds[0].shape)
+        # plt.plot(v_embeds.cpu().detach().numpy()[0], 'b')
+        # plt.plot(t_embeds.cpu().detach().numpy()[0], 'r')
+
+        # print(f"mlp inp shape {mlp_inp.shape}")
+        # mlp_temp = mlp_inp.cpu().detach().numpy()
+        # # plt.figure()
+        # plt.plot(mlp_temp[0])
+        # plt.show()
+        
+        ## MHA debugging
+        # plt.figure()
+        # mha_temp = weights.cpu().detach().numpy()
+        # print(f"mha {mha_temp[0]}")
+        # plt.imshow(mha_temp[0])
+
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
         return action_logits

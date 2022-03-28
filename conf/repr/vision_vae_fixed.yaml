@@ -1,5 +1,5 @@
-conv_bottleneck: 128
-embed_dim: 640
-latent_dim: 640
-beta: 1e-8
-lr: 0.0002
+latent_dim: 128
+embed_dim_v: 512
+beta: 1e-4
+lr: 0.0005
+loss_type: "l2"

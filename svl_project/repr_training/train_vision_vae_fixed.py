@@ -1,3 +1,6 @@
+import sys
+if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import torch
 from svl_project.datasets.repr_dataset import VisionFixedDataset
 from svl_project.models.decoders import make_vision_decoder
@@ -10,15 +13,19 @@ import yaml
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
+import sys
 
 def main(args):
+    print(sys.getrecursionlimit())
+    sys.setrecursionlimit(8000)
+    print(sys.getrecursionlimit())
     train_set = VisionFixedDataset(args.train_csv, args.data_folder)
     val_set = VisionFixedDataset(args.val_csv, args.data_folder)
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=8)
-    val_loader = DataLoader(val_set, 1, num_workers=8)
-    v_encoder = make_vision_encoder(args.conv_bottleneck, args.embed_dim)
-    v_decoder = make_vision_decoder(args.conv_bottleneck, args.embed_dim)
-    vae_model = VAE(v_encoder, v_decoder, args.embed_dim, args.latent_dim)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
+    val_loader = DataLoader(val_set, 1, num_workers=1)
+    v_encoder = make_vision_encoder(args.embed_dim_v)
+    v_decoder = make_vision_decoder(args.latent_dim)
+    vae_model = VAE(v_encoder, v_decoder, 512, args.latent_dim)
     optimizer = torch.optim.Adam(vae_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -36,20 +43,23 @@ if __name__ == "__main__":
     p.add("--lr", default=0.001, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=100)
+    p.add("--epochs", default=200)
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # VAE stuff
-    p.add("--conv_bottleneck", required=True, type=int)
-    p.add("--embed_dim", required=True, type=int)
+    # p.add("--conv_bottleneck", required=True, type=int)
+    # p.add("--embed_dim", required=True, type=int)
     p.add("--latent_dim", required=True, type=int)
     p.add("--beta", required=True, type=float)
     p.add("--prior_scale", default=1.0, type=float)
     p.add("--allow_mismatch", default=False, type=bool)
+    p.add("--loss_type", required=True, type=str)
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/test_recordings_0214")
+    p.add("--data_folder", default="../data_0322/test_recordings")
+    p.add("--embed_dim_v", required=True, type=int)
+    
 
     args = p.parse_args()
     main(args)

@@ -5,6 +5,8 @@ from tomlkit import key
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
+import numpy as np
+import torchvision
 
 class ImiBaselineLearn_Tuning(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
@@ -47,7 +49,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
         v_input = torch.reshape(v_input, (s[-4]*s[-5], 3, s[-2], s[-1]))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type == 'fl':
             keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
         # print("current", self.current_epoch)
         # print("freeze till", self.config.freeze_till)
@@ -74,7 +76,7 @@ class ImiBaselineLearn_Tuning(LightningModule):
         # cv2.waitKey(10000)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type == 'fl':
             keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
         # print(v_input.shape)
         # print("keyboard", keyboard)
@@ -110,6 +112,11 @@ class ImiBaselineLearn_Ablation(LightningModule):
             self.loss_cal = torch.nn.MSELoss()
         elif self.loss_type == 'cce':
             self.loss_cal = torch.nn.CrossEntropyLoss()
+        elif self.loss_type == 'fl':
+            self.loss_cal = torchvision.ops.focal_loss()
+        self.wrong = 1
+        self.correct = 0
+        self.total = 0
         print("baseline learn")
 
     def compute_loss(self, pred, demo, action_dim):
@@ -137,22 +144,21 @@ class ImiBaselineLearn_Ablation(LightningModule):
         s_v = v_input.shape
         s_t = t_input.shape
         s_a = a_input.shape
-        v_input = torch.reshape(v_input, (s_v[-4] * s_v[-5], 3, s_v[-2], s_v[-1]))
-        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], 3, s_t[-2], s_t[-1]))
+        v_input = torch.reshape(v_input, (s_v[-4] * s_v[-5], s_v[-3], s_v[-2], s_v[-1]))
+        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type =='fl':
             if self.config.action_dim == 4:
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
-        # print("current", self.current_epoch)
-        # print("freeze till", self.config.freeze_till)
         action_pred = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
         # print("keyboard", keyboard)
         # print("pred", action_pred)
         loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
         self.log_dict({"train/action_loss": loss})
+
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -167,25 +173,42 @@ class ImiBaselineLearn_Ablation(LightningModule):
         s_v = v_input.shape
         s_t = t_input.shape
         s_a = a_input.shape
-        v_input = torch.reshape(v_input, (s_v[-4] * s_v[-5], 3, s_v[-2], s_v[-1]))
-        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], 3, s_t[-2], s_t[-1]))
+        v_input = torch.reshape(v_input, (s_v[-4] * s_v[-5], s_v[-3], s_v[-2], s_v[-1]))
+        t_input = torch.reshape(t_input, (s_t[-4] * s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
         # for i in range(8):
         #     cv2.imshow('cam_g' + str(i * 6), v_input[i * 6].permute(1, 2, 0).cpu().numpy())
         #     cv2.imshow('cam_f' + str(i * 6 + 3), v_input[i * 6 + 3].permute(1, 2, 0).cpu().numpy())
         # cv2.waitKey(10000)
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
-        elif self.loss_type == 'cce':
+        elif self.loss_type == 'cce' or self.loss_type =='fl':
             if self.config.action_dim == 4:
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]        # print(v_input.shape)
-        # print("keyboard", keyboard)
-        # print("pred", action_pred)
-        with torch.no_grad():
-            action_pred = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
-            loss = self.compute_loss(action_pred, keyboard, self.config.action_dim)
-        self.log_dict({"val/action_loss": loss})
+        # with torch.no_grad(): # torch lightning module does this under the hood
+        action_logits = self.actor(v_input, t_input, a_input, True)  # , idx)
+        # print(f"action logits shape {action_logits.shape}")
+        loss = self.compute_loss(action_logits, keyboard, self.config.action_dim)
+        action_pred = torch.argmax(action_logits, dim=1)
+        cor = torch.eq(action_pred, keyboard)
+        if batch_idx == 0 and self.total > 0:
+            acc = self.correct / self.total
+            self.log('val/acc', acc)
+            self.correct = 0
+            self.total = 0
+        self.correct += torch.sum(cor)
+        self.total += cor.size()[0]
+        # self.log('val/acc', self.correct / self.total, on_step=True, on_epoch=False)
+        self.log("val/action_loss", loss.item())
+        return loss
+
+    # def validation_epoch_end(self, outs):
+    #     mean_loss = torch.mean(torch.stack(outs))
+    #     self.log('val/action_loss', mean_loss)
+    #     self.log('val/acc', self.correct / self.total)
+    #     self.correct = 0
+    #     self.total = 0
 
     def train_dataloader(self):
         """Training dataloader"""
@@ -251,6 +274,7 @@ class ImiPoseBaselineLearn(LightningModule):
         with torch.no_grad():
             action_pred = self.actor(pose, True)
             loss = compute_loss(action_pred, keyboard)
+            print(loss)
         self.log_dict({"val/loss": loss})
         return loss
 

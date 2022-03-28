@@ -21,6 +21,8 @@ class BaseDataset(Dataset):
             sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
         )
         self.streams = ["cam_gripper_color", "cam_fixed_color", "left_gelsight_flow", "left_gelsight_frame"]
+        self.gelsight_offset = torch.as_tensor(np.array(Image.open("gelsight_offset.png"))).float().permute(2, 0, 1) / 255
+        pass
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -35,9 +37,9 @@ class BaseDataset(Dataset):
         with open(os.path.join(trial, "timestamps.json")) as ts:
             self.timestamps = json.load(ts)
         if load_audio:
-            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
-            audio_hole = sf.read(os.path.join(trial, 'audio_gripper.wav'))[0]
-            audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))#.float()
+            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
+            audio_holebase = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
+            audio = torch.as_tensor(np.stack([audio_gripper, audio_holebase], 0))#.float()
         else:
             audio = None
         return trial, self.timestamps, audio, len(self.timestamps["action_history"])
@@ -76,6 +78,6 @@ class BaseDataset(Dataset):
         return len(self.logs)
 
     @staticmethod
-    def resize_image(image, scale_factor):
+    def resize_image(image, size):
         assert len(image.size()) == 3 # [3, H, W]
-        return torch.nn.functional.interpolate(image.unsqueeze(0), scale_factor=scale_factor, mode="bilinear").squeeze(0)
+        return torch.nn.functional.interpolate(image.unsqueeze(0), size=size, mode="bilinear").squeeze(0)

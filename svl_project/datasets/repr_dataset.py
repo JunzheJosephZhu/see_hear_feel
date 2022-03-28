@@ -30,20 +30,52 @@ class VisionGripperDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), scale_factor=(0.5, 0.5))
+        return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
 
 class VisionFixedDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        return self.load_image(trial, "cam_fixed_color", timestep)
+        trans = T.Compose([
+            T.Resize((72, 72)),
+            T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.1),
+            T.RandomCrop((int(72*0.9), int(72*0.9))),
+        ])
+        return trans(self.load_image(trial, "cam_fixed_color", timestep))
 
 class GelsightFrameDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        return self.resize_image(self.load_image(trial, "left_gelsight_frame", timestep), scale_factor=(0.5, 0.5))
+        original_img = self.load_image(trial, "left_gelsight_frame", timestep)
+        img =  self.resize_image(original_img - self.gelsight_offset, (64, 64)) + 0.5
+        img = img.clamp(0, 1)
+        # img = img.mean(0, keepdim=True).expand(3, 64, 64)
+        return img
 
+class AudioDataset(BaseDataset):
+    def __init__(self,log_file, data_folder="data/test_recordings_0214"):
+        super().__init__(log_file, data_folder)
+        self.fps = 10
+        self.sr = 44100
+        self.resolution = self.sr // self.fps  # number of audio samples in one image idx
+        self.audio_len = self.sr
+        self.mel = torchaudio.transforms.MelSpectrogram(
+            sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
+        )
+        self.EPS = 1e-8
+
+    def __getitem__(self, idx):
+        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
+        timestep = torch.randint(high=num_frames, size=()).item()
+        # load audio
+        audio_start = timestep * self.resolution
+        audio_end = audio_start + self.audio_len  # why self.sr // 2, and start + sr
+        audio_clip = self.clip_audio(audio, audio_start, audio_end)
+        spec = self.mel(audio_clip.type(torch.FloatTensor))
+        log_spec = torch.log(spec + EPS)
+        # img = img.mean(0, keepdim=True).expand(3, 64, 64)
+        return log_spec
 
 @DeprecationWarning
 class TripletDataset(Dataset):
