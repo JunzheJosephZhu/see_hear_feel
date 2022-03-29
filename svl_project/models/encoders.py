@@ -2,6 +2,7 @@ from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor,get_graph_node_names
 import torch
 from torch import nn
+# from perceiver_pytorch import Perceiver
 
 class CoordConv(nn.Module):
     """Add coordinates in [0,1] to an image, like CoordConv paper."""
@@ -61,12 +62,10 @@ def make_tactile_encoder():
     return Encoder(tactile_extractor)
 
 def make_flow_encoder():
-    input_dim = 4 * 10 * 14
+    input_dim = 2 * 10 * 14
     encoder = nn.Sequential(nn.Flatten(1), nn.Linear(input_dim, 2048),
                             nn.Linear(2048, 1024),
-                            nn.Linear(1024, 512),
-                            nn.Linear(512, 256),
-                            nn.Linear(256, 128))
+                            nn.Linear(1024, 512))
     return encoder
 
 def make_audio_encoder():

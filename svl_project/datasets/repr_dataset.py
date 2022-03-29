@@ -19,12 +19,21 @@ import torchaudio
 import math
 from re import L
 from collections import deque
-from torch.nn.utils.rnn import pad_sequence
 from svl_project.datasets.base import BaseDataset
 import numpy as np
 import torch.nn.functional as F
 
-EPS = 1e-8
+def visualize_flow(flow):
+    # get initial
+    initial = torch.load("data/test_recordings_0214/2022-02-14 00_01_37.507857/left_gelsight_flow/0.pt")
+    img = np.ones((300, 400))
+    for i in range(flow.shape[1]):
+        for j in range(flow.shape[2]):
+            pt1 = (int(initial[0, i, j]), int(initial[1, i, j]))
+            pt2 = (int(flow[0, i, j] + initial[0, i, j]), int(flow[1, i, j] + initial[1, i, j]))
+            cv2.arrowedLine(img, pt1, pt2, (0, 0, 0))
+    img = np.uint8(img * 255)
+    return img
 
 class VisionGripperDataset(BaseDataset):
     def __getitem__(self, idx):
@@ -40,9 +49,31 @@ class VisionFixedDataset(BaseDataset):
 
 class AudioDataset(BaseDataset):
     def __getitem__(self, idx):
+        EPS = 1e-8
         trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
-        timestep = torch.randint(high=num_frames, size=()).item()
+        # timestep = torch.randint(high=num_frames, size=()).item()
+                # voice activity detection
+        sil_ratio = 0.8
         resolution = 1600
+        audio_frames = audio.unfold(dimension=-1, size=resolution, step=resolution) # [2, num_frames, frame_size]
+        energy = torch.pow(audio_frames[:1], 2).sum(-1).sum(0) # user the gripper piezo
+        # plt.plot(energy)
+        # plt.plot(torch.ones(energy.shape) * 2)
+        # print(trial)
+        # plt.show()
+        # sample anchor times
+        timestep = None
+        if torch.rand(()) > sil_ratio and (energy > 2.5).any():  # sample anchor with audio event
+            anchor_choices = torch.nonzero(energy > 2.5)
+            if not anchor_choices.size(0) == 0:
+                timestep = anchor_choices[
+                    torch.randint(high=anchor_choices.size(0), size=())
+                ].item()
+        if timestep is None:
+            anchor_choices = torch.nonzero(energy < 2.5)
+            timestep = anchor_choices[
+                torch.randint(high=anchor_choices.size(0), size=())
+            ].item()
         audio_seq_len = 10480
         audio_start = timestep * resolution - audio_seq_len
         audio_end = audio_start + audio_seq_len
@@ -68,7 +99,7 @@ class GelsightFlowDataset(BaseDataset):
         timestep = torch.randint(high=num_frames, size=()).item()
         flow = self.load_flow(trial, "left_gelsight_flow", timestep)
         flow = flow[2:] - flow[:2]
-        return flow
+        return flow.float()
 
 
 @DeprecationWarning
