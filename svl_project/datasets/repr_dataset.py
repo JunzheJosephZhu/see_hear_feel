@@ -41,6 +41,14 @@ class VisionGripperDataset(BaseDataset):
         timestep = torch.randint(high=num_frames, size=()).item()
         return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
 
+class VisionGripper_FuturePred(BaseDataset):
+    def __getitem__(self, idx):
+        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
+        timestep = torch.randint(high=num_frames - 1, size=()).item()
+        current_img = self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
+        future_img = self.resize_image(self.load_image(trial, "cam_gripper_color", timestep + 1), (64, 64))
+        return current_img, future_img, torch.as_tensor(timestamps["action_history"][timestep])
+
 class VisionFixedDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
