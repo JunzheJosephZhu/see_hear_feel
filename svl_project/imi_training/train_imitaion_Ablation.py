@@ -4,8 +4,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-# from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
@@ -20,12 +20,12 @@ import pandas as pd
 import numpy as np
 
 
-
 def strip_sd(state_dict, prefix):
     """
     strip prefix from state dictionary
     """
     return {k.lstrip(prefix): v for k, v in state_dict.items() if k.startswith(prefix)}
+
 
 def main(args):
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=40, type=int)
+    p.add("--epochs", default=55, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
