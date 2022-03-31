@@ -19,9 +19,9 @@ def main(args):
     val_set = GelsightFrameDataset(args.val_csv, args.data_folder)
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
     val_loader = DataLoader(val_set, 1, num_workers=1, shuffle=True)
-    t_encoder = make_tactile_encoder(64)
+    t_encoder = make_tactile_encoder(512)
     t_decoder = make_tactile_decoder(args.latent_dim)
-    vae_model = VAE(t_encoder, t_decoder, 64, args.latent_dim)
+    vae_model = VAE(t_encoder, t_decoder, 512, args.latent_dim)
     optimizer = torch.optim.Adam(vae_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -49,9 +49,9 @@ if __name__ == "__main__":
     p.add("--allow_mismatch", default=False, type=bool)
     p.add("--loss_type", required=True, type=str)
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0322/test_recordings")
+    p.add("--train_csv", default="train_0318.csv")
+    p.add("--val_csv", default="val_0318.csv")
+    p.add("--data_folder", default="../data_0318/test_recordings")
 
     args = p.parse_args()
     main(args)

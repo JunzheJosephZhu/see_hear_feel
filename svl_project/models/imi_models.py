@@ -97,6 +97,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             self.mha = MultiheadAttention(self.v_embeds_shape, self.num_heads)
         else:
             print("mha: False; layernorm: False")
+            self.layernorm = nn.LayerNorm(self.embed_dim)
 
         if args.loss_type == 'cce':
             print("loss: cce")
@@ -136,8 +137,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
                 if self.use_tactile:
                     t_embeds = self.t_encoder(t_inp).detach()
-                    t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
-                    # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                    # t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                    t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
                 if self.use_audio:
                     a_embeds = self.a_encoder(a_inp).detach()
                     a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
@@ -147,8 +148,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
             if self.use_tactile:
                 t_embeds = self.t_encoder(t_inp)
-                t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
-                # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                # t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
             if self.use_audio:
                 a_embeds = self.a_encoder(a_inp)
                 a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
@@ -194,9 +195,11 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             # ## option 2: concat
             mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
         else:
-            out = torch.stack(embeds, dim=0)
-            out = self.layernorm(out)
-            mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
+            mlp_inp = torch.concat(embeds, dim=-1)
+            # out = torch.stack(embeds, dim=0)
+            mlp_inp = self.layernorm(mlp_inp)
+            # print(out.shape)
+            # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
 
         # print(embeds[0].shape)
         # plt.plot(v_embeds.cpu().detach().numpy()[0], 'b')

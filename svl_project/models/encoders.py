@@ -61,7 +61,7 @@ class Vision_Encoder(Encoder):
         if self.fc is not None:
             x = self.fc(x)
             ## adding relu
-            x = F.relu(x)
+            # x = F.relu(x)
         return x
 
 class Audio_Encoder(nn.Module):
@@ -76,7 +76,7 @@ class Audio_Encoder(nn.Module):
         x = x.squeeze(3).squeeze(2)
         x = self.ln(x)
         ## adding relu
-        x = F.relu(x)
+        # x = F.relu(x)
         return x
 
 class Tactile_RGB_Encoder(Encoder):
@@ -93,7 +93,7 @@ class Tactile_RGB_Encoder(Encoder):
         x = torch.flatten(x, 1)
         x = self.fc(x)
         ## adding relu
-        x = F.relu(x)
+        # x = F.relu(x)
         return x
 
 class Tactile_Flow_Encoder(nn.Module):
