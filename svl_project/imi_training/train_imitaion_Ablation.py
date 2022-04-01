@@ -102,7 +102,7 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn_ablation.yaml")
     p.add("--batch_size", default=4)
-    p.add("--lr", default=1e-3, type=float)
+    p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
     p.add("--epochs", default=55, type=int)
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train_0318.csv")
     p.add("--val_csv", default="val_0318.csv")
-    p.add("--data_folder", default="data/test_recordings")
+    p.add("--data_folder", default="../data_0331/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -145,8 +145,8 @@ if __name__ == "__main__":
     args = p.parse_args()
     # v_t
     main(args)
-    # args.ablation = 'a'
-    # main(args)
+    args.ablation = 'v_t'
+    main(args)
 
     # args.use_flow = True
     # args.ablation = 't'
