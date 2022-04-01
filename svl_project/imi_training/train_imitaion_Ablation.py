@@ -4,8 +4,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+# from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
@@ -123,8 +123,8 @@ if __name__ == "__main__":
     p.add("--use_mha", default=False)
     p.add("--use_layernorm", default=False)
     # data
-    p.add("--train_csv", default="train_0318.csv")
-    p.add("--val_csv", default="val_0318.csv")
+    p.add("--train_csv", default="train.csv")
+    p.add("--val_csv", default="val.csv")
     p.add("--data_folder", default="../data_0331/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
