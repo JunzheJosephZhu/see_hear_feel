@@ -123,8 +123,8 @@ if __name__ == "__main__":
     p.add("--use_mha", default=False)
     p.add("--use_layernorm", default=False)
     # data
-    p.add("--train_csv", default="train_0318.csv")
-    p.add("--val_csv", default="val_0318.csv")
+    p.add("--train_csv", default="train.csv")
+    p.add("--val_csv", default="val.csv")
     p.add("--data_folder", default="../data_0331/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
@@ -146,6 +146,8 @@ if __name__ == "__main__":
     # v_t
     main(args)
     args.ablation = 'v_t'
+    main(args)
+    args.ablation = 't'
     main(args)
 
     # args.use_flow = True

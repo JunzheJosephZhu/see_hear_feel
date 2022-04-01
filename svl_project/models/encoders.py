@@ -49,7 +49,7 @@ class Vision_Encoder(Encoder):
         super().__init__(feature_extractor)
         self.ln = None
         if out_dim is not None:
-            self.fc = nn.Linear(512, out_dim)
+            self.ln = nn.Linear(512, out_dim)
 
     def forward(self, x):
         x = self.coord_conv(x)
@@ -58,10 +58,10 @@ class Vision_Encoder(Encoder):
         x = list(x.values())[0]
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        if self.fc is not None:
-            x = self.fc(x)
+        if self.ln is not None:
+            x = self.ln(x)
             ## adding relu
-            # x = F.relu(x)
+            x = F.relu(x)
         return x
 
 class Audio_Encoder(nn.Module):
@@ -76,7 +76,7 @@ class Audio_Encoder(nn.Module):
         x = x.squeeze(3).squeeze(2)
         x = self.ln(x)
         ## adding relu
-        # x = F.relu(x)
+        x = F.relu(x)
         return x
 
 class Tactile_RGB_Encoder(Encoder):
@@ -93,7 +93,7 @@ class Tactile_RGB_Encoder(Encoder):
         x = torch.flatten(x, 1)
         x = self.fc(x)
         ## adding relu
-        # x = F.relu(x)
+        x = F.relu(x)
         return x
 
 class Tactile_Flow_Encoder(nn.Module):
