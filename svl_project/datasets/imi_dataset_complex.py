@@ -53,9 +53,9 @@ class ImitationDatasetLabelCount(BaseDataset):
 
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
-        xy_space = {-.002: 0, 0: 1, .002: 2}
-        z_space = {-.0015: 0, 0: 1, .0015: 2}
-        r_space = {-.02: 0, 0: 1, .02: 2}
+        xy_space = {-.0005: 0, 0: 1, .0005: 2}
+        z_space = {-.0005: 0, 0: 1, .0005: 2}
+        r_space = {-.005: 0, 0: 1, .005: 2}
         keyboard = torch.as_tensor(
             [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
         return keyboard

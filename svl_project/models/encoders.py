@@ -96,7 +96,7 @@ class Tactile_RGB_Encoder(Encoder):
         x = torch.flatten(x, 1)
         x = self.fc(x)
         ## adding relu
-        # x = F.relu(x)
+        x = F.relu(x)
         return x
 
 class Tactile_Flow_Encoder(nn.Module):
