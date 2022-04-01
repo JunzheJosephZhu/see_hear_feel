@@ -19,18 +19,35 @@ import torchaudio
 import math
 from re import L
 from collections import deque
-from torch.nn.utils.rnn import pad_sequence
 from svl_project.datasets.base import BaseDataset
 import numpy as np
 import torch.nn.functional as F
 
-EPS = 1e-8
+def visualize_flow(flow):
+    # get initial
+    initial = torch.load("data/test_recordings_0214/2022-02-14 00_01_37.507857/left_gelsight_flow/0.pt")
+    img = np.ones((300, 400))
+    for i in range(flow.shape[1]):
+        for j in range(flow.shape[2]):
+            pt1 = (int(initial[0, i, j]), int(initial[1, i, j]))
+            pt2 = (int(flow[0, i, j] + initial[0, i, j]), int(flow[1, i, j] + initial[1, i, j]))
+            cv2.arrowedLine(img, pt1, pt2, (0, 0, 0))
+    img = np.uint8(img * 255)
+    return img
 
 class VisionGripperDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
         return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
+
+class VisionGripper_FuturePred(BaseDataset):
+    def __getitem__(self, idx):
+        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
+        timestep = torch.randint(high=num_frames - 1, size=()).item()
+        current_img = self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
+        future_img = self.resize_image(self.load_image(trial, "cam_gripper_color", timestep + 1), (64, 64))
+        return current_img, future_img, torch.as_tensor(timestamps["action_history"][timestep])
 
 class VisionFixedDataset(BaseDataset):
     def __getitem__(self, idx):
@@ -43,6 +60,42 @@ class VisionFixedDataset(BaseDataset):
         ])
         return trans(self.load_image(trial, "cam_fixed_color", timestep))
 
+class AudioDataset(BaseDataset):
+    def __getitem__(self, idx):
+        EPS = 1e-8
+        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
+        # timestep = torch.randint(high=num_frames, size=()).item()
+                # voice activity detection
+        sil_ratio = 0.8
+        resolution = 1600
+        audio_frames = audio.unfold(dimension=-1, size=resolution, step=resolution) # [2, num_frames, frame_size]
+        energy = torch.pow(audio_frames[:1], 2).sum(-1).sum(0) # user the gripper piezo
+        # plt.plot(energy)
+        # plt.plot(torch.ones(energy.shape) * 2)
+        # print(trial)
+        # plt.show()
+        # sample anchor times
+        timestep = None
+        if torch.rand(()) > sil_ratio and (energy > 2.5).any():  # sample anchor with audio event
+            anchor_choices = torch.nonzero(energy > 2.5)
+            if not anchor_choices.size(0) == 0:
+                timestep = anchor_choices[
+                    torch.randint(high=anchor_choices.size(0), size=())
+                ].item()
+        if timestep is None:
+            anchor_choices = torch.nonzero(energy < 2.5)
+            timestep = anchor_choices[
+                torch.randint(high=anchor_choices.size(0), size=())
+            ].item()
+        audio_seq_len = 10480
+        audio_start = timestep * resolution - audio_seq_len
+        audio_end = audio_start + audio_seq_len
+        audio_pos = self.clip_audio(audio, audio_start, audio_end)
+        assert audio_pos.size(1) == audio_seq_len, (audio_start, audio_pos.size())
+        spec = self.mel(audio_pos.float())
+        log_spec = torch.log(spec + EPS)
+        return log_spec
+
 class GelsightFrameDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
@@ -53,29 +106,14 @@ class GelsightFrameDataset(BaseDataset):
         # img = img.mean(0, keepdim=True).expand(3, 64, 64)
         return img
 
-class AudioDataset(BaseDataset):
-    def __init__(self,log_file, data_folder="data/test_recordings_0214"):
-        super().__init__(log_file, data_folder)
-        self.fps = 10
-        self.sr = 44100
-        self.resolution = self.sr // self.fps  # number of audio samples in one image idx
-        self.audio_len = self.sr
-        self.mel = torchaudio.transforms.MelSpectrogram(
-            sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
-        )
-        self.EPS = 1e-8
-
+class GelsightFlowDataset(BaseDataset):
     def __getitem__(self, idx):
-        trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
+        trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
-        # load audio
-        audio_start = timestep * self.resolution
-        audio_end = audio_start + self.audio_len  # why self.sr // 2, and start + sr
-        audio_clip = self.clip_audio(audio, audio_start, audio_end)
-        spec = self.mel(audio_clip.type(torch.FloatTensor))
-        log_spec = torch.log(spec + EPS)
-        # img = img.mean(0, keepdim=True).expand(3, 64, 64)
-        return log_spec
+        flow = self.load_flow(trial, "left_gelsight_flow", timestep)
+        flow = flow[2:] - flow[:2]
+        return flow.float()
+
 
 @DeprecationWarning
 class TripletDataset(Dataset):

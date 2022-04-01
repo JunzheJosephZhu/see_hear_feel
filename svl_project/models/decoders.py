@@ -72,8 +72,23 @@ class ResNet_Decoder(nn.Module):
 def make_vision_decoder(latent_dim):
     return ResNet_Decoder(latent_dim=latent_dim, out_channels=3)
 
-def make_audio_decoder(out_dim):
-    return ResNet_Decoder(latent_dim=out_dim, out_channels=2)
+def make_audio_decoder(latent_dim):
+    return ResNet_Decoder(latent_dim=latent_dim, out_channels=2)
 
 def make_tactile_decoder(latent_dim):
     return ResNet_Decoder(latent_dim=latent_dim, out_channels=3)
+
+class Decoder_MLP(nn.Module):
+    def __init__(self, latent_dim):
+        super().__init__()
+        output_dim = 2 * 10 * 14
+        self.decoder = nn.Sequential(nn.Linear(latent_dim, 512),
+                                nn.Linear(512, 1024),
+                                nn.Linear(1024, 2048),
+                                nn.Linear(2048, output_dim))
+
+    def forward(self, latent):
+        return self.decoder(latent).view(latent.size(0), 2, 10, 14)
+
+def make_flow_decoder(out_dim):
+    return Decoder_MLP(latent_dim=out_dim)
