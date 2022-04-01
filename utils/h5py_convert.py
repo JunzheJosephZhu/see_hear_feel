@@ -15,7 +15,7 @@ import cv2
 
 def convert_episode(data_folder, logs, idx):
     print(idx)
-    format_time = logs.iloc[idx].Time#.replace(":", "_")
+    format_time = logs.iloc[idx].Time.replace(":", "_")
     trial = os.path.join(data_folder, format_time)
     all_datasets = h5py.File(os.path.join(trial, "data.hdf5"), 'r')
     streams = ["cam_gripper_color", "cam_fixed_color", "left_gelsight_flow", "left_gelsight_frame"]
@@ -29,7 +29,6 @@ def convert_episode(data_folder, logs, idx):
             if not stream.endswith("flow"):
                 if stream == "left_gelsight_frame":
                     img = img[:, 100:, :]
-                    # print(img.shape)
                 out_file = os.path.join(trial, stream, str(frame_nb) + ".png")
                 # if not os.path.exists(out_file) or True:
                 cv2.imwrite(out_file, img)
