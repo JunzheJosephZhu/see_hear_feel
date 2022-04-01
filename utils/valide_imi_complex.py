@@ -49,8 +49,8 @@ def baselineValidate(args):
         if args.use_flow:
             t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
         else:
-            t_encoder = make_tactile_encoder(args.embed_dim_v)
-            # t_encoder = make_tactile_encoder(args.embed_dim_t)
+            # t_encoder = make_tactile_encoder(args.embed_dim_v)
+            t_encoder = make_tactile_encoder(args.embed_dim_t)
         a_encoder = make_audio_encoder(args.embed_dim_a)
         v_encoder.eval()
         t_encoder.eval()
@@ -77,6 +77,8 @@ def baselineValidate(args):
     real = []
     predict_label = []
     real_label = []
+    label_correct = np.zeros(3 ** args.action_dim)
+    label_total = np.zeros(3 ** args.action_dim)
     
     debug_info = True
     for batch in val_loader:
@@ -129,9 +131,11 @@ def baselineValidate(args):
                 match = False
                 break
         if match:
+            label_correct[pred] += 1
             total_cor += 1
         else:
             total_wrong += 1
+        label_total[gt_label] += 1
         ## test partial match
         for i in range(args.action_dim):
             if pred_action[i] == keyboard[0][i]:
@@ -150,6 +154,7 @@ def baselineValidate(args):
     print(f"each direction acc: {acc}")
     acc = total_cor / (total_wrong + total_cor)
     print(f"EM = {acc}")
+    print(f"class acc: {label_correct / label_total}")
     predict = np.asarray(predict)
     real = np.asarray(real)
     
@@ -212,6 +217,7 @@ if __name__ == "__main__":
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
+    p.add("--use_layernorm", default=False, type=bool)
 
     args = p.parse_args()
     baselineValidate(args)

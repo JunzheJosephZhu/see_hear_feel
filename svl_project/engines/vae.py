@@ -2,6 +2,7 @@ from pytorch_lightning.core.lightning import LightningModule
 import torch.nn.functional as F
 import torch
 from torch.autograd import Variable
+from svl_project.datasets.repr_dataset import visualize_flow
 
 class VAELearn(LightningModule):
     def __init__(self, vae, train_loader, val_loader, beta, prior_scale, optimizer, scheduler, config):
@@ -49,6 +50,17 @@ class VAELearn(LightningModule):
                 self.logger.experiment.add_image(f"train/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
                 self.logger.experiment.add_image(f"train/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
             # TODO: add two channel audio logging
+            elif pixels.size(1) == 2 and pixels.size(2) == 64:
+                batch = torch.cat([batch, torch.zeros_like(batch)[:, :1]], dim=1)
+                pixels = torch.cat([pixels, torch.zeros_like(pixels)[:, :1]], dim=1)
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch, dataformats="CHW")
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch, dataformats="CHW")
+            else: # gelsight flow
+                gt_flow = visualize_flow(batch[0])
+                pred_flow = visualize_flow(pixels[0])
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_original", gt_flow, global_step=self.current_epoch, dataformats="HW")
+                self.logger.experiment.add_image(f"train/{str(batch_idx)}_reconstruct", pred_flow, global_step=self.current_epoch, dataformats="HW")
+
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -62,7 +74,11 @@ class VAELearn(LightningModule):
             if pixels.size(1) == 3:
                 self.logger.experiment.add_image(f"val/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch)
                 self.logger.experiment.add_image(f"val/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch)
-
+            elif pixels.size(1) == 2 and pixels.size(2) == 64:
+                batch = torch.cat([batch, torch.zeros_like(batch)[:, :1]], dim=1)
+                pixels = torch.cat([pixels, torch.zeros_like(pixels)[:, :1]], dim=1)
+                self.logger.experiment.add_image(f"val/{str(batch_idx)}_original", batch[0], global_step=self.current_epoch, dataformats="CHW")
+                self.logger.experiment.add_image(f"val/{str(batch_idx)}_reconstruct", pixels[0], global_step=self.current_epoch, dataformats="CHW")
         return loss
 
     def train_dataloader(self):

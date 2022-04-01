@@ -4,8 +4,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+# from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn_ablation.yaml")
     p.add("--batch_size", default=4)
-    p.add("--lr", default=1e-3, type=float)
+    p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
     p.add("--epochs", default=55, type=int)
@@ -123,9 +123,9 @@ if __name__ == "__main__":
     p.add("--use_mha", default=False)
     p.add("--use_layernorm", default=False)
     # data
-    p.add("--train_csv", default="train_0318.csv")
-    p.add("--val_csv", default="val_0318.csv")
-    p.add("--data_folder", default="data/test_recordings")
+    p.add("--train_csv", default="train.csv")
+    p.add("--val_csv", default="val.csv")
+    p.add("--data_folder", default="../data_0331/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -139,12 +139,14 @@ if __name__ == "__main__":
     p.add("--use_flow", default=False, type=bool)
     p.add("--use_holebase", default=False, type=bool)
 
+    
+
 
     args = p.parse_args()
     # v_t
     main(args)
-    # args.ablation = 'a'
-    # main(args)
+    args.ablation = 'v_t'
+    main(args)
 
     # args.use_flow = True
     # args.ablation = 't'
