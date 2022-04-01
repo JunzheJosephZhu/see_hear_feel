@@ -6,8 +6,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import cv2
 import torch
 import numpy as np
-from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti
-# from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
+# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_tactile_flow_encoder, make_audio_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
@@ -49,8 +49,8 @@ def baselineValidate(args):
         if args.use_flow:
             t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
         else:
-            # t_encoder = make_tactile_encoder(args.embed_dim_v)
-            t_encoder = make_tactile_encoder(args.embed_dim_t)
+            t_encoder = make_tactile_encoder(args.embed_dim_v)
+            # t_encoder = make_tactile_encoder(args.embed_dim_t)
         a_encoder = make_audio_encoder(args.embed_dim_a)
         v_encoder.eval()
         t_encoder.eval()
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     p.add("--resized_width_t", required=True, type=int)
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0322/test_recordings/")
+    p.add("--data_folder", default="../data_0331/test_recordings/")
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)

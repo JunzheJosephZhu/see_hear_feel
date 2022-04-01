@@ -137,8 +137,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
                 if self.use_tactile:
                     t_embeds = self.t_encoder(t_inp).detach()
-                    # t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
-                    t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                    t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                    # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
                 if self.use_audio:
                     a_embeds = self.a_encoder(a_inp).detach()
                     a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
@@ -148,8 +148,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
             if self.use_tactile:
                 t_embeds = self.t_encoder(t_inp)
-                # t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
-                t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
+                t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
+                # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
             if self.use_audio:
                 a_embeds = self.a_encoder(a_inp)
                 a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
@@ -179,12 +179,12 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             ## adding pooling layer to downsample
             v_out = out[0]
             outs = [v_out]
-            # if self.use_tactile:
-            #     t_out = self.t_pool(out[1])
-            #     outs.append(t_out)
-            # if self.use_audio:
-            #     a_out = self.a_pool(out[-1])
-            #     outs.append(a_out)
+            if self.use_tactile:
+                t_out = self.t_pool(out[1])
+                outs.append(t_out)
+            if self.use_audio:
+                a_out = self.a_pool(out[-1])
+                outs.append(a_out)
             mlp_inp = torch.concat(outs, 1)
         elif self.use_mha:
             mlp_inp = torch.stack(embeds, dim=0)
