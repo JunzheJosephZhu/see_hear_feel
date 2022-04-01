@@ -179,12 +179,12 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             ## adding pooling layer to downsample
             v_out = out[0]
             outs = [v_out]
-            if self.use_tactile:
-                t_out = self.t_pool(out[1])
-                outs.append(t_out)
-            if self.use_audio:
-                a_out = self.a_pool(out[-1])
-                outs.append(a_out)
+            # if self.use_tactile:
+            #     t_out = self.t_pool(out[1])
+            #     outs.append(t_out)
+            # if self.use_audio:
+            #     a_out = self.a_pool(out[-1])
+            #     outs.append(a_out)
             mlp_inp = torch.concat(outs, 1)
         elif self.use_mha:
             mlp_inp = torch.stack(embeds, dim=0)
