@@ -22,6 +22,15 @@ from torchvision import transforms as T
 from torch.autograd import Variable
 
 
+def collate_fn(batch):
+    len_batch = len(batch) # original batch length
+    batch = list(filter (lambda x:x is not None, batch)) # filter out all the Nones
+    # if len_batch > len(batch): # source all the required samples from the original dataset at random
+    #     diff = len_batch - len(batch)
+    #     for i in range(diff):
+    #         batch.append(dataset[np.random.randint(0, len(dataset))])
+    return torch.utils.data.dataloader.default_collate(batch)
+
 def baselineValidate(args):
     print(args.use_flow)
     def strip_sd(state_dict, prefix):
@@ -42,7 +51,7 @@ def baselineValidate(args):
                                          train=False)
          for i in range(min(args.num_episode, len(val_csv)))])
 
-    val_loader = DataLoader(val_set, 1, num_workers=8)
+    val_loader = DataLoader(val_set, 1, num_workers=4) #, collate_fn=collate_fn
     with torch.no_grad():
         # construct model
         v_encoder = make_vision_encoder(args.embed_dim_v)

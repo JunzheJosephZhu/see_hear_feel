@@ -17,7 +17,7 @@ class BaseDataset(Dataset):
         super().__init__()
         self.logs = pd.read_csv(log_file)
         self.data_folder = data_folder
-        self.sr = 16000
+        self.sr = 44100
         self.mel = torchaudio.transforms.MelSpectrogram(
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64, center=False
         )

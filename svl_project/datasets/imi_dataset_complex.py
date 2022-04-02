@@ -108,6 +108,16 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self._crop_height = int(self.resized_height_v * (1.0 - args.crop_percent))
         self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        
+        program_timestamps = self.timestamps['program_timestamps']
+        self.approach_end = 0
+        for ts in program_timestamps:
+            if ts < self.timestamps['approach_end'][0]:
+                self.approach_end += 1
+            else:
+                print("ts", ts)
+                print("end",self.timestamps['approach_end'], self.approach_end)
+                break
         if not args.use_holebase:
             self.audio = self.audio_gripper
         else:
@@ -149,12 +159,15 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         return trial, timestamps, audio_gripper, audio_holebase, len(timestamps["action_history"])
 
     def __len__(self):
-        return self.num_frames
+        if self.ablation == 't':
+            return self.num_frames - self.approach_end
+        else:
+            return self.num_frames
 
     def __getitem__(self, idx):
-        # if idx < self.num_frames / 2 and (self.ablation == 't' or self.ablation == 'a'):
-        #     print("only use data that contact the surface")
-        #     return self.__getitem__(torch.randint(low = int(self.num_frames/2), high=int(self.num_frames),size=()).numpy())
+        if self.ablation == 't':
+            # print("only use data that contact the surface")
+            idx = idx + self.approach_end
         end = idx  # torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len
         if start < 0:

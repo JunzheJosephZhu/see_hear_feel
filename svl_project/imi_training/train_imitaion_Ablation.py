@@ -78,15 +78,15 @@ def main(args):
     if args.use_flow:
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     else:
-        # t_encoder = make_tactile_encoder(args.embed_dim_t)
-        t_encoder = make_tactile_encoder(args.embed_dim_v)
+        t_encoder = make_tactile_encoder(args.embed_dim_t)
+        # t_encoder = make_tactile_encoder(args.embed_dim_v)
         if args.pretrained_t is not None:
             print("loading pretrained t...")
             state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
             t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
-    # a_encoder = make_audio_encoder(args.embed_dim_a)
-    a_encoder = make_audio_encoder(args.embed_dim_v)
+    a_encoder = make_audio_encoder(args.embed_dim_a)
+    # a_encoder = make_audio_encoder(args.embed_dim_v)
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -144,8 +144,6 @@ if __name__ == "__main__":
 
     args = p.parse_args()
     # v_t
-    main(args)
-    args.ablation = 't'
     main(args)
 
     # args.use_flow = True
