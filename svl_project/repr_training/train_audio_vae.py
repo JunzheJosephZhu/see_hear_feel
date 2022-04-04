@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/test_recordings_0214")
+    p.add("--data_folder", default="data/test_recordings")
 
     args = p.parse_args()
     main(args)

@@ -31,7 +31,7 @@ if __name__ == "__main__":
     import configargparse
 
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default="conf/repr/gelsight_vae.yaml")
+    p.add("-c", "--config", is_config_file=True, default="conf/repr/gelflow_vae.yaml")
     p.add("--batch_size", default=4)
     p.add("--lr", default=0.001, type=float)
     p.add("--gamma", default=0.9, type=float)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/test_recordings_0214")
+    p.add("--data_folder", default="data/test_recordings")
 
     args = p.parse_args()
     main(args)
