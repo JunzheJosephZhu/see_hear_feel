@@ -42,3 +42,42 @@ class VAE(torch.nn.Module):
         z = z_dist.rsample()
         pixels = self.decoder(z)
         return pixels, z_dist
+
+class VAE_FuturePred(torch.nn.Module):
+    def __init__(self, encoder, decoder, out_dim, latent_dim, action_dim):
+        super().__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+        self.mean_layer = nn.Linear(out_dim, latent_dim)
+        # log variance
+        self.scale_layer = nn.Linear(out_dim, latent_dim)
+        self.action_encoder = nn.Sequential(nn.Linear(action_dim, out_dim),
+                                            nn.Sigmoid(),
+                                            nn.Linear(out_dim, out_dim),
+                                            nn.Sigmoid(),
+                                            nn.Linear(out_dim, out_dim))
+        self.future_model = nn.Sequential(nn.Linear(out_dim * 2, out_dim),
+                                            nn.Sigmoid(),
+                                            nn.Linear(out_dim, out_dim),
+                                            nn.Sigmoid(),
+                                            nn.Linear(out_dim, out_dim))
+        self.future_mean_layer = nn.Linear(out_dim, latent_dim)
+        # log variance
+        self.future_scale_layer = nn.Linear(out_dim, latent_dim)
+
+    def forward(self, inp, action):
+        shared_repr = self.encoder(inp)
+        mean = self.mean_layer(shared_repr)
+        scale = torch.exp(0.5 * self.scale_layer(shared_repr))
+        z_dist = independent_multivariate_normal(mean=mean,
+                                        stddev=scale)
+        z = z_dist.rsample()
+        pixels = self.decoder(z)
+        # predict future representation
+        action_enc = self.action_encoder(action)
+        future_repr = self.future_model(torch.cat([shared_repr, action_enc], -1))
+        future_mean = self.future_mean_layer(future_repr)
+        future_scale = torch.exp(0.5 * self.future_scale_layer(future_repr))
+        future_z_dist = independent_multivariate_normal(mean=future_mean,
+                                        stddev=future_scale)
+        return pixels, z_dist, future_z_dist
