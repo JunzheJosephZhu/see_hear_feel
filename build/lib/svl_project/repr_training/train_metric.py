@@ -68,8 +68,8 @@ if __name__ == "__main__":
     p.add("--gap", required=True, type=float)
     p.add("--embed_dim", required=True, type=int)
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
+    p.add("--train_csv", default="train_0331.csv")
+    p.add("--val_csv", default="val_0331.csv")
     p.add("--sil_ratio", default=0.2)
 
     args = p.parse_args()

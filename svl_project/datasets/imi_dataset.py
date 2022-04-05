@@ -634,13 +634,13 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
 
     parser = ArgumentParser()
-    parser.add_argument("--log_file", default="train.csv")
+    parser.add_argument("--log_file", default="train_0331.csv")
     parser.add_argument("--num_stack", default=5, type=int)
     parser.add_argument("--frameskip", default=2, type=int)
     parser.add_argument("--data_folder", default="data/test_recordings_0220_toy")
     args = parser.parse_args()
 
-    dataset = ImitationOverfitDataset("train.csv")
+    dataset = ImitationOverfitDataset("train_0331.csv")
     # print("dataset", dataset.len)
     cnt = 0
     zero_cnt = 0

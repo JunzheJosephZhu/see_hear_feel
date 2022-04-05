@@ -1,7 +1,9 @@
 import torch
+from torch import nn
+
 from svl_project.datasets.repr_dataset import VisionGripper_FuturePred
-from svl_project.models.decoders import make_vision_decoder
-from svl_project.models.encoders import make_vision_encoder
+from svl_project.models.decoders import make_vision_decoder, make_tactile_decoder
+from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder
 from svl_project.models.repr_models import VAE_FuturePred
 from svl_project.engines.vae_futurepred import VAELearn_FuturePred
 from torch.utils.data import DataLoader
@@ -18,7 +20,13 @@ def main(args):
     val_loader = DataLoader(val_set, 1, num_workers=8)
     v_encoder = make_vision_encoder()
     v_decoder = make_vision_decoder(args.latent_dim)
-    vae_model = VAE_FuturePred(v_encoder, v_decoder, 512, args.latent_dim, args.action_dim)
+    t_encoder = make_tactile_encoder()
+    t_decoder = make_tactile_decoder(args.latent_dim)
+
+    fusion_module = nn.Sequential(nn.Linear(512 * 2, 512),
+                  nn.LeakyReLU(0.1, inplace=True),
+                  nn.Linear(512, 256))
+    vae_model = VAE_FuturePred(v_encoder, v_decoder, t_encoder, t_decoder, fusion_module, 512, args.latent_dim, args.action_dim)
     optimizer = torch.optim.Adam(vae_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -36,12 +44,12 @@ if __name__ == "__main__":
     p.add("--lr", default=0.001, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=100)
+    p.add("--epochs", default=200)
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # VAE stuff
     p.add("--latent_dim", required=True, type=int)
-    p.add("--action_dim", default=7, type=int)
+    p.add("--action_dim", default=4, type=int)
     p.add("--beta", required=True, type=float)
     p.add("--w_futureloss", required=True, type=float)
     p.add("--prior_scale", default=1.0, type=float)
@@ -50,7 +58,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/test_recordings_0214")
+    p.add("--data_folder", default="data/data_0401/test_recordings")
 
     args = p.parse_args()
     main(args)

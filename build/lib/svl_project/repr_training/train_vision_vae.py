@@ -46,8 +46,8 @@ if __name__ == "__main__":
     p.add("--beta", required=True, type=float)
     p.add("--prior_scale", default=1.0, type=float)
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
+    p.add("--train_csv", default="train_0331.csv")
+    p.add("--val_csv", default="val_0331.csv")
     p.add("--data_folder", default="data/test_recordings_0214")
 
     args = p.parse_args()

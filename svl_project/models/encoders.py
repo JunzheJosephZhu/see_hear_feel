@@ -113,7 +113,7 @@ class Tactile_Flow_Encoder(nn.Module):
         return x
 
 def make_vision_encoder(out_dim=None):
-    vision_extractor = resnet18(pretrained=False)
+    vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
@@ -129,15 +129,15 @@ def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
     return Encoder(vision_extractor)
 
-def make_tactile_encoder(out_dim):
+def make_tactile_encoder(out_dim=None):
     tactile_extractor = resnet18(pretrained=True)
     tactile_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
-    # tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
-    # return Encoder(tactile_extractor)
-    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
-    return Tactile_RGB_Encoder(tactile_extractor, out_dim)
+    tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
+    return Encoder(tactile_extractor)
+    # tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
+    # return Tactile_RGB_Encoder(tactile_extractor, out_dim)
 
 def make_flow_encoder():
     input_dim = 2 * 10 * 14

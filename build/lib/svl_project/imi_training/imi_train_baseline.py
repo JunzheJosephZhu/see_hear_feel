@@ -93,8 +93,8 @@ if __name__ == "__main__":
     p.add("--num_heads", type=int)
     p.add("--loss_type", default='mse')
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
+    p.add("--train_csv", default="train_0331.csv")
+    p.add("--val_csv", default="val_0331.csv")
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
     p.add("--crop_height", default=432, type=int)

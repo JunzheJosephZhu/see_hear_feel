@@ -85,8 +85,8 @@ if __name__ == "__main__":
     p.add("--embed_dim", required=True, type=int)
     p.add("--action_dim", default=3, type=int)
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
+    p.add("--train_csv", default="train_0331.csv")
+    p.add("--val_csv", default="val_0331.csv")
     p.add("--max_len", default=10, type=int)
 
     args = p.parse_args()

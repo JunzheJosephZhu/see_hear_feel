@@ -62,8 +62,8 @@ if __name__ == "__main__":
     p.add("--pretrained", default=None)
     p.add("--freeze_till", required=True, type=int)
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
+    p.add("--train_csv", default="train_0331.csv")
+    p.add("--val_csv", default="val_0331.csv")
     p.add("--data_folder", default="data/test_recordings")
     p.add("--resized_height", required=True, type=int)
     p.add("--resized_width", required=True, type=int)

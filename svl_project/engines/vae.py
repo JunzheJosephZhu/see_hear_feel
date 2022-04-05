@@ -1,3 +1,4 @@
+import torchvision.transforms
 from pytorch_lightning.core.lightning import LightningModule
 import torch.nn.functional as F
 import torch
@@ -18,6 +19,8 @@ class VAELearn(LightningModule):
         self.save_hyperparameters(vars(config))
 
     def compute_loss(self, predicted_pixels, gt_pixels, encoded_context_dist):
+        trans = torchvision.transforms.Resize((64, 64))
+        gt_pixels = trans(gt_pixels)
         if self.config.allow_mismatch:
             gt_pixels = gt_pixels[:, :, :predicted_pixels.size(2), :predicted_pixels.size(3)]
         if self.config.loss_type == "l1":

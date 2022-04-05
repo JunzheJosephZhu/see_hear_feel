@@ -205,8 +205,8 @@ if __name__ == "__main__":
     p.add("--action_dim", default=3, type=int)
     p.add("--num_heads", type=int)
     # data
-    p.add("--train_csv", default="train.csv")
-    p.add("--val_csv", default="val.csv")
+    p.add("--train_csv", default="train_0331.csv")
+    p.add("--val_csv", default="val_0331.csv")
 
     args = p.parse_args()
     learning_Reg(args)
