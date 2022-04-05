@@ -6,8 +6,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import cv2
 import torch
 import numpy as np
-from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti
-# from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
+# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_tactile_flow_encoder, make_audio_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
@@ -21,6 +21,15 @@ import pandas as pd
 from torchvision import transforms as T
 from torch.autograd import Variable
 
+
+def collate_fn(batch):
+    len_batch = len(batch) # original batch length
+    batch = list(filter (lambda x:x is not None, batch)) # filter out all the Nones
+    # if len_batch > len(batch): # source all the required samples from the original dataset at random
+    #     diff = len_batch - len(batch)
+    #     for i in range(diff):
+    #         batch.append(dataset[np.random.randint(0, len(dataset))])
+    return torch.utils.data.dataloader.default_collate(batch)
 
 def baselineValidate(args):
     print(args.use_flow)
@@ -42,15 +51,15 @@ def baselineValidate(args):
                                          train=False)
          for i in range(min(args.num_episode, len(val_csv)))])
 
-    val_loader = DataLoader(val_set, 1, num_workers=8)
+    val_loader = DataLoader(val_set, 1, num_workers=4) #, collate_fn=collate_fn
     with torch.no_grad():
         # construct model
         v_encoder = make_vision_encoder(args.embed_dim_v)
         if args.use_flow:
             t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
         else:
-            # t_encoder = make_tactile_encoder(args.embed_dim_v)
-            t_encoder = make_tactile_encoder(args.embed_dim_t)
+            t_encoder = make_tactile_encoder(args.embed_dim_v)
+            # t_encoder = make_tactile_encoder(args.embed_dim_t)
         a_encoder = make_audio_encoder(args.embed_dim_a)
         v_encoder.eval()
         t_encoder.eval()
@@ -211,9 +220,9 @@ if __name__ == "__main__":
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
     p.add("--resized_width_t", required=True, type=int)
-    p.add("--train_csv", default="train_0331.csv")
-    p.add("--val_csv", default="val_0331.csv")
-    p.add("--data_folder", default="../data_0322/test_recordings/")
+    p.add("--train_csv", default="train.csv")
+    p.add("--val_csv", default="val.csv")
+    p.add("--data_folder", default="../data_0331/test_recordings/")
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)

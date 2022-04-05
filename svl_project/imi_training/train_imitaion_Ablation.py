@@ -67,8 +67,7 @@ def main(args):
 
     train_loader = DataLoader(train_set, args.batch_size, num_workers=4, sampler=sampler)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
-
-    # state_dict = torch.load(args.pretrained, map_location="cpu")["state_dict"]
+    
     ## v encoder
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
     if args.pretrained_v is not None:
@@ -84,18 +83,12 @@ def main(args):
         if args.pretrained_t is not None:
             print("loading pretrained t...")
             state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
-            t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.t_encoder."))
+            t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
     # a_encoder = make_audio_encoder(args.embed_dim_a)
     a_encoder = make_audio_encoder(args.embed_dim_v)
-
-    # fusion_module = nn.Sequential(nn.Linear(512 * 2, 512),
-    #               nn.LeakyReLU(0.1, inplace=True),
-    #               nn.Linear(512, 256))
-    # if args.pretrained is not None:
-    #     fusion_module.load_state_dict(strip_sd(state_dict, "vae.fusion_module."))
     
-    imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, None, args).cuda()
+    imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -126,14 +119,13 @@ if __name__ == "__main__":
     p.add("--loss_type", default="cce")
     p.add("--pretrained_v", default=None)
     p.add("--pretrained_t", default=None)
-    p.add("--pretrained", default=None)
     p.add("--freeze_till", required=True, type=int)
     p.add("--use_mha", default=False)
     p.add("--use_layernorm", default=False)
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0401/test_recordings")
+    p.add("--data_folder", default="../data_0331/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -151,13 +143,12 @@ if __name__ == "__main__":
 
 
     args = p.parse_args()
-    # v
+    # v_t
     main(args)
 
     # args.use_flow = True
     # args.ablation = 't'
     # main(args)
-    #
-    # args.ablation = 'v_t'
+    # args.ablation = 'v_t_a'
     # main(args)
 
