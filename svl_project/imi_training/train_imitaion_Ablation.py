@@ -78,8 +78,8 @@ def main(args):
     if args.use_flow:
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     else:
-        t_encoder = make_tactile_encoder(args.embed_dim_t)
-        # t_encoder = make_tactile_encoder(args.embed_dim_v)
+        # t_encoder = make_tactile_encoder(args.embed_dim_t)
+        t_encoder = make_tactile_encoder(args.embed_dim_v)
         if args.pretrained_t is not None:
             print("loading pretrained t...")
             state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0331/test_recordings")
+    p.add("--data_folder", default="../data_0401/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)

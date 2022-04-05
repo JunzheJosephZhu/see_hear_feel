@@ -52,6 +52,7 @@ class ImitationDatasetLabelCount(BaseDataset):
         return self.num_frames
 
     def __getitem__(self, idx):
+        
         keyboard = self.timestamps["action_history"][idx]
         xy_space = {-0.0005: 0, 0: 1, 0.0005: 2}
         z_space = {-0.0005: 0, 0: 1, 0.0005: 2}
