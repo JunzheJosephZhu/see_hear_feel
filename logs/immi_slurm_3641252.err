@@ -1,0 +1,20 @@
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Set SLURM handle signals.
+
+  | Name     | Type                     | Params
+------------------------------------------------------
+0 | actor    | Imitation_Actor_Ablation | 40.6 M
+1 | loss_cal | CrossEntropyLoss         | 0     
+------------------------------------------------------
+40.6 M    Trainable params
+0         Non-trainable params
+40.6 M    Total params
+162.309   Total estimated model params size (MB)
+/viscam/u/josef/anaconda3/envs/joseph/lib/python3.9/site-packages/pytorch_lightning/callbacks/model_checkpoint.py:631: UserWarning: Checkpoint directory /viscam/u/josef/svl_project/exp/imi_learn_ablation/checkpoints exists and is not empty.
+  rank_zero_warn(f"Checkpoint directory {dirpath} exists and is not empty.")
+/viscam/u/josef/anaconda3/envs/joseph/lib/python3.9/site-packages/pytorch_lightning/trainer/data_loading.py:132: UserWarning: The dataloader, val_dataloader 0, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 72 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+slurmstepd: error: *** JOB 3641252 ON svl6 CANCELLED AT 2022-04-04T16:45:18 ***

@@ -1,0 +1,8 @@
+SLURM_JOBID=3641242
+SLURM_JOB_NODELIST=svl4
+SLURM_NNODES=1
+SLURMTMPDIR=
+working directory = /viscam/u/josef/svl_project
+Virtual Env Activated
+Working with the LD_LIBRARY_PATH: 
+running command : <RUN_COMMAND>

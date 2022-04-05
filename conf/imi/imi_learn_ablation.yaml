@@ -1,6 +1,6 @@
-embed_dim_v: 512
-embed_dim_t: 64
-embed_dim_a: 64
+embed_dim_v: 128
+embed_dim_t: 128
+embed_dim_a: 128
 #pretrained: None # "/exp/metric_learn/checkpoints/last.ckpt"
 freeze_till: 5
 num_stack: 4

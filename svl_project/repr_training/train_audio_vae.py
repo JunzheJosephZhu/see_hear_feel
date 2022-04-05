@@ -46,9 +46,9 @@ if __name__ == "__main__":
     p.add("--allow_mismatch", default=False, type=bool)
     p.add("--loss_type", required=True, type=str)
     # data
-    p.add("--train_csv", default="train_0331.csv")
-    p.add("--val_csv", default="val_0331.csv")
-    p.add("--data_folder", default="data/test_recordings_0214")
+    p.add("--train_csv", default="train.csv")
+    p.add("--val_csv", default="val.csv")
+    p.add("--data_folder", default="data/test_recordings")
 
     args = p.parse_args()
     main(args)
