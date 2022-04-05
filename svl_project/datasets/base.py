@@ -16,12 +16,12 @@ class BaseDataset(Dataset):
         super().__init__()
         self.logs = pd.read_csv(log_file)
         self.data_folder = data_folder
-        self.sr = 16000
+        self.sr = 44100
         self.mel = torchaudio.transforms.MelSpectrogram(
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64, center=False
         )
         self.streams = ["cam_gripper_color", "cam_fixed_color", "left_gelsight_flow", "left_gelsight_frame"]
-        self.gelsight_offset = torch.as_tensor(np.array(Image.open("gelsight_offset.png"))).float().permute(2, 0, 1) / 255
+        self.gelsight_offset = torch.as_tensor(np.array(Image.open(os.path.join(data_folder, "gs_offset.png")))).float().permute(2, 0, 1) / 255
         pass
 
     def get_episode(self, idx, load_audio=True):
@@ -32,17 +32,17 @@ class BaseDataset(Dataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx]#.Time.replace(":", "_")
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
-            timestamps = json.load(ts)
+            self.timestamps = json.load(ts)
         if load_audio:
             audio_gripper = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
             audio_hole = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
             audio = torch.as_tensor(np.stack([audio_gripper, audio_hole], 0))
         else:
             audio = None
-        return trial, timestamps, audio, len(timestamps["action_history"])
+        return trial, self.timestamps, audio, len(self.timestamps["action_history"])
 
     def __getitem__(self, idx):
         raise NotImplementedError

@@ -10,13 +10,15 @@ def save_config(args):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
         yaml.safe_dump(vars(args), outfile)
+    with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
+        yaml.safe_dump(vars(args), outfile)
     return exp_dir
 
 def start_training(args, exp_dir, pl_module):
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename="{epoch}-{step}",
-        save_top_k=0,
+        save_top_k=1,
         save_last=True,
     )
     trainer = Trainer(
@@ -25,7 +27,7 @@ def start_training(args, exp_dir, pl_module):
         default_root_dir=exp_dir,
         gpus=-1,
         strategy="dp",
-        limit_val_batches=10,
+        limit_val_batches=100,
         check_val_every_n_epoch=1,
         log_every_n_steps=5
     )

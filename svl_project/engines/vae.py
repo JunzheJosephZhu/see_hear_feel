@@ -1,6 +1,7 @@
 from pytorch_lightning.core.lightning import LightningModule
 import torch.nn.functional as F
 import torch
+from torch.autograd import Variable
 from svl_project.datasets.repr_dataset import visualize_flow
 
 class VAELearn(LightningModule):
@@ -38,7 +39,8 @@ class VAELearn(LightningModule):
         return loss, recon_loss, kld
 
     def training_step(self, batch, batch_idx):
-        inp = batch
+        # inp = batch
+        inp = Variable(batch).cuda()
         pixels, prior = self.vae(inp)
         loss, recon_loss, kld = self.compute_loss(pixels, inp.detach(), prior)
         self.log('train/loss_recon', recon_loss.item())
@@ -62,7 +64,8 @@ class VAELearn(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        inp = batch
+        # inp = batch
+        inp = Variable(batch).cuda()
         pixels, prior = self.vae(inp)
         loss, recon_loss, kld = self.compute_loss(pixels, inp.detach(), prior)
         self.log('val/loss_recon', recon_loss.item())
