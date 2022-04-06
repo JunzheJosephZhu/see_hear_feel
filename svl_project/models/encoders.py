@@ -52,7 +52,7 @@ class Vision_Encoder(Encoder):
         super().__init__(feature_extractor)
         self.ln = None
         if out_dim is not None:
-            self.ln = nn.Linear(512, out_dim)
+            self.fc= nn.Linear(512, out_dim)
 
     def forward(self, x):
         x = self.coord_conv(x)
@@ -61,8 +61,8 @@ class Vision_Encoder(Encoder):
         x = list(x.values())[0]
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        if self.ln is not None:
-            x = self.ln(x)
+        if self.fc is not None:
+            x = self.fc(x)
             ## adding relu
             x = F.relu(x)
         return x
@@ -135,9 +135,9 @@ def make_tactile_encoder(out_dim=None):
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
-    return Encoder(tactile_extractor)
+    # return Encoder(tactile_extractor)
     # tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
-    # return Tactile_RGB_Encoder(tactile_extractor, out_dim)
+    return Tactile_RGB_Encoder(tactile_extractor, out_dim)
 
 def make_flow_encoder():
     input_dim = 2 * 10 * 14
