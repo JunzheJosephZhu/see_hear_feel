@@ -21,3 +21,4 @@ Set SLURM handle signals.
   rank_zero_warn(f"Checkpoint directory {dirpath} exists and is not empty.")
 /viscam/u/josef/anaconda3/envs/joseph/lib/python3.9/site-packages/pytorch_lightning/trainer/data_loading.py:132: UserWarning: The dataloader, val_dataloader 0, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 72 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
   rank_zero_warn(
+slurmstepd: error: *** JOB 3641281 ON svl4 CANCELLED AT 2022-04-04T20:18:34 ***

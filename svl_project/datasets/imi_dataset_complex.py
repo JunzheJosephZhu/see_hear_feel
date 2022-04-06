@@ -94,7 +94,7 @@ class ImitationDatasetWholeSeq(BaseDataset):
         self.frameskip = args.frameskip
         self.fps = 10
         self.sr = 44100
-        self.subseq_len = 50
+        self.subseq_len = 100
         self.num_cam = args.num_camera
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
