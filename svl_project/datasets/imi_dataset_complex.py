@@ -95,7 +95,7 @@ class ImitationDatasetWholeSeq(BaseDataset):
         # self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.fps = 10
         self.sr = 44100
-        self.subseq_len = 100
+        self.subseq_len = 50
         self.num_cam = args.num_camera
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
@@ -107,12 +107,12 @@ class ImitationDatasetWholeSeq(BaseDataset):
 
         self.transform_img = T.Compose([
             T.Resize((self.resized_height_v, self.resized_width_v)),
-            T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
-            T.RandomCrop((self._crop_height, self._crop_width))
+            # T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
+            # T.RandomCrop((self._crop_height, self._crop_width))
         ])
         self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
+                # T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
         ])
 
         self.use_flow = args.use_flow
@@ -155,14 +155,19 @@ class ImitationDatasetWholeSeq(BaseDataset):
             return len(self.logs)
 
     def __getitem__(self, idx):
-        trial, timestamps, num_frames = self.get_episode(idx, load_audio=True)
+        trial, timestamps, _, _, num_frames = self.get_episode(idx, load_audio=True)
         # for timestamp in range(num_frames):
         #     img = self.transform(self.load_image("data/test_recordings/2022-03-31 19:32:18.632658/cam_fixed_color/0.png"))
         # i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
         assert num_frames >= self.subseq_len
-        start = torch.randint(low=0, high=num_frames - self.subseq_len, size=())
-        end = start + self.subseq_len
-
+        # if training, sample subseq_len consecutive frames
+        if self.train:
+            start = torch.randint(low=0, high=num_frames - self.subseq_len, size=())
+        # if testing, test on entire sequence
+            end = start + self.subseq_len
+        else:
+            start = 0
+            end = num_frames
         cam_fixed_seq = torch.stack(
             [self.transform_img(self.load_image(trial, "cam_fixed_color", timestep))
                 for timestep in range(start, end)], dim=0)
@@ -194,12 +199,12 @@ class ImitationDatasetWholeSeq(BaseDataset):
         keyboards = torch.as_tensor(
             [[xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]] for keyboard in keyboards])
 
-        # if self.num_cam == 2:
-        #     # [num_frames * 2, 3, H, W]
-        #     v_seq = torch.stack((cam_gripper_seq, cam_fixed_seq), dim=1)
-        # else:
-        v_seq = cam_fixed_seq
-
+        if self.num_cam == 2:
+            # [num_frames * 2, 3, H, W]
+            v_seq = [cam_gripper_seq, cam_fixed_seq]
+        else:
+            v_seq = [cam_fixed_seq]
+        
         return v_seq, tactile_seq, keyboards
 
 

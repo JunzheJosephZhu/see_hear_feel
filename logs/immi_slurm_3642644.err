@@ -1,0 +1,18 @@
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
+Set SLURM handle signals.
+
+  | Name     | Type                     | Params
+------------------------------------------------------
+0 | actor    | Imitation_Actor_Ablation | 34.5 M
+1 | loss_cal | CrossEntropyLoss         | 0     
+------------------------------------------------------
+34.5 M    Trainable params
+0         Non-trainable params
+34.5 M    Total params
+137.945   Total estimated model params size (MB)
+/viscam/u/josef/anaconda3/envs/joseph/lib/python3.9/site-packages/pytorch_lightning/callbacks/model_checkpoint.py:631: UserWarning: Checkpoint directory /viscam/u/josef/svl_project/exp/imi_learn_ablation/checkpoints exists and is not empty.
+  rank_zero_warn(f"Checkpoint directory {dirpath} exists and is not empty.")
+slurmstepd: error: *** JOB 3642644 ON svl5 CANCELLED AT 2022-04-06T00:51:19 ***

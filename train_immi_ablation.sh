@@ -4,8 +4,8 @@
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=10
-#SBATCH --mem=50G
+#SBATCH --cpus-per-task=20
+#SBATCH --mem=100G
 #SBATCH --gres=gpu:2
 #SBATCH --job-name="immi"
 #SBATCH --output=logs/immi_slurm_%A.out
@@ -39,4 +39,8 @@ cd svl_project
 # Run your script #
 ###################
 echo "running command : <RUN_COMMAND>"
+<<<<<<< HEAD
 /viscam/u/josef/anaconda3/envs/joseph/bin/python /viscam/u/josef/svl_project/svl_project/imi_training/train_imitaion_Ablation.py
+=======
+/viscam/u/josef/anaconda3/envs/joseph/bin/python /viscam/u/josef/svl_project/svl_project/imi_training/train_imitaion_Ablation.py --batch_size 2 --num_camera 2 --ablation v
+>>>>>>> 674b750be3fe70e8091ab221e5d4a0dccfae3fce

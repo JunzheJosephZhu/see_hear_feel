@@ -131,62 +131,87 @@ class ImiBaselineLearn_Ablation(LightningModule):
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, space_dim)
         elif self.loss_type == 'cce':
+            
             # [batch, 3, num_dims]
-            pred = pred.transpose(1, 2)
+            # print(pred.shape)
+            pred = pred.reshape(batch_size * seq_len, 3, action_dim)
+            # pred = pred.transpose(1, 2)
+            # print(pred.shape)
+            demo = demo.reshape(batch_size * seq_len, action_dim)
+            # print("demo", demo.shape)
         return self.loss_cal(pred, demo)
 
     def training_step(self, batch, batch_idx):
         # use idx in batch for debugging
-        v_input, t_input, keyboard = batch  # , idx = batch
-        v_input = v_input.cuda()
+        v_inputs, t_input, keyboard = batch  # , idx = batch
+        v_inputs = [v_input.cuda() for v_input in v_inputs]
         t_input = t_input.cuda()
         keyboard = keyboard.cuda()
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         elif self.loss_type == 'cce' or self.loss_type =='fl':
-            if self.config.action_dim == 4:
-                keyboard = keyboard[..., 0] * 27 + keyboard[..., 1] * 9 + keyboard[..., 2] * 3 + keyboard[..., 3]
-            elif self.config.action_dim == 3:
-                keyboard = keyboard[..., 0] * 9 + keyboard[..., 1] * 3 + keyboard[..., 2]
-        action_logits = self.actor(v_input, t_input, False)  # , idx)
+            # if self.config.action_dim == 4:
+            #     keyboard = keyboard[..., 0] * 27 + keyboard[..., 1] * 9 + keyboard[..., 2] * 3 + keyboard[..., 3]
+            # elif self.config.action_dim == 3:
+            #     keyboard = keyboard[..., 0] * 9 + keyboard[..., 1] * 3 + keyboard[..., 2]
+            pass
+        action_logits, hidden = self.actor(v_inputs, t_input, False)  # , idx)
         # print("keyboard", keyboard)
         # print("pred", action_pred)
+        # print(keyboard.shape)
         loss = self.compute_loss(action_logits, keyboard, self.config.action_dim)
-        self.log_dict({"train/action_loss": loss})
+        if batch_idx % 10 == 0:
+            self.log_dict({"train/action_loss": loss})
 
         return loss
 
     def validation_step(self, batch, batch_idx):
         # use idx in batch for debugging
-        v_input, t_input, keyboard = batch  # , idx = batch
-        v_input = v_input.cuda()
+        v_inputs, t_input, keyboard = batch  # , idx = batch
+        v_inputs = [v_input.cuda() for v_input in v_inputs]
         t_input = t_input.cuda()
         keyboard = keyboard.cuda()
         if self.loss_type == 'mse':
             keyboard = (keyboard - 1.).type(torch.cuda.FloatTensor)
         elif self.loss_type == 'cce' or self.loss_type =='fl':
-            if self.config.action_dim == 4:
-                keyboard = keyboard[..., 0] * 27 + keyboard[..., 1] * 9 + keyboard[..., 2] * 3 + keyboard[..., 3]
-            elif self.config.action_dim == 3:
-                keyboard = keyboard[..., 0] * 9 + keyboard[..., 1] * 3 + keyboard[..., 2]
-        action_logits = self.actor(v_input, t_input, False)  # , idx)
-        # print("keyboard", keyboard)
-        # print("pred", action_pred)
+            # if self.config.action_dim == 4:
+            #     keyboard = keyboard[..., 0] * 27 + keyboard[..., 1] * 9 + keyboard[..., 2] * 3 + keyboard[..., 3]
+            # elif self.config.action_dim == 3:
+            #     keyboard = keyboard[..., 0] * 9 + keyboard[..., 1] * 3 + keyboard[..., 2]
+            pass
+
+        action_logits = []
+
+        num_frames = v_inputs[0].size(1)
+        i = 0
+        prev_hidden=None
+        while i <= num_frames:
+            action_logit, prev_hidden = self.actor([v_input[:, i:i+100] for v_input in v_inputs], t_input[:, i:i+100], False, prev_hidden)  # , idx)
+            action_logits.append(action_logit)
+            i += 100
+
+        action_logits = torch.cat(action_logits, dim=1)
         loss = self.compute_loss(action_logits, keyboard, self.config.action_dim)
-        self.log_dict({"val/val_loss": loss})
 
-        action_pred = torch.argmax(action_logits, dim=-1)
+        # print(action_logit.reshape((-1, 3,4)))
+        
+        action_pred = torch.argmax(action_logits.reshape((-1 , 3, 4)), dim=-2)
+        # print(action_pred.shape)
+        
         cor = torch.eq(action_pred, keyboard)
-        if batch_idx == 0 and self.total > 0:
-            self.acc = self.correct / self.total
-            self.log('val/val_acc', self.acc)
-            self.correct = 0
-            self.total = 0
-        self.correct += torch.sum(cor)
-        self.total += cor.size()[0] * cor.size()[1]
-        metrics = {'val_loss': loss, 'val_acc': self.acc}
-        return metrics
+        total =  cor.size()[0] * cor.size()[1]
+        self.log("val/loss", loss, on_step=False, on_epoch=True)
+        return (cor.sum(), total)
 
+    def validation_epoch_end(self, validation_step_outputs):
+        numerator = 0
+        divider = 0
+        for (cor, total) in validation_step_outputs:
+            numerator += cor
+            divider += total
+        acc = numerator / divider
+        self.log("val/acc", acc, on_step=False, on_epoch=True)
+    
     def train_dataloader(self):
         """Training dataloader"""
         return self.train_loader
