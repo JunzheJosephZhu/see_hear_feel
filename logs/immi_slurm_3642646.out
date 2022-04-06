@@ -1,0 +1,15 @@
+SLURM_JOBID=3642646
+SLURM_JOB_NODELIST=svl17
+SLURM_NNODES=1
+SLURMTMPDIR=
+working directory = /viscam/u/josef/svl_project
+Virtual Env Activated
+Working with the LD_LIBRARY_PATH: 
+running command : <RUN_COMMAND>
+1000
+8000
+Using modalities: ['v', 't']
+Using tactile flow: False
+loss: cce
+baseline learn
+Validation sanity check: 0it [00:00, ?it/s]Validation sanity check:   0%|          | 0/2 [00:00<?, ?it/s]
