@@ -39,6 +39,7 @@ class VisionGripperDataset(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames, size=()).item()
+        raise NotImplementedError, "resize image"
         return self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
 
 class VisionGripper_FuturePred(BaseDataset):
@@ -60,6 +61,7 @@ class VisionFixedDataset(BaseDataset):
             T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.1),
             T.RandomCrop((int(72*0.9), int(72*0.9))),
         ])
+        raise NotImplementedError, "resize image"
         return trans(self.load_image(trial, "cam_fixed_color", timestep))
 
 class AudioDataset(BaseDataset):

@@ -81,18 +81,19 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             self.embed_dim += self.v_embeds_shape
         if self.use_tactile:
             self.embed_dim += self.t_embeds_shape
-        self.lstm = torch.nn.LSTM(self.embed_dim, 1024, 1, False)
+        self.lstm = torch.nn.LSTM(input_size=self.embed_dim, hidden_size=256, num_layers=1, batch_first=True)
 
         if args.loss_type == 'cce':
             print("loss: cce")
             self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(1024, 1024),
+                torch.nn.Linear(256, 256),
                 # torch.nn.Linear(self.v_embeds_shape, 1024),
                 torch.nn.ReLU(),
-                torch.nn.Linear(1024, 1024),
+                torch.nn.Linear(256, 256),
                 torch.nn.ReLU(),
-                torch.nn.Linear(1024, pow(3, args.action_dim))
+                torch.nn.Linear(256, pow(3, args.action_dim))
             )
+            
         elif args.loss_type == 'mse':
             print("loss: mse")
             self.mlp = torch.nn.Sequential(
@@ -104,40 +105,27 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 torch.nn.Tanh()
             )
 
-    def forward(self, v_input, t_input, freeze): #, idx):
-        # debugging dataloader
-        # print(f"\nFORWARD, idx shape: {len(idx), idx[0].shape}")
-        # print(idx[0].cpu().numpy())
-        # print(f"{v_inp.shape[0]} imgs found with shape {v_inp[0].shape}")
-        # for i in range(v_inp.shape[0]):
-        #     img = v_inp[i]
-        #     print(img.permute(1, 2, 0).cpu().numpy().shape)
-        #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
-        #     cv2.waitKey(100)
+    def forward(self, v_inputs, t_input, freeze, prev_hidden=None): #, idx):
         """
             args: v_inp - [batch, seq_len, 3, H, W]
                   t_inp - [batch, seq_len, 3, H, W]
         """
 
-        batch_size, seq_len, _, H, W = v_input.shape
-        v_input = v_input.view(batch_size * seq_len, 3, H, W)
-        t_input = t_input.view(batch_size * seq_len, 3, H, W)
-        if freeze:
-            with torch.no_grad():
-                if self.use_vision:
-                    v_embeds = self.v_encoder(v_input).detach()
-                    v_embeds = torch.reshape(v_embeds, (-1, self.v_embeds_shape))
-                if self.use_tactile:
-                    t_embeds = self.t_encoder(t_input).detach()
-                    if self.use_layernorm:
-                        t_embeds = torch.reshape(t_embeds, (-1, self.v_embeds_shape))
-                    else:
-                        t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
 
-        else:
+
+        with torch.set_grad_enabled(not freeze and self.training):
+            batch_size, seq_len, _, H2, W2 = t_input.shape
+            t_input = t_input.view(batch_size * seq_len, 3, H2, W2)
             if self.use_vision:
-                v_embeds = self.v_encoder(v_input)
-                v_embeds = v_embeds.view(batch_size, seq_len, self.v_embeds_shape)
+                v_embeds = []
+                for v_input in v_inputs:
+                    batch_size, seq_len, _, H1, W1 = v_input.shape
+                    v_input = v_input.view(batch_size * seq_len, 3, H1, W1)
+                    v_embed = self.v_encoder(v_input)
+                    v_embed = v_embed.view(batch_size, seq_len, -1)
+                    v_embeds.append(v_embed)
+                v_embeds = torch.cat(v_embeds, -1)
+                assert v_embeds.size(-1) == self.v_embeds_shape
             if self.use_tactile:
                 t_embeds = self.t_encoder(t_input)
                 t_embeds = t_embeds.view(batch_size, seq_len, self.t_embeds_shape)
@@ -147,37 +135,15 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             embeds.append(v_embeds)
         if self.use_tactile:
             embeds.append(t_embeds)
-        # mlp_inp = torch.concat(embeds, dim=-1)
-        # v_embed - (batch_size, seq_len, v_embed_dim)
-        # t_embed - (batch_size, seq_len, t_embed_dim)
 
-        lstm_inp = torch.concat(embeds, dim=-1)
-        mlp_inp, _ = self.lstm(lstm_inp)
-        
-            # out = torch.stack(embeds, dim=0)
-            # mlp_inp = self.layernorm(mlp_inp)
-            # print(out.shape)
-            # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
-
-        # print(embeds[0].shape)
-        # plt.plot(v_embeds.cpu().detach().numpy()[0], 'b')
-        # plt.plot(t_embeds.cpu().detach().numpy()[0], 'r')
-
-        # print(f"mlp inp shape {mlp_inp.shape}")
-        # mlp_temp = mlp_inp.cpu().detach().numpy()
-        # # plt.figure()
-        # plt.plot(mlp_temp[0])
-        # plt.show()
-        
-        ## MHA debugging
-        # plt.figure()
-        # mha_temp = weights.cpu().detach().numpy()
-        # print(f"mha {mha_temp[0]}")
-        # plt.imshow(mha_temp[0])
+        # v_embeds - (batch_size, seq_len, v_embed_dim)
+        # t_embeds - (batch_size, seq_len, t_embed_dim)
+        lstm_inp = torch.cat(embeds, dim=-1)
+        mlp_inp, next_hidden = self.lstm(lstm_inp, prev_hidden)
 
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
-        return action_logits
+        return action_logits, next_hidden
 
 class Imitation_Pose_Baseline_Actor(torch.nn.Module):
     def __init__(self, embed_dim, action_dim):
