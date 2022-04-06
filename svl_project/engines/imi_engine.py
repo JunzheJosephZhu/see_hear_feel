@@ -118,6 +118,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
         self.total = 0
         print("baseline learn")
         self.save_hyperparameters(vars(config))
+        self.acc = 0
 
     def compute_loss(self, pred, demo, action_dim):
         """
@@ -172,18 +173,19 @@ class ImiBaselineLearn_Ablation(LightningModule):
         # print("keyboard", keyboard)
         # print("pred", action_pred)
         loss = self.compute_loss(action_logits, keyboard, self.config.action_dim)
-        self.log_dict({"val/action_loss": loss})
+        self.log_dict({"val/val_loss": loss})
 
         action_pred = torch.argmax(action_logits, dim=-1)
         cor = torch.eq(action_pred, keyboard)
         if batch_idx == 0 and self.total > 0:
-            acc = self.correct / self.total
-            self.log('val/acc', acc)
+            self.acc = self.correct / self.total
+            self.log('val/val_acc', acc)
             self.correct = 0
             self.total = 0
         self.correct += torch.sum(cor)
         self.total += cor.size()[0] * cor.size()[1]
-        return loss
+        metrics = {'val_loss': loss, 'val_acc': self.acc}
+        return metrics
 
     def train_dataloader(self):
         """Training dataloader"""

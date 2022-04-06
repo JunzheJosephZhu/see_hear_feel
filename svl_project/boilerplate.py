@@ -25,6 +25,8 @@ def start_training(args, exp_dir, pl_module):
         filename=exp_time+"{epoch}-{step}",
         save_top_k=1,
         save_last=True,
+        monitor='val/val_acc',
+        mode='max'
     )
 
     logger = TensorBoardLogger(save_dir=exp_dir, version=exp_time, name="lightning_logs")
@@ -35,9 +37,14 @@ def start_training(args, exp_dir, pl_module):
         gpus=-1,
         strategy="dp",
         limit_val_batches=100,
+<<<<<<< HEAD
         check_val_every_n_epoch=1,
         log_every_n_steps=5,
         logger=logger
+=======
+        check_val_every_n_epoch=5,
+        log_every_n_steps=5
+>>>>>>> 386e6057a010c7a27b08e335ff508265482f07b1
     )
     trainer.fit(
         pl_module,
