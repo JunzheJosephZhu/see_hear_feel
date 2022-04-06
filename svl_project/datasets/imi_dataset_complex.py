@@ -95,12 +95,7 @@ class ImitationDatasetWholeSeq(BaseDataset):
         # self.max_len = (self.num_stack - 1) * self.frameskip + 1
         self.fps = 10
         self.sr = 44100
-        self.subseq_len = 50
-        # self.resolution = self.sr // self.fps  # number of audio samples in one image idx
-        # self.audio_len = int(self.resolution * (max(self.max_len, 10)))
-        # self.mel = torchaudio.transforms.MelSpectrogram(
-        #     sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
-        # )
+        self.subseq_len = 100
         self.num_cam = args.num_camera
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
@@ -110,48 +105,15 @@ class ImitationDatasetWholeSeq(BaseDataset):
         self._crop_height = int(self.resized_height_v * (1.0 - args.crop_percent))
         self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
 
-        # # initialize augmentations
-        # if self.train:
-        #     # load camera frames
-        #     self.transform_img = T.Compose([
-        #         T.Resize((self.resized_height_v, self.resized_width_v)),
-        #         T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
-        #     ])
-
-        #     self.transform_gel = T.Compose([
-        #         T.Resize((self.resized_height_t, self.resized_width_t)),
-        #         T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
-        #     ])
-
-        #     if self.num_cam == 2:
-        #         cam_gripper_framestack = torch.stack(
-        #             [T.functional.crop(transform(self.load_image(self.trial, "cam_gripper_color", timestep)), i, j, h,
-        #                                w)
-        #              for timestep in cam_idx], dim=0)
-
-        #     cam_fixed_framestack = torch.stack(
-        #         [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep)), i, j, h, w)
-        #          for timestep in cam_idx], dim=0)
-
-        # else:
-        #     # load camera frames
-        #     transform = T.Compose([
-        #         T.Resize((self.resized_height_v, self.resized_width_v)),
-        #         T.CenterCrop((self.resized_height_v, self.resized_width_v))
-        #     ])
-
-        #     transform_gel = T.Compose([
-        #         T.Resize((self.resized_height_t, self.resized_width_t)),
-        #     ])
-
-        #     if self.num_cam == 2:
-        #         cam_gripper_framestack = torch.stack(
-        #             [transform(self.load_image(self.trial, "cam_gripper_color", timestep))
-        #              for timestep in cam_idx], dim=0)
-
-        #     cam_fixed_framestack = torch.stack(
-        #         [transform(self.load_image(self.trial, "cam_fixed_color", timestep))
-        #          for timestep in cam_idx], dim=0)
+        self.transform_img = T.Compose([
+            T.Resize((self.resized_height_v, self.resized_width_v)),
+            T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
+            T.RandomCrop((self._crop_height, self._crop_width))
+        ])
+        self.transform_gel = T.Compose([
+                T.Resize((self.resized_height_t, self.resized_width_t)),
+                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
+        ])
 
         self.use_flow = args.use_flow
         # saving the offset
@@ -202,7 +164,7 @@ class ImitationDatasetWholeSeq(BaseDataset):
         end = start + self.subseq_len
 
         cam_fixed_seq = torch.stack(
-            [self.resize_image(self.load_image(trial, "cam_fixed_color", timestep), (64, 64))
+            [self.transform_img(self.load_image(trial, "cam_fixed_color", timestep))
                 for timestep in range(start, end)], dim=0)
 
         if self.num_cam == 2:
@@ -214,9 +176,8 @@ class ImitationDatasetWholeSeq(BaseDataset):
         if not self.use_flow:
             tactile_seq = torch.stack(
                 [(
-                    self.resize_image(
-                        self.load_image(trial, "left_gelsight_frame", timestep) - self.gelsight_offset,
-                        (64, 64))
+                    self.transform_gel(
+                        self.load_image(trial, "left_gelsight_frame", timestep) - self.gelsight_offset)
                  + 0.5).clamp(0, 1) for
                  timestep in range(start, end)], dim=0)
             # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])

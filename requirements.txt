@@ -8,3 +8,4 @@ configargparse
 torchaudio
 torchvision
 tomlkit
+h5py
