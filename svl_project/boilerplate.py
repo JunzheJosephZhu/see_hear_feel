@@ -18,8 +18,10 @@ def start_training(args, exp_dir, pl_module):
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename="{epoch}-{step}",
-        save_top_k=1,
+        save_top_k=-1,
         save_last=True,
+        monitor='val/val_acc',
+        mode='max'
     )
     trainer = Trainer(
         max_epochs=args.epochs,
@@ -28,7 +30,7 @@ def start_training(args, exp_dir, pl_module):
         gpus=-1,
         strategy="dp",
         limit_val_batches=100,
-        check_val_every_n_epoch=1,
+        check_val_every_n_epoch=5,
         log_every_n_steps=5
     )
     trainer.fit(
