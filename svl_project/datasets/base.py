@@ -9,8 +9,7 @@ import torchaudio
 import soundfile as sf
 
 class BaseDataset(Dataset):
-    # def __init__(self, log_file, data_folder="data/test_recordings_0214"):
-    def __init__(self, log_file, data_folder="../data_0331/test_recordings"):
+    def __init__(self, log_file, data_folder="data/test_recordings"):
         """
         neg_ratio: ratio of silence audio clips to sample
         """

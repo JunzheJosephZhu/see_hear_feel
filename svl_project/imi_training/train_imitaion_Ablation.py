@@ -5,8 +5,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import torch
 from torch import nn
 # from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder, make_flow_encoder
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetWholeSeq, ImitationDatasetLabelCount
+from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
 from torch.utils.data import DataLoader
@@ -19,6 +19,7 @@ from svl_project.boilerplate import *
 import pandas as pd
 import numpy as np
 
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 def strip_sd(state_dict, prefix):
     """
@@ -42,30 +43,30 @@ def main(args):
         train_num_episode = args.num_episode
         val_num_episode = args.num_episode
 
-    train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
+    # train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
+    train_set = ImitationDatasetWholeSeq(args.train_csv, args, args.data_folder)
+    val_set = ImitationDatasetWholeSeq(args.val_csv, args, args.data_folder, False)
 
     # create weighted sampler to balance samples
-    train_label = []
-    for keyboard in train_label_set:
-        if args.action_dim == 4:
-            keyboard = keyboard[0] * 27 + keyboard[1] * 9 + keyboard[2] * 3 + keyboard[3]
-        elif args.action_dim == 3:
-            keyboard = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
-        train_label.append(keyboard)
+    # train_label = []
+    # for keyboard in train_label_set:
+    #     if args.action_dim == 4:
+    #         keyboard = keyboard[0] * 27 + keyboard[1] * 9 + keyboard[2] * 3 + keyboard[3]
+    #     elif args.action_dim == 3:
+    #         keyboard = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
+    #     train_label.append(keyboard)
 
-    class_sample_count = np.zeros(pow(3, args.action_dim))
-    for t in np.unique(train_label):
-        class_sample_count[t] = len(np.where(train_label == t)[0])
+    # class_sample_count = np.zeros(pow(3, args.action_dim))
+    # for t in np.unique(train_label):
+        # class_sample_count[t] = len(np.where(train_label == t)[0])
 
-    weight = 1. / (class_sample_count + 1e-5)
-    samples_weight = np.array([weight[t] for t in train_label])
+    # weight = 1. / (class_sample_count + 1e-5)
+    # samples_weight = np.array([weight[t] for t in train_label])
 
-    samples_weight = torch.from_numpy(samples_weight)
-    sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
+    # samples_weight = torch.from_numpy(samples_weight)
+    # sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=4, sampler=sampler)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=4)
     val_loader = DataLoader(val_set, args.batch_size, num_workers=1, shuffle=False)
     
     ## v encoder
@@ -78,15 +79,15 @@ def main(args):
     if args.use_flow:
         t_encoder = make_flow_encoder()
     else:
-        # t_encoder = make_tactile_encoder(args.embed_dim_t)
-        t_encoder = make_tactile_encoder(args.embed_dim_v)
+        t_encoder = make_tactile_encoder(args.embed_dim_t)
+        # t_encoder = make_tactile_encoder(args.embed_dim_v)
         if args.pretrained_t is not None:
             print("loading pretrained t...")
             state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
             t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
-    # a_encoder = make_audio_encoder(args.embed_dim_a)
-    a_encoder = make_audio_encoder(args.embed_dim_v)
+    a_encoder = make_audio_encoder(args.embed_dim_a)
+    # a_encoder = make_audio_encoder(args.embed_dim_v)
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=55, type=int)
+    p.add("--epochs", default=1000, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -125,7 +126,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0401/test_recordings")
+    p.add("--data_folder", default="../data_0331/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)

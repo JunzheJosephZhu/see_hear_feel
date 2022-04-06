@@ -62,7 +62,7 @@ class ImitationOverfitDataset(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -356,6 +356,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             ])
 
             if self.num_cam == 2:
+                # [num_frames, 3, H, W]
                 cam_gripper_framestack = torch.stack(
                     [T.functional.crop(transform(self.load_image(self.trial, "cam_gripper_color", timestep)), i, j, h, w)
                      for timestep in cam_idx], dim=0)
@@ -422,6 +423,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         #         keyboard = torch.tensor([1, 0, 1])
 
         if self.num_cam == 2:
+            # [batch_size * 2]
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         else:
             v_framestack = cam_fixed_framestack

@@ -15,6 +15,7 @@ svl_project/engines/constrastive.py
 svl_project/engines/future_prediction.py
 svl_project/engines/imi_engine.py
 svl_project/engines/vae.py
+svl_project/engines/vae_futurepred.py
 svl_project/imi_training/__init__.py
 svl_project/imi_training/imi_train_baseline.py
 svl_project/imi_training/train_imitaion.py
@@ -34,8 +35,9 @@ svl_project/models/vae(deprecated).py
 svl_project/repr_training/__init__.py
 svl_project/repr_training/train_audio_vae.py
 svl_project/repr_training/train_future_prediction.py
-svl_project/repr_training/train_gelsight_vae.py
 svl_project/repr_training/train_gelflow_vae.py
+svl_project/repr_training/train_gelsight_vae.py
 svl_project/repr_training/train_metric.py
+svl_project/repr_training/train_vision_futurepred_gripper.py
 svl_project/repr_training/train_vision_vae_fixed.py
 svl_project/repr_training/train_vision_vae_gripper.py

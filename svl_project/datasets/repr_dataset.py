@@ -25,7 +25,7 @@ import torch.nn.functional as F
 
 def visualize_flow(flow):
     # get initial
-    initial = torch.load("data/test_recordings_0214/2022-02-14 00_01_37.507857/left_gelsight_flow/0.pt")
+    initial = torch.load("/viscam/u/josef/svl_project/data/test_recordings/2022-03-22 23_00_43.784332/left_gelsight_flow/0.pt")
     img = np.ones((300, 400))
     for i in range(flow.shape[1]):
         for j in range(flow.shape[2]):
@@ -65,6 +65,7 @@ class VisionFixedDataset(BaseDataset):
 class AudioDataset(BaseDataset):
     def __getitem__(self, idx):
         EPS = 1e-8
+        energy_thres = 0.1
         trial, timestamps, audio, num_frames = self.get_episode(idx, load_audio=True)
         # timestep = torch.randint(high=num_frames, size=()).item()
                 # voice activity detection
@@ -72,20 +73,23 @@ class AudioDataset(BaseDataset):
         resolution = 1600
         audio_frames = audio.unfold(dimension=-1, size=resolution, step=resolution) # [2, num_frames, frame_size]
         energy = torch.pow(audio_frames[:1], 2).sum(-1).sum(0) # user the gripper piezo
-        # plt.plot(energy)
+        # plt.figure()
+        # eplot = plt.plot(energy)
+        # plt.savefig("energy.png")
+        # print(audio.min(), audio.max())
         # plt.plot(torch.ones(energy.shape) * 2)
         # print(trial)
         # plt.show()
         # sample anchor times
         timestep = None
-        if torch.rand(()) > sil_ratio and (energy > 2.5).any():  # sample anchor with audio event
-            anchor_choices = torch.nonzero(energy > 2.5)
+        if torch.rand(()) > sil_ratio and (energy > energy_thres).any():  # sample anchor with audio event
+            anchor_choices = torch.nonzero(energy > energy_thres)
             if not anchor_choices.size(0) == 0:
                 timestep = anchor_choices[
                     torch.randint(high=anchor_choices.size(0), size=())
                 ].item()
         if timestep is None:
-            anchor_choices = torch.nonzero(energy < 2.5)
+            anchor_choices = torch.nonzero(energy < energy_thres)
             timestep = anchor_choices[
                 torch.randint(high=anchor_choices.size(0), size=())
             ].item()
