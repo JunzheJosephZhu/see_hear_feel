@@ -4,8 +4,8 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import torch
 
-from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-# from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
@@ -86,7 +86,7 @@ def main(args):
             t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
     # a_encoder = make_audio_encoder(args.embed_dim_a)
-    a_encoder = make_audio_encoder(args.embed_dim_v)
+    a_encoder = make_audio_encoder()
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=55, type=int)
+    p.add("--epochs", default=65, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0331/test_recordings")
+    p.add("--data_folder", default="data/data_0401/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -143,10 +143,14 @@ if __name__ == "__main__":
 
 
     args = p.parse_args()
-    # v_t
+    # v
     main(args)
     args.ablation = 'v_t'
     main(args)
+    # args.frameskip = 15
+    # main(args)
+    # args.frameskip = 18
+    # main(args)
 
     # args.use_flow = True
     # args.ablation = 't'

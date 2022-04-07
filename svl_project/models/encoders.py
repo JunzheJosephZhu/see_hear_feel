@@ -45,8 +45,7 @@ class Encoder(nn.Module):
         x = torch.flatten(x, 1)
         return x
 
-def make_vision_encoder():
-    vision_extractor = resnet18(pretrained=True)
+
 class Vision_Encoder(Encoder):
     def __init__(self, feature_extractor, out_dim=None):
         super().__init__(feature_extractor)
@@ -96,7 +95,7 @@ class Tactile_RGB_Encoder(Encoder):
         x = torch.flatten(x, 1)
         x = self.fc(x)
         ## adding relu
-        # x = F.relu(x)
+        x = F.relu(x)
         return x
 
 class Tactile_Flow_Encoder(nn.Module):
@@ -113,7 +112,7 @@ class Tactile_Flow_Encoder(nn.Module):
         return x
 
 def make_vision_encoder(out_dim=None):
-    vision_extractor = resnet18(pretrained=False)
+    vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
         5, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
@@ -155,7 +154,7 @@ def make_tactile_flow_encoder(out_dim):
     return Tactile_Flow_Encoder(tactile_extractor, out_dim)
 
 # @DeprecationWarning
-def make_audio_encoder(out_dim):
+def make_audio_encoder():
     audio_extractor = resnet18(pretrained=True)
     audio_extractor.conv1 = nn.Conv2d(
         4, 64, kernel_size=7, stride=1, padding=3, bias=False

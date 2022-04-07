@@ -53,9 +53,9 @@ class ImitationDatasetLabelCount(BaseDataset):
 
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
-        xy_space = {-.002: 0, 0: 1, .002: 2}
-        z_space = {-.0015: 0, 0: 1, .0015: 2}
-        r_space = {-.02: 0, 0: 1, .02: 2}
+        xy_space = {-.0005: 0, 0: 1, .0005: 2}
+        z_space = {-.0005: 0, 0: 1, .0005: 2}
+        r_space = {-.005: 0, 0: 1, .005: 2}
         keyboard = torch.as_tensor(
             [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
         return keyboard
@@ -105,8 +105,10 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.resized_width_v = args.resized_width_v
         self.resized_height_t = args.resized_height_t
         self.resized_width_t = args.resized_width_t
-        self._crop_height = int(self.resized_height_v * (1.0 - args.crop_percent))
-        self._crop_width = int(self.resized_width_v * (1.0 - args.crop_percent))
+        self._crop_height_v = int(self.resized_height_v * (1.0 - args.crop_percent))
+        self._crop_width_v = int(self.resized_width_v * (1.0 - args.crop_percent))
+        self._crop_height_t = int(self.resized_height_t * (1.0 - args.crop_percent))
+        self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
         if not args.use_holebase:
             self.audio = self.audio_gripper
@@ -169,21 +171,24 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                 T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
             ])
             img = transform(self.load_image(self.trial, "cam_fixed_color", end))
-            i, j, h, w = T.RandomCrop.get_params(img, output_size=(self._crop_height, self._crop_width))
+            i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
+                # T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
             ])
+
+            img_g = transform(self.load_image(self.trial, "left_gelsight_frame", end))
+            i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_g, output_size=(self._crop_height_t, self._crop_width_t))
 
             if self.num_cam == 2:
                 cam_gripper_framestack = torch.stack(
-                    [T.functional.crop(transform(self.load_image(self.trial, "cam_gripper_color", timestep)), i, j, h,
-                                       w)
+                    [T.functional.crop(transform(self.load_image(self.trial, "cam_gripper_color", timestep)), i_v, j_v, h_v,
+                                       w_v)
                      for timestep in cam_idx], dim=0)
 
             cam_fixed_framestack = torch.stack(
-                [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep)), i, j, h, w)
+                [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep)), i_v, j_v, h_v, w_v)
                  for timestep in cam_idx], dim=0)
 
         else:
@@ -195,6 +200,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
+                T.CenterCrop((self.resized_height_t, self.resized_width_t))
             ])
 
             if self.num_cam == 2:
@@ -208,11 +214,11 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
         if not self.use_flow:
             tactile_framestack = torch.stack(
-                [(transform_gel(
+                [T.functional.crop((transform_gel(
                     self.load_image(self.trial, "left_gelsight_frame", timestep)
                     ## input difference between current frame and initial (static) frame instead of the frame itself
                     - self.gelsight_offset
-                ) + 0.5).clamp(0, 1) for
+                ) + 0.5).clamp(0, 1), i_t, j_t, h_t, w_t) for
                  timestep in cam_idx], dim=0)
             # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
             # cv2.waitKey(100)

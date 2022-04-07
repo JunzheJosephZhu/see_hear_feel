@@ -18,7 +18,7 @@ def start_training(args, exp_dir, pl_module):
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename="{epoch}-{step}",
-        save_top_k=1,
+        save_top_k=-1,
         save_last=True,
     )
     trainer = Trainer(

@@ -33,10 +33,10 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/repr/vision_futurepred_gripper.yaml")
     p.add("--batch_size", default=4)
-    p.add("--lr", default=0.001, type=float)
+    p.add("--lr", default=0.0001, type=float)
     p.add("--gamma", default=0.9)
     p.add("--period", default=3)
-    p.add("--epochs", default=100)
+    p.add("--epochs", default=200)
     p.add("--resume", default=None)
     p.add("--num_workers", default=4, type=int)
     # VAE stuff
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/test_recordings_0214")
+    p.add("--data_folder", default="data/data_0331/test_recordings")
 
     args = p.parse_args()
     main(args)

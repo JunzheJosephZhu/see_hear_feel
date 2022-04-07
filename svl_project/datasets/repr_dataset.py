@@ -45,8 +45,8 @@ class VisionGripper_FuturePred(BaseDataset):
     def __getitem__(self, idx):
         trial, timestamps, _, num_frames = self.get_episode(idx, load_audio=False)
         timestep = torch.randint(high=num_frames - 1, size=()).item()
-        current_img = self.resize_image(self.load_image(trial, "cam_gripper_color", timestep), (64, 64))
-        future_img = self.resize_image(self.load_image(trial, "cam_gripper_color", timestep + 1), (64, 64))
+        current_img = self.resize_image(self.load_image(trial, "cam_fixed_color", timestep), (64, 64))
+        future_img = self.resize_image(self.load_image(trial, "cam_fixed_color", timestep + 1), (64, 64))
         return current_img, future_img, torch.as_tensor(timestamps["action_history"][timestep])
 
 class VisionFixedDataset(BaseDataset):
@@ -67,7 +67,7 @@ class AudioDataset(BaseDataset):
         # timestep = torch.randint(high=num_frames, size=()).item()
                 # voice activity detection
         sil_ratio = 0.8
-        resolution = 1600
+        resolution = 4410
         audio_frames = audio.unfold(dimension=-1, size=resolution, step=resolution) # [2, num_frames, frame_size]
         energy = torch.pow(audio_frames[:1], 2).sum(-1).sum(0) # user the gripper piezo
         # plt.plot(energy)
@@ -87,7 +87,7 @@ class AudioDataset(BaseDataset):
             timestep = anchor_choices[
                 torch.randint(high=anchor_choices.size(0), size=())
             ].item()
-        audio_seq_len = 10480
+        audio_seq_len = 28886
         audio_start = timestep * resolution - audio_seq_len
         audio_end = audio_start + audio_seq_len
         audio_pos = self.clip_audio(audio, audio_start, audio_end)
