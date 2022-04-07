@@ -20,4 +20,4 @@ use_holebase: True
 action_dim: 4
 #use_flow: True
 #use_mha: True
-# use_layernorm: True
+use_layernorm: True

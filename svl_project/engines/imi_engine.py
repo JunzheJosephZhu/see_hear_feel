@@ -131,7 +131,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
             # [batch, 3, num_dims]
             pred = pred.reshape(batch_size, space_dim)
         elif self.loss_type == 'cce':
-            
+
             # [batch, 3, num_dims]
             # print(pred.shape)
             pred = pred.reshape(batch_size * seq_len, 3, action_dim)
@@ -194,12 +194,19 @@ class ImiBaselineLearn_Ablation(LightningModule):
         loss = self.compute_loss(action_logits, keyboard, self.config.action_dim)
 
         # print(action_logit.reshape((-1, 3,4)))
-        
+
         action_pred = torch.argmax(action_logits.reshape((-1 , 3, 4)), dim=-2)
-        # print(action_pred.shape)
-        
+        # print("action",action_pred.shape)
+        # print(keyboard.shape)
         cor = torch.eq(action_pred, keyboard)
-        total =  cor.size()[0] * cor.size()[1]
+        # print("cor", cor.shape)
+        # total = cor.size()[-1] * cor.size()[-2]
+        # print("cor_sum", cor.sum())
+        # print(total)
+        cor = torch.eq(cor.sum(dim=2), 4)
+        # print(f"em {cor.shape} {cor.sum()}")
+        total = cor.size()[1]
+        # print(f"total {total}")
         self.log("val/loss", loss, on_step=False, on_epoch=True)
         return (cor.sum(), total)
 
@@ -211,7 +218,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
             divider += total
         acc = numerator / divider
         self.log("val/acc", acc, on_step=False, on_epoch=True)
-    
+
     def train_dataloader(self):
         """Training dataloader"""
         return self.train_loader
