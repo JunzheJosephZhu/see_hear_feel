@@ -43,7 +43,7 @@ def augment_image(image):
     return image
 
 class ImitationDatasetLabelCount(BaseDataset):
-    def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings_0214", train=True):
+    def __init__(self, log_file, args, dataset_idx, data_folder=None, train=True):
         super().__init__(log_file, data_folder)
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(
             dataset_idx, load_audio=False)
@@ -54,10 +54,13 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
         xy_space = {-.0005: 0, 0: 1, .0005: 2}
-        z_space = {-.0005: 0, 0: 1, .0005: 2}
-        r_space = {-.005: 0, 0: 1, .005: 2}
+        # z_space = {-.0005: 0, 0: 1, .0005: 2}
+        # r_space = {-.005: 0, 0: 1, .005: 2}
+        # keyboard = torch.as_tensor(
+        #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+        z_space = {-.005: 0, 0: 1, .005: 2}
         keyboard = torch.as_tensor(
-            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
         return keyboard
 
     def get_episode(self, idx, load_audio=False):
@@ -111,7 +114,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
         
-        self.approach_end = self.timestamps['approach_end_idx'][0]
+        # self.approach_end = self.timestamps['approach_end_idx'][0]
         
         if not args.use_holebase:
             self.audio = self.audio_gripper
@@ -246,10 +249,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
         keyboard = self.timestamps["action_history"][end]
         xy_space = {-.0005: 0, 0: 1, .0005: 2}
-        z_space = {-.0005: 0, 0: 1, .0005: 2}
-        r_space = {-.005: 0, 0: 1, .005: 2}
+        # z_space = {-.0005: 0, 0: 1, .0005: 2}
+        # r_space = {-.005: 0, 0: 1, .005: 2}
+        # keyboard = torch.as_tensor(
+        #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+        z_space = {-.005: 0, 0: 1, .005: 2}
         keyboard = torch.as_tensor(
-            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
 
         if self.num_cam == 2:
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)

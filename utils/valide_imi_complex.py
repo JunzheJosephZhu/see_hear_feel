@@ -1,7 +1,4 @@
 import sys
-
-from tomlkit import key
-
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
@@ -25,6 +22,7 @@ from torchvision import transforms as T
 from torch.autograd import Variable
 import shutil
 from tqdm import tqdm
+from save_val_obs import MakeVideo
 
 def collate_fn(batch):
     len_batch = len(batch) # original batch length
@@ -34,84 +32,6 @@ def collate_fn(batch):
     #     for i in range(diff):
     #         batch.append(dataset[np.random.randint(0, len(dataset))])
     return torch.utils.data.dataloader.default_collate(batch)
-
-class MakeVideo():
-    def __init__(self, dir=None, framestack=None, name='default', num_episode=1, mods='v_t'):
-        self.dir = dir
-        self.framestack = framestack
-        self.name = name
-        self.save_dir = os.path.join(self.dir, self.name)
-        if os.path.exists(self.save_dir):
-            shutil.rmtree(self.save_dir)
-        os.mkdir(self.save_dir)
-        self.mydict = {
-            'v': {
-                'resolution': (160, 120),
-                # 'resolution': (160, 120),
-                  'font_scale': .5,
-                  'thick_scale': 1},
-            't': {'resolution': (100, 100),
-                  'font_scale': .7,
-                  'thick_scale': 1},
-        }
-        self.path_dict = {'v': [],
-                          't': []}
-        self.video_writer = {}
-        self.frames_ = []
-    
-    def initialize_sep(self):
-        ## save the histogram
-        self.hist_dir = os.path.join(self.save_dir, 'hist')
-        if os.path.exists(self.hist_dir):
-            shutil.rmtree(self.hist_dir)
-        os.mkdir(self.hist_dir)
-        
-        for i in range(self.framestack):
-            v_path = os.path.join(self.save_dir, f"v{i}" + '.avi')
-            self.video_writer[f"v{i}"] = cv2.VideoWriter(
-                v_path,
-                cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
-                10,
-                self.mydict['v']['resolution']
-            )
-            t_path = os.path.join(self.save_dir, f"t{i}" + '.avi')
-            self.video_writer[f"t{i}"] = cv2.VideoWriter(
-                t_path,
-                cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
-                10,
-                self.mydict['t']['resolution']
-            )
-            self.path_dict['v'].append(v_path)
-            self.path_dict['t'].append(t_path)
-        self.font = cv2.FONT_HERSHEY_SIMPLEX
-        self.color = 255, 50, 50
-        self.thickness = cv2.LINE_8
-    
-    def save_obs(self, imgs, item, pred=None, gt=None, step=None):
-        if item == 'hist':
-            imgs.savefig(os.path.join(self.hist_dir, f"{step}.png"))
-            return
-        for i in range(self.framestack):
-            img = imgs[i]
-            if item ==  'v':
-                img = imgs[i].cpu().permute(1, 2, 0).numpy()
-            elif item == 't':
-                img = imgs[i].cpu().permute(2, 1, 0).numpy()
-            img = np.uint8(img * 255)
-            if item == 'v':
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                cv2.putText(img,
-                            str(i),
-                            (5, 20),
-                            self.font,
-                            self.mydict[item]['font_scale'],
-                            self.color,
-                            self.mydict[item]['thick_scale'],
-                            self.thickness
-                )
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            self.video_writer[item + str(i)].write(img)
-
 
 def baselineValidate(args):
     print(args.use_flow)
@@ -137,18 +57,20 @@ def baselineValidate(args):
         return {k.split('.', 1)[-1] : v for k, v in state_dict.items() if k.startswith(prefix)}
     
     val_csv = pd.read_csv(args.val_csv)
-    # val_set = torch.utils.data.ConcatDataset(
-    #     [ImitationDatasetFramestackMulti(args.val_csv,
-    #                                      args,
-    #                                      i,
-    #                                      args.data_folder,
-    #                                      train=False)
-    #      for i in range(min(args.num_episode, len(val_csv)))])
-    val_set = ImitationDatasetFramestackMulti(args.val_csv,
-                                              args,
-                                              args.num_episode,
-                                              args.data_folder,
-                                              train=False)
+    if args.episode is None:
+        val_set = torch.utils.data.ConcatDataset(
+            [ImitationDatasetFramestackMulti(args.val_csv,
+                                             args,
+                                             i,
+                                             args.data_folder,
+                                             train=False)
+             for i in range(min(20, len(val_csv)))])
+    else:
+        val_set = ImitationDatasetFramestackMulti(args.val_csv,
+                                                  args,
+                                                  args.episode,
+                                                  args.data_folder,
+                                                  train=False)
 
     val_loader = DataLoader(val_set, 1, num_workers=4) #, collate_fn=collate_fn
     with torch.no_grad():
@@ -194,10 +116,10 @@ def baselineValidate(args):
     
     model_dir = '/'.join(args.pretrained.split('/')[:-1])
     
-    if args.save_video:
-        video_saver = MakeVideo(dir=model_dir, framestack=args.num_stack, name=args.exp_name)
+    if args.episode is not None:
+        video_saver = MakeVideo(dir=model_dir, framestack=args.num_stack, name=args.exp_name, args=args, length=len(val_loader))
         video_saver.initialize_sep()
-    
+
     for batch in tqdm(val_loader):
         # v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
         v_input, t_input, log_spec, keyboard = batch
@@ -273,11 +195,77 @@ def baselineValidate(args):
         pred_action = pred_action - 1.0
         
         
-        if args.save_video:
+        if args.episode is not None:
             # video_saver.append_frame(v_input, t_input, 'v', pred_action, keyboard)
             video_saver.save_obs(v_input, 'v', pred_action, keyboard, cnt-1)
             video_saver.save_obs(t_input, 't')
-            
+
+            ## arrow
+            mywidth = .08
+            fig_arr, ax_arr = plt.subplots(figsize=(4, 2))
+            ax_arr.set_xlim(-4, 4)
+            ax_arr.set_ylim(-2, 2)
+            ax_arr.plot([0, 0], [-2, 2], 'k', linewidth=.5)
+            # x, y
+            for shift in [-2, 2]:
+                ax_arr.plot([shift, shift], [0, 2], 'k', linewidth=.2)
+                ax_arr.text(x=shift, y=2, s='x', fontsize=7)
+                ax_arr.plot([shift, shift + 2], [0, 0], 'k', linewidth=.2)
+                ax_arr.text(x=shift + 2, y=0, s='y', fontsize=7)
+
+            if keyboard[0] != 0 or keyboard[1] != 0:
+                ax_arr.arrow(-2, 0, keyboard[1], keyboard[0], color='b', width=mywidth)
+            if pred_action[0] != 0 or pred_action[1] != 0:
+                ax_arr.arrow(2, 0, pred_action[1], pred_action[0], color='r', width=mywidth)
+            # z
+            ax_arr.text(x=-3.9, y=0, s='z:', color='b', fontsize=7)
+            if keyboard[2] != 0:
+                ax_arr.arrow(-3.5, 0, 0, keyboard[2], color='b', width=mywidth)
+            ax_arr.text(x=0.1, y=0, s='z:', color='r', fontsize=7)
+            if pred_action[2] != 0:
+                ax_arr.arrow(0.5, 0, 0, pred_action[2], color='r', width=mywidth)
+            # dz
+            ax_arr.text(x=-2, y=1.7, s='dz:', color='b', fontsize=7)
+            if keyboard[3] != 0:
+                ax_arr.arrow(-2, 1.5, keyboard[3], 0, color='b', width=mywidth)
+            ax_arr.text(x=2, y=1.7, s='dz:', color='r', fontsize=7)
+            if pred_action[3] != 0:
+                ax_arr.arrow(2, 1.5, pred_action[3], 0, color='r', width=mywidth)
+
+            ax_arr.set_title(f"gt {keyboard}, pred {pred_action}")
+
+            video_saver.save_obs(fig_arr, 'arrow', step=cnt-1)
+            plt.close(fig_arr)
+
+            ## time history
+            # fig, axs = plt.subplots(args.action_dim + 1, 1, figsize=(5, 5), sharex='col')
+            titles = ['class', 'x', 'y', 'z']
+            if args.action_dim == 4:
+                titles.append('dz')
+            for i in range(len(titles)):
+                if i < 1:
+                    if gt_label == pred_label:
+                        mycolor = 'b'
+                    else:
+                        mycolor = 'r'
+                    video_saver.axs_seq[i].set_title(f"(step {cnt-1}) gt: {gt_label}, pred: {pred_label}", color=mycolor, fontsize=8)
+                    video_saver.axs_seq[i].plot(real_labels, 'b+', label='real')
+                    video_saver.axs_seq[i].plot(pred_labels, 'r.', label='predict')
+                else:
+                    if keyboard[i-1] == pred_action[i-1]:
+                        mycolor = 'b'
+                    else:
+                        mycolor = 'r'
+                    video_saver.axs_seq[i].set_title(f"({titles[i]}) gt: {keyboard[i-1]}, pred: {pred_action[i-1]}", color=mycolor, fontsize=8)
+                    # _real = np.array(real_actions)
+                    # _pred = np.array(pred_actions)
+                    video_saver.axs_seq[i].plot(cnt - 1, keyboard[i-1], 'b+', label='real')
+                    video_saver.axs_seq[i].plot(cnt - 1, pred_action[i-1], 'r.', label='predict')
+                # axs[i].legend()
+            # fig.savefig(os.path.join(model_dir, f"{args.exp_name}_label_t.png"))
+
+            video_saver.save_obs(video_saver.fig_seq, 'seq', step=cnt-1)
+
             ## histogram
             fig, axs = plt.subplots(figsize=(5, 5))
             axs.set_ylim(0, 300)
@@ -326,7 +314,7 @@ def baselineValidate(args):
         axs[i].title.set_text(titles[i])
         axs[i].legend()
     print(args.pretrained.split('/')[:-1] + [f'{args.exp_name}.png'])
-    fig.savefig(os.path.join(model_dir, f"{args.exp_name}_label_t.png"))
+    fig.savefig(os.path.join(model_dir, f"{args.exp_name}_seq.png"))
     
     ## trying better visualization
     fig, axs = plt.subplots()
@@ -345,7 +333,7 @@ def baselineValidate(args):
     axs.set_title(f'acc: {acc}')
     fig.savefig(os.path.join(model_dir, f"{args.exp_name}_labeldist.png"))
     
-    plt.show()
+    fig.show()
 
 if __name__ == "__main__":
     import configargparse
@@ -363,7 +351,7 @@ if __name__ == "__main__":
     # p.add("--embed_dim", required=True, type=int)
     p.add("--pretrained", required=True)
     p.add("--freeze_till", required=True, type=int)
-    p.add("--num_episode", default=15, type=int)
+    p.add("--episode", default=None, type=int)
     p.add("--conv_bottleneck", required=True, type=int)
     p.add("--embed_dim_v", required=True, type=int)
     p.add("--embed_dim_t", required=True, type=int)
@@ -384,7 +372,7 @@ if __name__ == "__main__":
     p.add("--resized_width_t", required=True, type=int)
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="../data_0401/test_recordings/")
+    p.add("--data_folder", default="data/data_0401/test_recordings/")
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
