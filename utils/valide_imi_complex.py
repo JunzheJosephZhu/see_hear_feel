@@ -137,18 +137,18 @@ def baselineValidate(args):
         return {k.split('.', 1)[-1] : v for k, v in state_dict.items() if k.startswith(prefix)}
     
     val_csv = pd.read_csv(args.val_csv)
-    # val_set = torch.utils.data.ConcatDataset(
-    #     [ImitationDatasetFramestackMulti(args.val_csv,
-    #                                      args,
-    #                                      i,
-    #                                      args.data_folder,
-    #                                      train=False)
-    #      for i in range(min(args.num_episode, len(val_csv)))])
-    val_set = ImitationDatasetFramestackMulti(args.val_csv,
-                                              args,
-                                              args.num_episode,
-                                              args.data_folder,
-                                              train=False)
+    val_set = torch.utils.data.ConcatDataset(
+        [ImitationDatasetFramestackMulti(args.val_csv,
+                                         args,
+                                         i,
+                                         args.data_folder,
+                                         train=False)
+         for i in range(min(args.num_episode, len(val_csv)))])
+    # val_set = ImitationDatasetFramestackMulti(args.val_csv,
+    #                                           args,
+    #                                           args.num_episode,
+    #                                           args.data_folder,
+    #                                           train=False)
 
     val_loader = DataLoader(val_set, 1, num_workers=4) #, collate_fn=collate_fn
     with torch.no_grad():

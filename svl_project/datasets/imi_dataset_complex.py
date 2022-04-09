@@ -111,7 +111,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
         
-        self.approach_end = self.timestamps['approach_end_idx'][0]
+        # self.approach_end = self.timestamps['approach_end_idx'][0]
         
         if not args.use_holebase:
             self.audio = self.audio_gripper
