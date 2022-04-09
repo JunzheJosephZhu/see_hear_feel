@@ -88,7 +88,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             print("mha: False; layernorm: True")
             self.layernorm = nn.LayerNorm(self.v_embeds_shape)
             self.t_pool = nn.MaxPool1d(self.v_embeds_shape // self.t_embeds_shape)
-            # self.a_pool = nn.AvgPool1d(self.v_embeds_shape // self.a_embeds_shape)
+            # self.t_pool = nn.AvgPool1d(self.v_embeds_shape // self.t_embeds_shape)
             # self.t_fc = nn.Linear(self.v_embeds_shape, self.t_embeds_shape)
         elif self.use_mha:
             print("mha: True")
@@ -212,7 +212,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
 
         # print(f"mlp inp shape {mlp_inp.shape}")
         # mlp_temp = mlp_inp.cpu().detach().numpy()
-        # # plt.figure()
+        # plt.figure()
         # plt.plot(mlp_temp[0])
         # plt.show()
         

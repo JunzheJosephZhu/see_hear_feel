@@ -43,7 +43,7 @@ def augment_image(image):
     return image
 
 class ImitationDatasetLabelCount(BaseDataset):
-    def __init__(self, log_file, args, dataset_idx, data_folder="data/test_recordings_0214", train=True):
+    def __init__(self, log_file, args, dataset_idx, data_folder=None, train=True):
         super().__init__(log_file, data_folder)
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(
             dataset_idx, load_audio=False)
@@ -54,10 +54,13 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
         xy_space = {-.0005: 0, 0: 1, .0005: 2}
-        z_space = {-.0005: 0, 0: 1, .0005: 2}
-        r_space = {-.005: 0, 0: 1, .005: 2}
+        # z_space = {-.0005: 0, 0: 1, .0005: 2}
+        # r_space = {-.005: 0, 0: 1, .005: 2}
+        # keyboard = torch.as_tensor(
+        #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+        z_space = {-.005: 0, 0: 1, .005: 2}
         keyboard = torch.as_tensor(
-            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
         return keyboard
 
     def get_episode(self, idx, load_audio=False):
@@ -110,6 +113,9 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self._crop_height_t = int(self.resized_height_t * (1.0 - args.crop_percent))
         self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        
+        # self.approach_end = self.timestamps['approach_end_idx'][0]
+        
         if not args.use_holebase:
             self.audio = self.audio_gripper
         else:
@@ -124,6 +130,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                                                                                                    1) / 255
         self.ablation = args.ablation
         self.action_dim = args.action_dim
+        
 
     def get_episode(self, idx, load_audio=True):
         """
@@ -133,7 +140,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -151,9 +158,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         return trial, timestamps, audio_gripper, audio_holebase, len(timestamps["action_history"])
 
     def __len__(self):
+        # if self.ablation == 't' or True:
+        #     return self.num_frames - self.approach_end
+        # else:
         return self.num_frames
 
     def __getitem__(self, idx):
+        # idx = idx + self.approach_end
         # if idx < self.num_frames / 2 and (self.ablation == 't' or self.ablation == 'a'):
         #     print("only use data that contact the surface")
         #     return self.__getitem__(torch.randint(low = int(self.num_frames/2), high=int(self.num_frames),size=()).numpy())
@@ -214,11 +225,11 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
         if not self.use_flow:
             tactile_framestack = torch.stack(
-                [T.functional.crop((transform_gel(
+                [(transform_gel(
                     self.load_image(self.trial, "left_gelsight_frame", timestep)
                     ## input difference between current frame and initial (static) frame instead of the frame itself
                     - self.gelsight_offset
-                ) + 0.5).clamp(0, 1), i_t, j_t, h_t, w_t) for
+                ) + 0.5).clamp(0, 1) for
                  timestep in cam_idx], dim=0)
             # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
             # cv2.waitKey(100)
@@ -238,10 +249,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
         keyboard = self.timestamps["action_history"][end]
         xy_space = {-.0005: 0, 0: 1, .0005: 2}
-        z_space = {-.0005: 0, 0: 1, .0005: 2}
-        r_space = {-.005: 0, 0: 1, .005: 2}
+        # z_space = {-.0005: 0, 0: 1, .0005: 2}
+        # r_space = {-.005: 0, 0: 1, .005: 2}
+        # keyboard = torch.as_tensor(
+        #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+        z_space = {-.005: 0, 0: 1, .005: 2}
         keyboard = torch.as_tensor(
-            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
+            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
 
         if self.num_cam == 2:
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
