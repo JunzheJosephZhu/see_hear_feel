@@ -15,7 +15,7 @@ import cv2
 
 def convert_episode(data_folder, logs, idx):
     print(idx)
-    format_time = logs.iloc[idx].Time.replace(":", "_")
+    format_time = logs.iloc[idx].Time#.replace(":", "_")
     trial = os.path.join(data_folder, format_time)
     all_datasets = h5py.File(os.path.join(trial, "data.hdf5"), 'r')
     streams = ["cam_gripper_color", "cam_fixed_color", "left_gelsight_flow", "left_gelsight_frame"]
@@ -39,9 +39,7 @@ def convert_episode(data_folder, logs, idx):
         sf.write(os.path.join(trial, track + '.wav'), all_datasets[track], 16000)
 
 if __name__ == "__main__":
-    logs = pd.read_csv("data/data_0331/episode_times.csv")
-    data_folder = "data/data_0331/test_recordings"
-    # logs = pd.read_csv("../data_0318/episode_times.csv")
-    # data_folder = "../data_0318/test_recordings"
+    logs = pd.read_csv("data/data_0408/episode_times.csv")
+    data_folder = "data/data_0408/test_recordings"
     for idx in range(len(logs)):
         convert_episode(data_folder, logs, idx)

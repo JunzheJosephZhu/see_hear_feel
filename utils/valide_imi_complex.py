@@ -372,7 +372,7 @@ if __name__ == "__main__":
     p.add("--resized_width_t", required=True, type=int)
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0401/test_recordings/")
+    p.add("--data_folder", default="../data_0408/test_recordings/")
     p.add("--num_camera", required=True, type=int)
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)

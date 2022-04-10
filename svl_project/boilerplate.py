@@ -13,8 +13,6 @@ def save_config(args):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
         yaml.safe_dump(vars(args), outfile)
-    with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
-        yaml.safe_dump(vars(args), outfile)
     return exp_dir
 
 def start_training(args, exp_dir, pl_module, monitor="val/acc"):
