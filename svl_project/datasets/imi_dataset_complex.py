@@ -58,7 +58,7 @@ class ImitationDatasetLabelCount(BaseDataset):
         # r_space = {-.005: 0, 0: 1, .005: 2}
         # keyboard = torch.as_tensor(
         #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-        z_space = {-.005: 0, 0: 1, .005: 2}
+        z_space = {-.0005: 0, 0: 1, .0005: 2}
         keyboard = torch.as_tensor(
             [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
         return keyboard
@@ -71,7 +71,7 @@ class ImitationDatasetLabelCount(BaseDataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
@@ -202,6 +202,23 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                 [T.functional.crop(transform(self.load_image(self.trial, "cam_fixed_color", timestep)), i_v, j_v, h_v, w_v)
                  for timestep in cam_idx], dim=0)
 
+            if not self.use_flow:
+                tactile_framestack = torch.stack(
+                    [T.functional.crop((transform_gel(
+                        self.load_image(self.trial, "left_gelsight_frame", timestep)
+                        ## input difference between current frame and initial (static) frame instead of the frame itself
+                        - self.gelsight_offset
+                    ) + 0.5).clamp(0, 1), i_t, j_t, h_t, w_t)  for
+                    timestep in cam_idx], dim=0)
+                # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
+                # cv2.waitKey(100)
+            else:
+                tactile_framestack = torch.stack(
+                    [torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
+                        torch.FloatTensor)
+                    for timestep in cam_idx], dim=0)
+
         else:
             # load camera frames
             transform = T.Compose([
@@ -223,22 +240,22 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                 [transform(self.load_image(self.trial, "cam_fixed_color", timestep))
                  for timestep in cam_idx], dim=0)
 
-        if not self.use_flow:
-            tactile_framestack = torch.stack(
-                [(transform_gel(
-                    self.load_image(self.trial, "left_gelsight_frame", timestep)
-                    ## input difference between current frame and initial (static) frame instead of the frame itself
-                    - self.gelsight_offset
-                ) + 0.5).clamp(0, 1) for
-                 timestep in cam_idx], dim=0)
-            # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
-            # cv2.waitKey(100)
-        else:
-            tactile_framestack = torch.stack(
-                [torch.from_numpy(
-                    torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
-                    torch.FloatTensor)
-                 for timestep in cam_idx], dim=0)
+            if not self.use_flow:
+                tactile_framestack = torch.stack(
+                    [(transform_gel(
+                        self.load_image(self.trial, "left_gelsight_frame", timestep)
+                        ## input difference between current frame and initial (static) frame instead of the frame itself
+                        - self.gelsight_offset
+                    ) + 0.5).clamp(0, 1) for
+                    timestep in cam_idx], dim=0)
+                # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
+                # cv2.waitKey(100)
+            else:
+                tactile_framestack = torch.stack(
+                    [torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
+                        torch.FloatTensor)
+                    for timestep in cam_idx], dim=0)
 
         # load audio
         audio_end = end * self.resolution
@@ -253,7 +270,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         # r_space = {-.005: 0, 0: 1, .005: 2}
         # keyboard = torch.as_tensor(
         #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-        z_space = {-.005: 0, 0: 1, .005: 2}
+        z_space = {-.0005: 0, 0: 1, .0005: 2}
         keyboard = torch.as_tensor(
             [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
 

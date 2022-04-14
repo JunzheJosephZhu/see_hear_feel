@@ -33,7 +33,7 @@ def start_training(args, exp_dir, pl_module, monitor="val/acc"):
         default_root_dir=exp_dir,
         gpus=-1,
         strategy="dp",
-        check_val_every_n_epoch=5,
+        check_val_every_n_epoch=1,
         log_every_n_steps=1,
         logger=logger
     )

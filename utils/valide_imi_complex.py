@@ -224,13 +224,15 @@ def baselineValidate(args):
             ax_arr.text(x=0.1, y=0, s='z:', color='r', fontsize=7)
             if pred_action[2] != 0:
                 ax_arr.arrow(0.5, 0, 0, pred_action[2], color='r', width=mywidth)
-            # dz
-            ax_arr.text(x=-2, y=1.7, s='dz:', color='b', fontsize=7)
-            if keyboard[3] != 0:
-                ax_arr.arrow(-2, 1.5, keyboard[3], 0, color='b', width=mywidth)
-            ax_arr.text(x=2, y=1.7, s='dz:', color='r', fontsize=7)
-            if pred_action[3] != 0:
-                ax_arr.arrow(2, 1.5, pred_action[3], 0, color='r', width=mywidth)
+            
+            if args.action_dim == 4:
+                # dz
+                ax_arr.text(x=-2, y=1.7, s='dz:', color='b', fontsize=7)
+                if keyboard[3] != 0:
+                    ax_arr.arrow(-2, 1.5, keyboard[3], 0, color='b', width=mywidth)
+                ax_arr.text(x=2, y=1.7, s='dz:', color='r', fontsize=7)
+                if pred_action[3] != 0:
+                    ax_arr.arrow(2, 1.5, pred_action[3], 0, color='r', width=mywidth)
 
             ax_arr.set_title(f"gt {keyboard}, pred {pred_action}")
 
@@ -269,7 +271,7 @@ def baselineValidate(args):
             ## histogram
             fig, axs = plt.subplots(figsize=(5, 5))
             axs.set_ylim(0, 300)
-            axs.plot([0, 81], [0, 0], 'k', linewidth=.5)
+            axs.plot([0, 3 ** args.action_dim], [0, 0], 'k', linewidth=.5)
             nonzero_labels = list(np.where(pred_label_cnts + real_label_cnts > 0)[0])
             # print(nonzero_labels)
             for label in nonzero_labels:
