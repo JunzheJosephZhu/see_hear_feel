@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import yaml
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -8,7 +9,9 @@ import numpy as np
 
 def save_config(args):
     config_name = os.path.basename(args.config).split(".yaml")[0]
-    exp_dir = os.path.join("exp", config_name)
+    now = datetime.now()
+    dt = now.strftime("%m%d%Y")
+    exp_dir = os.path.join("exp" + dt, config_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:

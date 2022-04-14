@@ -53,14 +53,15 @@ class ImitationDatasetLabelCount(BaseDataset):
 
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
-        xy_space = {-.0005: 0, 0: 1, .0005: 2}
+        x_space = {-.0004: 0, 0: 1, .0004: 2}
+        y_space = {-.0002: 0, 0: 1, .0002: 2}
         # z_space = {-.0005: 0, 0: 1, .0005: 2}
         # r_space = {-.005: 0, 0: 1, .005: 2}
         # keyboard = torch.as_tensor(
         #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-        z_space = {-.0005: 0, 0: 1, .0005: 2}
+        z_space = {-.0002: 0, 0: 1, .0002: 2}
         keyboard = torch.as_tensor(
-            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
+            [x_space[keyboard[0]], y_space[keyboard[1]], z_space[keyboard[2]]])
         return keyboard
 
     def get_episode(self, idx, load_audio=False):
@@ -265,14 +266,15 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         log_spec = torch.log(spec + EPS)
 
         keyboard = self.timestamps["action_history"][end]
-        xy_space = {-.0005: 0, 0: 1, .0005: 2}
+        x_space = {-.0004: 0, 0: 1, .0004: 2}
+        y_space = {-.0002: 0, 0: 1, .0002: 2}
         # z_space = {-.0005: 0, 0: 1, .0005: 2}
         # r_space = {-.005: 0, 0: 1, .005: 2}
         # keyboard = torch.as_tensor(
         #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-        z_space = {-.0005: 0, 0: 1, .0005: 2}
+        z_space = {-.0002: 0, 0: 1, .0002: 2}
         keyboard = torch.as_tensor(
-            [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]]])
+            [x_space[keyboard[0]], y_space[keyboard[1]], z_space[keyboard[2]]])
 
         if self.num_cam == 2:
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
