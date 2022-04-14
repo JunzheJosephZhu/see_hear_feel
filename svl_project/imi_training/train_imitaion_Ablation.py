@@ -65,8 +65,8 @@ def main(args):
     samples_weight = torch.from_numpy(samples_weight)
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
-    val_loader = DataLoader(val_set, args.batch_size, num_workers=8, shuffle=False)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=2, sampler=sampler)
+    val_loader = DataLoader(val_set, args.batch_size, num_workers=2, shuffle=False)
     
     ## v encoder
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
@@ -100,7 +100,7 @@ def main(args):
 if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn_ablation.yaml")
+    p.add("-c", "--config", is_config_file=True, default=None)
     p.add("--batch_size", default=4)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)

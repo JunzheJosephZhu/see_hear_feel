@@ -18,11 +18,11 @@ class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
         self.embed_dim = args.embed_dim * args.num_stack * args.num_camera
         if args.loss_type == 'cce':
             self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(self.embed_dim, 1024),
+                torch.nn.Linear(self.embed_dim, 512),
                 torch.nn.ReLU(),
-                torch.nn.Linear(1024, 1024),
+                torch.nn.Linear(512, 256),
                 torch.nn.ReLU(),
-                torch.nn.Linear(1024, 9 * args.action_dim)
+                torch.nn.Linear(256, 9 * args.action_dim)
             )
         elif args.loss_type == 'mse':
             self.mlp = torch.nn.Sequential(
@@ -88,6 +88,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             print("mha: False; layernorm: True")
             self.layernorm = nn.LayerNorm(self.v_embeds_shape)
             self.t_pool = nn.MaxPool1d(self.v_embeds_shape // self.t_embeds_shape)
+            self.a_pool = nn.MaxPool1d(self.v_embeds_shape // self.a_embeds_shape)
             # self.t_pool = nn.AvgPool1d(self.v_embeds_shape // self.t_embeds_shape)
             # self.t_fc = nn.Linear(self.v_embeds_shape, self.t_embeds_shape)
         elif self.use_mha:
@@ -141,7 +142,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
                 if self.use_audio:
                     a_embeds = self.a_encoder(a_inp).detach()
-                    a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
+                    a_embeds = torch.reshape(a_embeds, (-1, self.v_embeds_shape))
         else:
             if self.use_vision:
                 v_embeds = self.v_encoder(v_inp)
@@ -152,7 +153,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 # t_embeds = torch.reshape(t_embeds, (-1, self.t_embeds_shape))
             if self.use_audio:
                 a_embeds = self.a_encoder(a_inp)
-                a_embeds = torch.reshape(a_embeds, (-1, self.a_embeds_shape))
+                a_embeds = torch.reshape(a_embeds, (-1, self.v_embeds_shape))
         
         # if self.ablation == 'v_t':
         #     mlp_inp = torch.concat((v_embeds,t_embeds), dim=-1)
@@ -170,10 +171,11 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         if self.use_tactile:
             embeds.append(t_embeds)
         if self.use_audio:
-            embeds.append(a_embeds)
+            embeds.append(a_embeds) 
         # mlp_inp = torch.concat(embeds, dim=-1)
         if self.use_layernorm:
-            out = torch.stack(embeds, dim=0)
+            out = torch.cat(embeds, dim=0)
+            print(out.shape)
             out = self.layernorm(out)
             # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
             ## adding pooling layer to downsample
