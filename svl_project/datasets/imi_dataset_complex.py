@@ -120,7 +120,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         if not args.use_holebase:
             self.audio = self.audio_gripper
         else:
-            self.audio = self.audio_holebase
+            self.audio = self.audio_holebase[1].unsqueeze(0)
         self.use_flow = args.use_flow
         ## saving initial gelsight frame
         # self.static_gs = self.load_image(os.path.join(self.data_folder, 'static_gs'), "left_gelsight_frame", 0)

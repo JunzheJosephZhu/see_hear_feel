@@ -65,8 +65,8 @@ def main(args):
     samples_weight = torch.from_numpy(samples_weight)
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=2, sampler=sampler)
-    val_loader = DataLoader(val_set, args.batch_size, num_workers=2, shuffle=False)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
+    val_loader = DataLoader(val_set, args.batch_size, num_workers=8, shuffle=False)
     
     ## v encoder
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
@@ -144,8 +144,6 @@ if __name__ == "__main__":
 
     args = p.parse_args()
     # v
-    main(args)
-    args.ablation = 'v_t'
     main(args)
     # args.frameskip = 15
     # main(args)

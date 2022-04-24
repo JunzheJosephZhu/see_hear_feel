@@ -77,10 +77,10 @@ class BaseDataset(Dataset):
     def clip_audio(audio, audio_start, audio_end):
         left_pad, right_pad = torch.Tensor([]), torch.Tensor([])
         if audio_start < 0:
-            left_pad = torch.zeros((2, -audio_start))
+            left_pad = torch.zeros((audio.shape[0], -audio_start))
             audio_start = 0
         if audio_end >= audio.size(-1):
-            right_pad = torch.zeros((2, audio_end - audio.size(-1)))
+            right_pad = torch.zeros((audio.shape[0], audio_end - audio.size(-1)))
             audio_end = audio.size(-1)
         audio_clip = torch.cat(
             [left_pad, audio[:, audio_start:audio_end], right_pad], dim=1
