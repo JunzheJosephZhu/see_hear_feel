@@ -1,4 +1,5 @@
 import sys
+from tomlkit import key
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
@@ -53,6 +54,13 @@ def main(args):
             keyboard = keyboard[0] * 27 + keyboard[1] * 9 + keyboard[2] * 3 + keyboard[3]
         elif args.action_dim == 3:
             keyboard = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
+        elif args.action_dim == 2:
+            keyboard = keyboard[0] * 3 + keyboard[1]
+            keyboard[keyboard == 0] = 0
+            keyboard[keyboard == 3] = 1
+            keyboard[keyboard == 4] = 2
+            keyboard[keyboard == 5] = 2
+            keyboard[keyboard == 6] = 3
         train_label.append(keyboard)
 
     class_sample_count = np.zeros(pow(3, args.action_dim))
@@ -65,8 +73,8 @@ def main(args):
     samples_weight = torch.from_numpy(samples_weight)
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=2, sampler=sampler)
-    val_loader = DataLoader(val_set, args.batch_size, num_workers=2, shuffle=False)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
+    val_loader = DataLoader(val_set, args.batch_size, num_workers=8, shuffle=False)
     
     ## v encoder
     v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
@@ -86,7 +94,7 @@ def main(args):
             t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
     # a_encoder = make_audio_encoder(args.embed_dim_a)
-    a_encoder = make_audio_encoder(2048)
+    a_encoder = make_audio_encoder(args.num_stack * 512)
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -125,7 +133,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0413/test_recordings")
+    p.add("--data_folder", default="data/data_0424/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -138,14 +146,14 @@ if __name__ == "__main__":
     p.add("--num_heads", required=True, type=int)
     p.add("--use_flow", default=False, type=bool)
     p.add("--use_holebase", default=False, type=bool)
+    p.add("--pouring", default=False, type=bool)
+
 
     
 
 
     args = p.parse_args()
     # v
-    main(args)
-    args.ablation = 'v_t'
     main(args)
     # args.frameskip = 15
     # main(args)

@@ -131,7 +131,10 @@ class ImiBaselineLearn_Ablation(LightningModule):
             pred = pred.reshape(batch_size, space_dim)
         elif self.loss_type == 'cce':
             # [batch, 3, num_dims]
-            pred = pred.reshape(batch_size, pow(3, action_dim))
+            if not self.config.pouring:
+                pred = pred.reshape(batch_size, pow(3, action_dim))
+            else:
+                pred = pred.reshape(batch_size, 4)
         return self.loss_cal(pred, demo)
 
     def training_step(self, batch, batch_idx):
@@ -153,6 +156,13 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]
+            elif self.config.action_dim == 2:
+                keyboard = keyboard[:, 0] * 3 + keyboard[:, 1]
+                keyboard[keyboard == 0] = 0
+                keyboard[keyboard == 3] = 1
+                keyboard[keyboard == 4] = 2
+                keyboard[keyboard == 5] = 2
+                keyboard[keyboard == 6] = 3
         action_pred = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
         # print("keyboard", keyboard)
         # print("pred", action_pred)
@@ -186,6 +196,13 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard = keyboard[:, 0] * 27 + keyboard[:, 1] * 9 + keyboard[:, 2] * 3 + keyboard[:, 3]
             elif self.config.action_dim == 3:
                 keyboard = keyboard[:, 0] * 9 + keyboard[:, 1] * 3 + keyboard[:, 2]        # print(v_input.shape)
+            elif self.config.action_dim == 2:
+                keyboard = keyboard[:, 0] * 3 + keyboard[:, 1]
+                keyboard[keyboard == 0] = 0
+                keyboard[keyboard == 3] = 1
+                keyboard[keyboard == 4] = 2
+                keyboard[keyboard == 5] = 2
+                keyboard[keyboard == 6] = 3
         # with torch.no_grad(): # torch lightning module does this under the hood
         action_logits = self.actor(v_input, t_input, a_input, True)  # , idx)
         # print(f"action logits shape {action_logits.shape}")

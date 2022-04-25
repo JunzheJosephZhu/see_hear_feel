@@ -25,8 +25,8 @@ def convert_episode(data_folder, logs, idx):
         for frame_nb, frame_chunk in enumerate(tqdm(frame_chunks)):
             img = all_datasets[stream][frame_chunk]
             if not stream.endswith("flow"):
-                if stream == "left_gelsight_frame":
-                    img = img[:, 100:, :]
+                # if stream == "left_gelsight_frame":
+                    # img = img[:, 100:, :]
                 out_file = os.path.join(trial, stream, str(frame_nb) + ".png")
                 if not os.path.exists(out_file) or True:
                     cv2.imwrite(out_file, img)
@@ -39,7 +39,7 @@ def convert_episode(data_folder, logs, idx):
         sf.write(os.path.join(trial, track + '.wav'), all_datasets[track], 44100)
 
 if __name__ == "__main__":
-    logs = pd.read_csv("data/data_0413/episode_times.csv")
-    data_folder = "data/data_0413/test_recordings"
+    logs = pd.read_csv("data/data_0424/episode_times.csv")
+    data_folder = "data/data_0424/test_recordings"
     for idx in range(len(logs)):
         convert_episode(data_folder, logs, idx)

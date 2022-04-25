@@ -158,7 +158,7 @@ def make_tactile_flow_encoder(out_dim):
 def make_audio_encoder(out_dim=None):
     audio_extractor = resnet18(pretrained=True)
     audio_extractor.conv1 = nn.Conv2d(
-        4, 64, kernel_size=7, stride=1, padding=3, bias=False
+        3, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["layer4.1.relu_1"])
     return Audio_Encoder(audio_extractor, out_dim)
