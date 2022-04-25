@@ -126,7 +126,7 @@ def baselineValidate(args):
         v_input = Variable(v_input).cuda()
         t_input = Variable(t_input).cuda()
         a_input = Variable(log_spec).cuda()
-        
+            
         v_input.squeeze_(0)
         t_input.squeeze_(0)
         s_v = v_input.shape

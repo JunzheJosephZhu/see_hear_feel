@@ -102,14 +102,24 @@ class Imitation_Actor_Ablation(torch.nn.Module):
 
         if args.loss_type == 'cce':
             print("loss: cce")
-            self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(self.embed_dim, 1024),
-                # torch.nn.Linear(self.v_embeds_shape, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Linear(1024, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Linear(1024, pow(3, args.action_dim))
-            )
+            if args.pouring:
+                self.mlp = torch.nn.Sequential(
+                    torch.nn.Linear(self.embed_dim, 1024),
+                    # torch.nn.Linear(self.v_embeds_shape, 1024),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(1024, 1024),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(1024, 4)
+                )
+            else:
+                self.mlp = torch.nn.Sequential(
+                    torch.nn.Linear(self.embed_dim, 1024),
+                    # torch.nn.Linear(self.v_embeds_shape, 1024),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(1024, 1024),
+                    torch.nn.ReLU(),
+                    torch.nn.Linear(1024, pow(3, args.action_dim))
+                )
         elif args.loss_type == 'mse':
             print("loss: mse")
             self.mlp = torch.nn.Sequential(
