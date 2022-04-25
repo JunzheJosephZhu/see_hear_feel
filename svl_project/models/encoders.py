@@ -1,4 +1,3 @@
-from black import out
 from torchvision.models import resnet18
 from torchvision.models.feature_extraction import create_feature_extractor,get_graph_node_names
 import torch

@@ -53,7 +53,7 @@ class MakeVideo():
     def initialize_sep(self):
         ## save the histogram and action sequence
         self.subdirs = {}
-        for dirkey in ['hist', 'seq', 'arrow']:
+        for dirkey in ['hist', 'seq', 'arrow', 'audio']:
             self.subdirs[dirkey] = os.path.join(self.save_dir, dirkey)
             if os.path.exists(self.subdirs[dirkey]):
                 shutil.rmtree(self.subdirs[dirkey])
@@ -89,7 +89,7 @@ class MakeVideo():
         self.thickness = cv2.LINE_8
 
     def save_obs(self, imgs, item, pred=None, gt=None, step=None):
-        if item in ['hist', 'seq', 'arrow']:
+        if item in ['hist', 'seq', 'arrow', 'audio']:
             imgs.savefig(os.path.join(self.subdirs[item], f"{step}.png"))
             return
         for i in range(self.framestack):

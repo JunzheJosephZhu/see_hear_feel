@@ -121,6 +121,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             self.audio = self.audio_gripper
         else:
             self.audio = self.audio_holebase
+            print(self.audio.shape)
         self.use_flow = args.use_flow
         ## saving initial gelsight frame
         # self.static_gs = self.load_image(os.path.join(self.data_folder, 'static_gs'), "left_gelsight_frame", 0)
@@ -262,6 +263,9 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         audio_end = end * self.resolution
         audio_start = audio_end - self.audio_len  # why self.sr // 2, and start + sr
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
+        
+        # spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
+        
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)
 
@@ -287,7 +291,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         #     x = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
         # print(x)
 
-        return v_framestack, tactile_framestack, log_spec, keyboard
+        return v_framestack, tactile_framestack, log_spec, keyboard, audio_clip
 
 if __name__ == "__main__":
     import argparse

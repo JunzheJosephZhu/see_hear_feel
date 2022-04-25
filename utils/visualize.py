@@ -13,8 +13,11 @@ import moviepy.editor as mpe
 from tqdm import tqdm
 import json
 import pandas as pd
+import torch
 
-tstamp = '2022-04-13 15:43:13.884338'
+tstamp = '2022-04-24 00:21:32.002072' # from right
+# tstamp = '2022-04-13 15:21:47.091513' # from left
+# tstamp = '2022-04-17 19:43:56.213370'
 DIR = '../test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # action_hist_file = pd.read_csv(os.path.join(DIR, 'action_history.csv'))
@@ -35,14 +38,14 @@ item_list = {
     7: 'audio_gripper_right',
     8: 'audio_holebase_right'
 }
-test_items = [1, 2, 3, 4]
+test_items = [1,2,3,4,5]
 
 
 class Tests():
     def __init__(self, args):
+        # self.dir = os.path.join('../test_recordings', tstamp)
         self.dir = os.path.join('../test_recordings', tstamp)
-        # self.dir = os.path.join('./data_0331/test_recordings', tstamp)
-        if args.video and not args.store:
+        if args.video and (not args.store):
             self.make_video()
             return
         self.store = args.store
@@ -67,9 +70,9 @@ class Tests():
     def test_audio(self):
         audio_buffer = f[self.test_item]
         if self.store:
-            import soundfile
+            import soundfile as sd
             fs = 44100
-            soundfile.write(
+            sd.write(
                 file=self.path + '.wav',
                 data=audio_buffer[:],
                 samplerate=fs
@@ -79,14 +82,21 @@ class Tests():
             plt.figure()
             audio_buffer_arr = audio_buffer[:]
             x_lim = np.arange(0, len(audio_buffer)) / 4410
-            # audio_buffer_arr = np.abs(audio_buffer[:])
-            # audio_buffer_arr = np.clip(audio_buffer_arr,
-            #                            a_min=0,
-            #                            a_max=0.5)
-            plt.plot(x_lim, audio_buffer_arr)
-            plt.title(self.test_item)
-            # plt.show(block=False)
-            # plt.pause(1000)
+            audio_buffer_arr = np.abs(audio_buffer[:])
+            audio_buffer_arr = np.clip(audio_buffer_arr,
+                                       a_min=0,
+                                       a_max=0.5)
+            # plt.plot(x_lim, audio_buffer_arr)
+            # plt.title(self.test_item)
+            step = int(len(audio_buffer_arr)/44100)
+            for i in range(step):
+                plt.figure(i)
+                spec_nomel = torch.fft.rfft(torch.tensor(audio_buffer_arr[i*44100:(i+1)*44100]).type(torch.FloatTensor))
+                x = torch.fft.rfftfreq(len(audio_buffer_arr[i*44100:(i+1)*44100]), 1 / 44100)
+                plt.plot(x[:10000], np.abs(spec_nomel[:10000]))
+                plt.show()
+
+        plt.savefig(f"{self.path}.png")
 
     def test_img(self):
         if self.test_item == 'left_gelsight_frame':
@@ -195,16 +205,16 @@ class Tests():
         import moviepy.editor as mpe
         final_video = None
         clip_dict = {}
-        for item_idx in item_list.keys():
+        for item_idx in test_items:#item_list.keys():
             item = item_list[item_idx]
             # these are videos
             if item_idx <= 4:
                 clip_dict[item] = mpe.VideoFileClip(os.path.join(self.dir, item + '.avi'))
                 if item_idx <= 2:
                     clip_dict[item] = clip_dict[item].resize(height=400)
-            # and these are audios
-            # else:
-            #     clip_dict[item] = mpe.AudioFileClip(os.path.join(self.dir, item + '.wav'))
+            # # and these are audios
+            else:
+                clip_dict[item] = mpe.AudioFileClip(os.path.join(self.dir, item + '.wav'))
 
         comp_clip = mpe.clips_array([
             [clip_dict['cam_fixed_color'], clip_dict['cam_gripper_color']],
@@ -212,14 +222,17 @@ class Tests():
             # [clip_dict['cam_gripper_color'], clip_dict['left_gelsight_frame']]
         ])
         comp_clip = comp_clip.resize(width=480)
-        final_video = comp_clip  # .set_audio(clip_dict['audio_holebase_left'])
+        final_video = comp_clip.set_audio(clip_dict['audio_holebase_left'])
         final_video.write_videofile(os.path.join(self.dir, "final_video_holebase.mp4"))
 
 
 class Analysis():
     def __init__(self, dir=None, items=None):
         self.dir = dir
-        self.items = items
+        if items is None:
+            self.items = ['hist', 'seq', 'arrow', 'audio']
+        else:
+            self.items = items
         self._save_vt_video()
         for item in self.items:
             self._save_video_from(item)
@@ -236,6 +249,8 @@ class Analysis():
             resolution = 600, 400
         elif item == 'arrow':
             resolution = 400, 200
+        elif item == 'audio':
+            resolution = 400, 200 #640, 480
         video_writer = cv2.VideoWriter(
             os.path.join(self.dir, item + '.avi'),
             cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10, resolution  # , False
@@ -251,7 +266,7 @@ class Analysis():
 
     def _save_vt_video(self):
         items = os.listdir(self.dir)
-        logs = ['hist', 'seq', 'arrow']
+        logs = ['hist', 'seq', 'arrow', 'audio']
         for log in logs:
             if log in items:
                 items.remove(log)
@@ -280,7 +295,7 @@ class Analysis():
             items = ['arrow', 'seq']
         clip_arr = []
         for item in items:
-            paths[item] = os.path.join(self.dir, item+'.avi')
+            paths[item] = os.path.join(self.dir, item + '.avi')
             clips[item] = mpe.VideoFileClip(paths[item])
             clip_arr.append([clips[item]])
         # comp_clip = mpe.clips_array([[clips['arrow']],
@@ -288,7 +303,7 @@ class Analysis():
         comp_clip = mpe.clips_array(clip_arr)
         comp_clip.write_videofile(os.path.join(self.dir, "logs.mp4"))
 
-    def add_hist_video(self):
+    def add_log_video(self):
         logs_path = os.path.join(self.dir, 'logs.mp4')
         vt_path = os.path.join(self.dir, 'vt.mp4')
 
@@ -305,14 +320,14 @@ if __name__ == '__main__':
     p.add_argument("--data_folder", default='./testing_models/recpeg_small/03_v_t/test')
     args = p.parse_args()
 
-    # ## save histogram video demo
-    # analyze_video = Analysis(args.data_folder, ['hist', 'seq', 'arrow'])
+    ## save histogram video demo
+    # analyze_video = Analysis(args.data_folder, ['seq', 'audio'])
     
     # ## compose validation videos
-    # analyze_video.save_log_video()
+    # analyze_video.save_log_video(items=['seq', 'audio'])
 
     # # ## add hist video
-    # analyze_video.add_hist_video()
+    # analyze_video.add_log_video()
 
     ## compose human demo / data
     Tests(args)
