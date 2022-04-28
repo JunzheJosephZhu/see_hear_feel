@@ -87,14 +87,14 @@ def main(args):
         t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
     else:
         # t_encoder = make_tactile_encoder(args.embed_dim_t)
-        t_encoder = make_tactile_encoder(args.embed_dim_v)
+        t_encoder = make_tactile_encoder(args.embed_dim_t)
         if args.pretrained_t is not None:
             print("loading pretrained t...")
             state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
             t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
     # a_encoder = make_audio_encoder(args.embed_dim_a)
-    a_encoder = make_audio_encoder(args.num_stack * 512)
+    a_encoder = make_audio_encoder(args.embed_dim_a)
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -108,8 +108,8 @@ def main(args):
 if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default=None)
-    p.add("--batch_size", default=4)
+    p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn_ablation.yaml")
+    p.add("--batch_size", default=32)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
@@ -128,12 +128,12 @@ if __name__ == "__main__":
     p.add("--pretrained_v", default=None)
     p.add("--pretrained_t", default=None)
     p.add("--freeze_till", required=True, type=int)
-    p.add("--use_mha", default=False)
-    p.add("--use_layernorm", default=False)
+    p.add("--use_mha", default=False, action="store_true")
+    p.add("--use_layernorm", default=False, action="store_true")
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0424/test_recordings")
+    p.add("--data_folder", default="data/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -144,9 +144,9 @@ if __name__ == "__main__":
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
     p.add("--num_heads", required=True, type=int)
-    p.add("--use_flow", default=False, type=bool)
-    p.add("--use_holebase", default=False, type=bool)
-    p.add("--pouring", default=False, type=bool)
+    p.add("--use_flow", default=False, action="store_true")
+    p.add("--use_holebase", default=False, action="store_true")
+    p.add("--pouring", default=False, action="store_true")
     p.add("--cam_to_use", default='fixed')
 
 

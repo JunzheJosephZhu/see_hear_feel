@@ -271,6 +271,9 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         audio_end = end * self.resolution
         audio_start = audio_end - self.audio_len  # why self.sr // 2, and start + sr
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
+        
+        # spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
+        
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)
         # print(log_spec.shape)

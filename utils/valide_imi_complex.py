@@ -12,7 +12,7 @@ from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import librosa.display
 import os
 import yaml
 from pytorch_lightning import Trainer
@@ -81,7 +81,7 @@ def baselineValidate(args):
         else:
             t_encoder = make_tactile_encoder(args.embed_dim_v)
             # t_encoder = make_tactile_encoder(args.embed_dim_t)
-        a_encoder = make_audio_encoder()
+        a_encoder = make_audio_encoder(2048)
         v_encoder.eval()
         t_encoder.eval()
         a_encoder.eval()
@@ -116,13 +116,42 @@ def baselineValidate(args):
     
     model_dir = '/'.join(args.pretrained.split('/')[:-1])
     
-    if args.episode is not None:
+    if args.save_video:
         video_saver = MakeVideo(dir=model_dir, framestack=args.num_stack, name=args.exp_name, args=args, length=len(val_loader))
         video_saver.initialize_sep()
 
     for batch in tqdm(val_loader):
+        # if cnt < 200:
+        #     cnt += 1
+        #     continue
         # v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
-        v_input, t_input, log_spec, keyboard = batch
+        v_input, t_input, log_spec, keyboard, audio_clip = batch
+        if args.save_video:
+            spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
+            # print(spec_nomel.shape)
+            # print(audio_clip.shape)
+            
+            # plt.figure(0)
+            fig_audio, arrs_audio = plt.subplots(2, figsize=(4, 2))
+            # print(x)
+            ## plot mel spec
+            arrs_audio[0].imshow(log_spec[0][0])
+            arrs_audio[1].imshow(log_spec[0][1])
+            ## plot rfft
+            # x = torch.fft.rfftfreq(len(audio_clip[0][1]), 1 / 44100)
+            # arrs_audio[0].plot(x[:10000], np.abs(spec_nomel[0][0])[:10000])
+            # arrs_audio[1].plot(x[:10000], np.abs(spec_nomel[0][1])[:10000])
+            # arrs_audio[0].set_ylim([0,2])
+            # arrs_audio[1].set_ylim([0,2])
+            
+            
+            # plt.imshow(spec_nomel[0][0])
+            video_saver.save_obs(fig_audio, item='audio', step=cnt)
+            # plt.show()
+            # plt.pause(.001)
+            # plt.draw()
+            plt.close(fig_audio)
+        
         v_input = Variable(v_input).cuda()
         t_input = Variable(t_input).cuda()
         a_input = Variable(log_spec).cuda()
@@ -195,7 +224,7 @@ def baselineValidate(args):
         pred_action = pred_action - 1.0
         
         
-        if args.episode is not None:
+        if args.save_video:
             # video_saver.append_frame(v_input, t_input, 'v', pred_action, keyboard)
             video_saver.save_obs(v_input, 'v', pred_action, keyboard, cnt-1)
             video_saver.save_obs(t_input, 't')
