@@ -94,6 +94,7 @@ def main(args):
             t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
     # a_encoder = make_audio_encoder(args.embed_dim_a)
+    # a_encoder = make_audio_encoder(2048)
     a_encoder = make_audio_encoder(args.num_stack * 512)
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()

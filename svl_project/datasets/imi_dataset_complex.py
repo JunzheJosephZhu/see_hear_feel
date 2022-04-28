@@ -111,6 +111,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
         )
         self.num_cam = args.num_camera
+        self.cam_to_use = args.cam_to_use
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
         self.resized_width_v = args.resized_width_v
@@ -297,8 +298,10 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         else:
             if not self.pouring:
                 v_framestack = cam_fixed_framestack
-            else:
+            elif self.cam_to_use == 'fixed':
                 v_framestack = cam_fixed_framestack
+            elif self.cam_to_use == 'gripper':
+                v_framestack = cam_gripper_framestack
 
         # if self.action_dim == 4:
         #     x = keyboard[0] * 27 + keyboard[1] * 9 + keyboard[2] * 3 + keyboard[3]
