@@ -39,4 +39,7 @@ cd svl_fs
 # Run your script #
 ###################
 echo "running command : <RUN_COMMAND>"
-python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_a_pour.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_pour.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vg_a_pour.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_pour.yaml
+python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vg_t_a_pour.yaml

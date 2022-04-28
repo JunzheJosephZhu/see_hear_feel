@@ -1,0 +1,25 @@
+embed_dim_v: 512
+embed_dim_t: 64
+embed_dim_a: 64
+#pretrained: None # "/exp/metric_learn/checkpoints/last.ckpt"
+freeze_till: 5
+num_stack: 3
+frameskip: 5
+crop_percent: 0.1
+conv_bottleneck: 128
+resized_height_v: 120
+resized_width_v: 160
+resized_height_t: 75 #75 #150
+resized_width_t: 100 #100 #200
+num_camera: 1
+total_episode: 50
+ablation: v_t
+gamma: 0.9
+num_heads: 8
+use_holebase: True
+action_dim: 2
+#use_flow: True
+#use_mha: True
+use_layernorm: True
+pouring: True
+cam_to_use: fixed

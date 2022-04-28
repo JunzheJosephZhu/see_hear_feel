@@ -147,6 +147,7 @@ if __name__ == "__main__":
     p.add("--use_flow", default=False, type=bool)
     p.add("--use_holebase", default=False, type=bool)
     p.add("--pouring", default=False, type=bool)
+    p.add("--cam_to_use", default='fixed')
 
 
     

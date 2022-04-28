@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from ast import arg
 from lib2to3.pytree import Base
 from tkinter.messagebox import NO
+from cv2 import log
 from grpc import AuthMetadataContext
 from importlib_metadata import itertools
 from matplotlib.transforms import Transform
@@ -111,6 +112,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             sample_rate=self.sr, n_fft=int(self.sr * 0.025), hop_length=int(self.sr * 0.01), n_mels=64
         )
         self.num_cam = args.num_camera
+        self.cam_to_use = args.cam_to_use
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
         self.resized_width_v = args.resized_width_v
@@ -271,6 +273,10 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)
+        # print(log_spec.shape)
+        # print(log_spec.sum(axis=-2))
+        log_spec /= ((log_spec**2).mean(dim=-2, keepdim=True))**0.5
+        
 
         keyboard = self.timestamps["action_history"][end]
         if self.pouring:
@@ -294,8 +300,10 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         else:
             if not self.pouring:
                 v_framestack = cam_fixed_framestack
-            else:
+            elif self.cam_to_use == 'fixed':
                 v_framestack = cam_fixed_framestack
+            elif self.cam_to_use == 'gripper':
+                v_framestack = cam_gripper_framestack
 
         # if self.action_dim == 4:
         #     x = keyboard[0] * 27 + keyboard[1] * 9 + keyboard[2] * 3 + keyboard[3]
