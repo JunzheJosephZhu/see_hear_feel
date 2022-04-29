@@ -276,8 +276,6 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)
-        # print(log_spec.shape)
-        # print(log_spec.sum(axis=-2))
         log_spec /= ((log_spec**2).mean(dim=-2, keepdim=True))**0.5
         
 
