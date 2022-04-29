@@ -12,7 +12,6 @@ from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-import librosa.display
 import os
 import yaml
 from pytorch_lightning import Trainer
@@ -23,6 +22,17 @@ from torch.autograd import Variable
 import shutil
 from tqdm import tqdm
 from save_val_obs import MakeVideo
+
+# keyboard[keyboard == 0] = 0
+# keyboard[keyboard == 3] = 1
+# keyboard[keyboard == 4] = 2
+# keyboard[keyboard == 5] = 2
+# keyboard[keyboard == 6] = 3
+
+pouring_action_map = {0 : 0,
+                      1 : 3,
+                      2 : 5,
+                      3 : 6}
 
 def collate_fn(batch):
     len_batch = len(batch) # original batch length
@@ -81,7 +91,8 @@ def baselineValidate(args):
         else:
             t_encoder = make_tactile_encoder(args.embed_dim_v)
             # t_encoder = make_tactile_encoder(args.embed_dim_t)
-        a_encoder = make_audio_encoder(2048)
+        # a_encoder = make_audio_encoder(2048)
+        a_encoder = make_audio_encoder(args.num_stack * 512)
         v_encoder.eval()
         t_encoder.eval()
         a_encoder.eval()
@@ -175,6 +186,8 @@ def baselineValidate(args):
         action_logits = actor(v_input, t_input, a_input, True).detach().cpu().numpy()
         if args.loss_type == 'cce':
             pred_label = np.argmax(action_logits)
+            if args.pouring:
+                pred_label = pouring_action_map[pred_label]
             gt_label = 0
             pred_temp = pred_label
             pred_action = np.zeros(args.action_dim)
@@ -183,7 +196,7 @@ def baselineValidate(args):
                 pred_action[args.action_dim - d - 1] = pred_temp % 3
                 pred_temp //= 3
             # print(f"keyboard {keyboard}, label {gt_label}")
-            # print(f"pred_action {pred_action}, label {pred}")
+            # print(f"pred_action {pred_action}, label {pred_label}")
         elif args.loss_type == 'mse':
             pred_action = pred_action.reshape(-1) # * np.array((.003, .003, .0015))
         # keyboard = (keyboard - 1.)#.type(torch.cuda.FloatTensor)
@@ -273,6 +286,8 @@ def baselineValidate(args):
             titles = ['class', 'x', 'y', 'z']
             if args.action_dim == 4:
                 titles.append('dz')
+            elif args.pouring:
+                titles = [f"acc: {acc}", 'x', 'dy']
             for i in range(len(titles)):
                 if i < 1:
                     if gt_label == pred_label:
@@ -335,6 +350,8 @@ def baselineValidate(args):
     titles = [f"acc: {acc}", 'x', 'y', 'z']
     if args.action_dim == 4:
         titles.append('dz')
+    elif args.pouring:
+        titles = [f"acc: {acc}", 'x', 'dy']
     for i in range(len(titles)):
         if i < 1:
             axs[i].plot(real_labels, 'b+', label='real')
@@ -349,7 +366,7 @@ def baselineValidate(args):
     
     ## trying better visualization
     fig, axs = plt.subplots()
-    axs.plot([0, 81], [0, 0], 'k', linewidth=.5)
+    axs.plot([0, 3 ** args.action_dim], [0, 0], 'k', linewidth=.5)
     for label in range(3 ** args.action_dim):
         if pred_label_cnts[label] > 0 or real_label_cnts[label] > 0:
             print(f"plot label {label}, real cnt {real_label_cnts[label]}, pred cnt {pred_label_cnts[label]}")
@@ -395,6 +412,8 @@ if __name__ == "__main__":
     p.add("--use_flow", default=False, type=bool)
     p.add("--use_mha", default=False)
     p.add("--use_holebase", default=False)
+    p.add("--pouring", default=False, type=bool)
+    p.add("--cam_to_use", default='fixed')
     # data
     p.add("--crop_percent", default=.1, type=float)
     p.add("--resized_height_v", required=True, type=int)

@@ -89,7 +89,7 @@ class MakeVideo():
         self.thickness = cv2.LINE_8
 
     def save_obs(self, imgs, item, pred=None, gt=None, step=None):
-        if item in ['hist', 'seq', 'arrow', 'audio']:
+        if item in ['hist', 'seq', 'arrow', '   ']:
             imgs.savefig(os.path.join(self.subdirs[item], f"{step}.png"))
             return
         for i in range(self.framestack):

@@ -42,6 +42,11 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_pour.yaml
-python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_pour.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour_norm.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_norm.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_pour_norm.yaml
+python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour_norm.yaml
 
 

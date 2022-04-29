@@ -141,6 +141,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.ablation = args.ablation
         self.action_dim = args.action_dim
         self.pouring = args.pouring
+        self.norm_audio = args.norm_audio
         
 
     def get_episode(self, idx, load_audio=True):
@@ -199,9 +200,10 @@ class ImitationDatasetFramestackMulti(BaseDataset):
                 T.Resize((self.resized_height_t, self.resized_width_t)),
                 # T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
             ])
-
-            img_g = transform(self.load_image(self.trial, "left_gelsight_frame", end))
-            i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_g, output_size=(self._crop_height_t, self._crop_width_t))
+            
+            # no random crop on tactile
+            # img_g = transform(self.load_image(self.trial, "left_gelsight_frame", end))
+            # i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_g, output_size=(self._crop_height_t, self._crop_width_t))
 
             # if self.num_cam == 2:
             cam_gripper_framestack = torch.stack(
@@ -215,11 +217,11 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
             if not self.use_flow:
                 tactile_framestack = torch.stack(
-                    [T.functional.crop((transform_gel(
+                    [(transform_gel(
                         self.load_image(self.trial, "left_gelsight_frame", timestep)
                         ## input difference between current frame and initial (static) frame instead of the frame itself
                         - self.gelsight_offset
-                    ) + 0.5).clamp(0, 1), i_t, j_t, h_t, w_t)  for
+                    ) + 0.5).clamp(0, 1)  for
                     timestep in cam_idx], dim=0)
                 # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
                 # cv2.waitKey(100)
@@ -239,7 +241,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.CenterCrop((self.resized_height_t, self.resized_width_t))
+                # T.CenterCrop((self.resized_height_t, self.resized_width_t))
             ])
         #    if self.num_cam == 2:
             cam_gripper_framestack = torch.stack(
@@ -273,11 +275,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         
         # spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
-        
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)
-        log_spec /= ((log_spec**2).mean(dim=-2, keepdim=True))**0.5
-        
+        if self.norm_audio:
+            log_spec /= ((log_spec**2).mean(dim=-2, keepdim=True))**0.5
+        # log_spec /= log_spec.sum(dim=-2, keepdim=True)
+        # print(log_spec.shape)
+        # print(log_spec.sum(axis=-2))
 
         keyboard = self.timestamps["action_history"][end]
         if self.pouring:

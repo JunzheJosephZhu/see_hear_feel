@@ -15,15 +15,16 @@ import json
 import pandas as pd
 import torch
 
-tstamp = '2022-04-24 00:21:32.002072' # from right
-# tstamp = '2022-04-13 15:21:47.091513' # from left
-# tstamp = '2022-04-17 19:43:56.213370'
+tstamp = '2022-04-25 19:36:10.756063'
 DIR = '../test_recordings/' + tstamp
+# DIR = '../data_0424/test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # action_hist_file = pd.read_csv(os.path.join(DIR, 'action_history.csv'))
+with open(os.path.join(DIR, "timestamps.json")) as ts:
+    action_hist_file = json.load(ts)
 
 # action_hist = None
-# action_hist = action_hist_file['action_history']
+action_hist = action_hist_file['action_history']
 # print(action_hist)
 # print(action_hist[0].tolist()[0])
 # tstamp = '2022-03-31 20:55:52.238120'
@@ -38,13 +39,13 @@ item_list = {
     7: 'audio_gripper_right',
     8: 'audio_holebase_right'
 }
-test_items = [1,2,3,4,5]
+test_items = [1,2,3,4]
 
 
 class Tests():
     def __init__(self, args):
-        # self.dir = os.path.join('../test_recordings', tstamp)
         self.dir = os.path.join('../test_recordings', tstamp)
+        # self.dir = os.path.join('../data_0424/test_recordings', tstamp)
         if args.video and (not args.store):
             self.make_video()
             return
@@ -158,9 +159,14 @@ class Tests():
             #                     thickness=2,
             #                     tipLength=0.3)
             # print(img)
+            if self.test_item == 'cam_fixed_color':
+                str = f"action: {action_hist[cnt]}"
+            else:
+                str = self.test_item
             cv2.putText(img,
-                        self.test_item, (50, 50),
-                        self.font, font_scale, self.color, thick_scale, self.thickness
+                        str, (5, 50),
+                        # self.test_item, (50, 50),
+                        self.font, font_scale/2, self.color, thick_scale, self.thickness
                         )
             if self.store:
                 video_writer.write(img)
@@ -213,16 +219,22 @@ class Tests():
                 if item_idx <= 2:
                     clip_dict[item] = clip_dict[item].resize(height=400)
             # # and these are audios
-            else:
-                clip_dict[item] = mpe.AudioFileClip(os.path.join(self.dir, item + '.wav'))
-
+            # else:
+            #     clip_dict[item] = mpe.AudioFileClip(os.path.join(self.dir, item + '.wav'))
+        
+        # broken gelsight flow
         comp_clip = mpe.clips_array([
-            [clip_dict['cam_fixed_color'], clip_dict['cam_gripper_color']],
-            [clip_dict['left_gelsight_frame'], clip_dict['left_gelsight_flow']]
-            # [clip_dict['cam_gripper_color'], clip_dict['left_gelsight_frame']]
+            [clip_dict['cam_fixed_color'], clip_dict['cam_gripper_color'], clip_dict['left_gelsight_frame']]
         ])
-        comp_clip = comp_clip.resize(width=480)
-        final_video = comp_clip.set_audio(clip_dict['audio_holebase_left'])
+
+        # comp_clip = mpe.clips_array([
+        #     [clip_dict['cam_fixed_color'], clip_dict['cam_gripper_color']],
+        #     [clip_dict['left_gelsight_frame'], clip_dict['left_gelsight_flow']]
+        #     # [clip_dict['cam_gripper_color'], clip_dict['left_gelsight_frame']]
+        # ])
+        # comp_clip = comp_clip.resize(width=480)
+        
+        final_video = comp_clip#.set_audio(clip_dict['audio_holebase_left'])
         final_video.write_videofile(os.path.join(self.dir, "final_video_holebase.mp4"))
 
 

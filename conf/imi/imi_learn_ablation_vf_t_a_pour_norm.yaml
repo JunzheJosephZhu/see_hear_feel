@@ -25,4 +25,4 @@ use_mha: True
 use_layernorm: True
 pouring: True
 cam_to_use: fixed
-# norm_audio: True
+norm_audio: True
