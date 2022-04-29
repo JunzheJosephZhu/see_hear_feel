@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from ast import arg
 from lib2to3.pytree import Base
 from tkinter.messagebox import NO
+from cv2 import log
 from grpc import AuthMetadataContext
 from importlib_metadata import itertools
 from matplotlib.transforms import Transform
@@ -140,6 +141,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.ablation = args.ablation
         self.action_dim = args.action_dim
         self.pouring = args.pouring
+        self.norm_audio = args.norm_audio
         
 
     def get_episode(self, idx, load_audio=True):
@@ -272,9 +274,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         audio_clip = self.clip_audio(self.audio, audio_start, audio_end)
         
         # spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
-        
         spec = self.mel(audio_clip.type(torch.FloatTensor))
         log_spec = torch.log(spec + EPS)
+        if self.norm_audio:
+            log_spec /= ((log_spec**2).mean(dim=-2, keepdim=True))**0.5
+        # log_spec /= log_spec.sum(dim=-2, keepdim=True)
+        # print(log_spec.shape)
+        # print(log_spec.sum(axis=-2))
 
         keyboard = self.timestamps["action_history"][end]
         if self.pouring:
@@ -309,7 +315,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         #     x = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
         # print(x)
 
-        return v_framestack, tactile_framestack, log_spec, keyboard, audio_clip
+        return v_framestack, tactile_framestack, log_spec, keyboard
 
 if __name__ == "__main__":
     import argparse

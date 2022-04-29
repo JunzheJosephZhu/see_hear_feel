@@ -15,13 +15,13 @@ resized_height_t: 75 #75 #150
 resized_width_t: 100 #100 #200
 num_camera: 1
 total_episode: 50
-ablation: a_t
+ablation: v
 gamma: 0.9
 num_heads: 8
 use_holebase: True
 action_dim: 2
 #use_flow: True
-use_mha: True
+# use_mha: True
 use_layernorm: True
 pouring: True
 cam_to_use: fixed

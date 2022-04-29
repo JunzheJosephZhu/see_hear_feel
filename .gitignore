@@ -21,6 +21,11 @@ exp_baseline_tuning_2_9_12_47/
 exp_baseline_tuning_2_9_lr_0.0001/
 exp_baseline_tuning_2_13/
 exp_baseline_tuning_2_14/
+exp/*
+.vscode/*
+data/
+data/*
+
 
 svl_project/datasets/__pycache__/*
 svl_project/engines/__pycache__/*

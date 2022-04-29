@@ -1,3 +1,4 @@
+from email.policy import default
 import sys
 from tomlkit import key
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
@@ -74,28 +75,26 @@ def main(args):
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
-    val_loader = DataLoader(val_set, args.batch_size, num_workers=8, shuffle=False)
+    val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False)
     
     ## v encoder
-    v_encoder = make_vision_encoder(args.embed_dim_v) # 3,4/4,5
+    v_encoder = make_vision_encoder(args.encoder_dim) # 3,4/4,5
     if args.pretrained_v is not None:
         print("loading pretrained v...")
         state_dict_v = torch.load(args.pretrained_v, map_location="cpu")["state_dict"]
         v_encoder.load_state_dict(strip_sd(state_dict_v, "vae.encoder."))
     ## t encoder
     if args.use_flow:
-        t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
+        t_encoder = make_tactile_flow_encoder(args.encoder_dim)
     else:
-        # t_encoder = make_tactile_encoder(args.embed_dim_t)
-        t_encoder = make_tactile_encoder(args.embed_dim_v)
+        t_encoder = make_tactile_encoder(args.encoder_dim)
         if args.pretrained_t is not None:
             print("loading pretrained t...")
             state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
             t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
     ## a encoder
-    # a_encoder = make_audio_encoder(args.embed_dim_a)
-    # a_encoder = make_audio_encoder(2048)
-    a_encoder = make_audio_encoder(args.num_stack * 512)
+    # audio dont have framestack, so just make it output size multiply by num stack
+    a_encoder = make_audio_encoder(args.encoder_dim * args.num_stack)
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -109,8 +108,8 @@ def main(args):
 if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default=None)
-    p.add("--batch_size", default=4)
+    p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn_ablation.yaml")
+    p.add("--batch_size", default=32)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
@@ -122,6 +121,7 @@ if __name__ == "__main__":
     p.add("--embed_dim_v", required=True, type=int)
     p.add("--embed_dim_t", required=True, type=int)
     p.add("--embed_dim_a", required=True, type=int)
+    p.add("--encoder_dim", required=True, type=int)
     p.add("--action_dim", default=3, type=int)
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
@@ -129,8 +129,8 @@ if __name__ == "__main__":
     p.add("--pretrained_v", default=None)
     p.add("--pretrained_t", default=None)
     p.add("--freeze_till", required=True, type=int)
-    p.add("--use_mha", default=False)
-    p.add("--use_layernorm", default=False)
+    p.add("--use_mha", default=False, action="store_true")
+    p.add("--use_layernorm", default=False, action="store_true")
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
@@ -145,10 +145,11 @@ if __name__ == "__main__":
     p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
     p.add("--num_heads", required=True, type=int)
-    p.add("--use_flow", default=False, type=bool)
-    p.add("--use_holebase", default=False, type=bool)
-    p.add("--pouring", default=False, type=bool)
-
+    p.add("--use_flow", default=False, action="store_true")
+    p.add("--use_holebase", default=False, action="store_true")
+    p.add("--pouring", default=False, action="store_true")
+    p.add("--cam_to_use", default='fixed')
+    p.add("--norm_audio", default=False, action="store_true")
 
     
 
