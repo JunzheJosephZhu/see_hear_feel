@@ -1,6 +1,7 @@
-encoder_dim: 512
+encoder_dim: 256
 # notice that the final embedding ratio of different modality is v*fs : t*fs : a
-embed_dim_v: 512
+# below params are for pooling
+embed_dim_v: 256
 embed_dim_t: 64
 embed_dim_a: 512
 #pretrained: None # "/exp/metric_learn/checkpoints/last.ckpt"
@@ -15,7 +16,7 @@ resized_height_t: 75 #75 #150
 resized_width_t: 100 #100 #200
 num_camera: 1
 total_episode: 50
-ablation: a
+ablation: v_t_a
 gamma: 0.9
 num_heads: 8
 use_holebase: True

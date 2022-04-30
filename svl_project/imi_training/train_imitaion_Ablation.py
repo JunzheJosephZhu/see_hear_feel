@@ -151,6 +151,8 @@ if __name__ == "__main__":
     p.add("--cam_to_use", default='fixed')
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--pool_a_t", default=False, action="store_true")
+    p.add("--no_res_con", default=False, action="store_true")
+
 
     
 

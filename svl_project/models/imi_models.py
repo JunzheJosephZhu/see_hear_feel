@@ -71,6 +71,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_mha = args.use_mha
         self.use_layernorm = args.use_layernorm
         self.pool_a_t = args.pool_a_t
+        self.no_res_con = args.no_res_con
                 
         ## load models
         self.modalities = self.ablation.split('_')
@@ -204,7 +205,9 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         if self.use_mha:
             # batch first=False, (L, N, E)
             sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
-            outs = sublayer_out + mlp_inp            
+            outs = sublayer_out
+            if not self.no_res_con:
+                outs = outs + mlp_inp            
             # ## option 1: average
             # # mlp_inp = torch.mean(out, dim=0)
             # ## option 2: concat
