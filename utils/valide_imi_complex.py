@@ -1,3 +1,4 @@
+from re import L
 import sys
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
@@ -22,6 +23,7 @@ from torch.autograd import Variable
 import shutil
 from tqdm import tqdm
 from save_val_obs import MakeVideo
+import seaborn as sn
 
 # keyboard[keyboard == 0] = 0
 # keyboard[keyboard == 3] = 1
@@ -131,7 +133,7 @@ def baselineValidate(args):
         video_saver = MakeVideo(dir=model_dir, framestack=args.num_stack, name=args.exp_name, args=args, length=len(val_loader))
         video_saver.initialize_sep()
 
-    for batch in tqdm(val_loader):
+    for batch, batch_idx in tqdm(val_loader):
         # if cnt < 200:
         #     cnt += 1
         #     continue
@@ -183,7 +185,10 @@ def baselineValidate(args):
         # cv2.waitKey(200)
         
         keyboard = keyboard.numpy()
-        action_logits = actor(v_input, t_input, a_input, True).detach().cpu().numpy()
+        action_logits, weights = actor(v_input, t_input, a_input, True)
+        action_logits = action_logits.detach().cpu().numpy()
+        weights = weights.detach().cpu().numpy()
+            
         if args.loss_type == 'cce':
             pred_label = np.argmax(action_logits)
             if args.pouring:
@@ -335,6 +340,32 @@ def baselineValidate(args):
         
             plt.close(fig)
             
+            # Confusion matrix
+            if weights != None:
+                weights = weights[0]
+                modalities = args.ablation.split('_')
+                use_vision = 'v' in modalities
+                use_tactile = 't' in modalities
+                use_audio = 'a' in modalities
+                used_input = []
+                output = []
+                if use_vision:
+                    used_input.append('v_in')
+                    output.append('v_out')
+                if use_tactile:
+                    used_input.append('t_in')
+                    output.append('t_out')
+                if use_audio:
+                    used_input.append('a_in')
+                    output.append('a_out')
+                df_cm = pd.DataFrame(weights.cpu().numpy(), index = output, columns=used_input)
+                plt.figure(figsize = (20, 14))
+                fig_ = sn.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
+                
+                video_saver.save_obs(fig_, 'confusion', step=cnt-1)
+                
+                plt.close(fig_)
+            
 
     ## accuracy summary
     acc = cor / (cor + wrong)
@@ -401,6 +432,7 @@ if __name__ == "__main__":
     p.add("--freeze_till", required=True, type=int)
     p.add("--episode", default=None, type=int)
     p.add("--conv_bottleneck", required=True, type=int)
+    p.add("--encoder_dim", required=True, type=int)
     p.add("--embed_dim_v", required=True, type=int)
     p.add("--embed_dim_t", required=True, type=int)
     p.add("--embed_dim_a", required=True, type=int)
@@ -429,6 +461,12 @@ if __name__ == "__main__":
     p.add("--use_layernorm", default=False, type=bool)
     p.add("--exp_name", default=None)
     p.add("--save_video", default=False, action='store_true')
+    p.add("--norm_audio", default=False, action='store_true')
+    p.add("--pool_a_t", default=False, action='store_true')
+    p.add("--no_res_con", default=False, action='store_true')
+    
+
+    
 
     args = p.parse_args()
     baselineValidate(args)
