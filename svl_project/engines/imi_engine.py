@@ -132,7 +132,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
         self.total += cor.size()[0]
         # self.log('val/acc', self.correct / self.total, on_step=True, on_epoch=False)
         self.log("val/action_loss", loss.item())
-        print(self.current_epoch)
         if weights != None and  batch_idx < 225:
             weights = weights[0]
             df_cm = pd.DataFrame(weights.cpu().numpy(), index = range(weights.shape[0]), columns=range(weights.shape[0]))
