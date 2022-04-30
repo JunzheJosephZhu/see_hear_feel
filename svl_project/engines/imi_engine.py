@@ -85,7 +85,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        print(batch_idx)
         # v_gripper_inp = torch.reshape(v_gripper_inp, (-1, 3, v_gripper_inp.shape[-2], v_gripper_inp.shape[-1]))
         # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
         # print(v_gripper_inp.shape)
@@ -132,7 +131,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
         self.total += cor.size()[0]
         # self.log('val/acc', self.correct / self.total, on_step=True, on_epoch=False)
         self.log("val/action_loss", loss.item())
-        print(self.current_epoch)
         if weights != None and  batch_idx < 225:
             weights = weights[0]
             df_cm = pd.DataFrame(weights.cpu().numpy(), index = range(weights.shape[0]), columns=range(weights.shape[0]))
