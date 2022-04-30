@@ -85,7 +85,6 @@ class ImiBaselineLearn_Ablation(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        print(batch_idx)
         # v_gripper_inp = torch.reshape(v_gripper_inp, (-1, 3, v_gripper_inp.shape[-2], v_gripper_inp.shape[-1]))
         # v_fixed_inp = torch.reshape(v_fixed_inp, (-1, 3, v_fixed_inp.shape[-2], v_fixed_inp.shape[-1]))
         # print(v_gripper_inp.shape)

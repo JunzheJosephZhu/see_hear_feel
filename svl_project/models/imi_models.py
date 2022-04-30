@@ -70,6 +70,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_audio = False
         self.use_mha = args.use_mha
         self.use_layernorm = args.use_layernorm
+        self.pool_a_t = args.pool_a_t
                 
         ## load models
         self.modalities = self.ablation.split('_')
@@ -80,17 +81,17 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_tactile = 't' in self.modalities
         self.use_audio = 'a' in self.modalities
         if self.use_vision:
-            if not self.use_mha:
+            if not self.use_mha and self.pool_a_t:
                 self.embed_dim += self.v_embeds_shape
             else:
                 self.embed_dim += self.layernorm_embed_shape
         if self.use_tactile:
-            if not self.use_mha:
+            if not self.use_mha and self.pool_a_t:
                 self.embed_dim += self.t_embeds_shape
             else:
                 self.embed_dim += self.layernorm_embed_shape
         if self.use_audio:
-            if not self.use_mha:
+            if not self.use_mha and self.pool_a_t:
                 self.embed_dim += self.a_embeds_shape
             else:
                 self.embed_dim += self.layernorm_embed_shape
@@ -186,13 +187,18 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     outs.append(v_out)
                     i += 1
                 if self.use_tactile:
-                    t_out = self.t_pool(out[i])
+                    t_out = out[i]
+                    if self.pool_a_t:
+                        t_out = self.t_pool(t_out)
                     outs.append(t_out)
                     i += 1
                 if self.use_audio:
-                    a_out = self.a_pool(out[i])
+                    a_out = out[i]
+                    if self.pool_a_t:
+                        a_out = self.a_pool(a_out)
                     outs.append(a_out)
                 mlp_inp = torch.concat(outs, 1)
+                print(mlp_inp.shape)
         
         weights = None        
         if self.use_mha:
