@@ -5,21 +5,10 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import cv2
 import torch
 import numpy as np
-# from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti
-from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti
-from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_tactile_flow_encoder, make_audio_encoder
-from svl_project.models.imi_models import Imitation_Actor_Ablation
-from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
-from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import os
 import yaml
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
-import pandas as pd
-from torchvision import transforms as T
-from torch.autograd import Variable
 import shutil
 from tqdm import tqdm
 
@@ -29,7 +18,10 @@ class MakeVideo():
         self.dir = dir
         self.framestack = framestack
         self.name = name
-        self.save_dir = os.path.join(self.dir, self.name)
+        if self.name is None:
+            self.save_dir = self.dir
+        else:
+            self.save_dir = os.path.join(self.dir, self.name)
         self.action_dim = args.action_dim
         self.length = length
         if os.path.exists(self.save_dir):
@@ -41,7 +33,8 @@ class MakeVideo():
                 # 'resolution': (160, 120),
                 'font_scale': .5,
                 'thick_scale': 1},
-            't': {'resolution': (100, 100),
+            't': {'resolution': (75, 100),
+                #   'resolution': (100, 100),
                   'font_scale': .7,
                   'thick_scale': 1},
         }
@@ -53,7 +46,7 @@ class MakeVideo():
     def initialize_sep(self):
         ## save the histogram and action sequence
         self.subdirs = {}
-        for dirkey in ['hist', 'seq', 'arrow', 'audio']:
+        for dirkey in ['hist', 'seq', 'arrow', 'audio', 'confusion']:
             self.subdirs[dirkey] = os.path.join(self.save_dir, dirkey)
             if os.path.exists(self.subdirs[dirkey]):
                 shutil.rmtree(self.subdirs[dirkey])
@@ -89,14 +82,35 @@ class MakeVideo():
         self.thickness = cv2.LINE_8
 
     def save_obs(self, imgs, item, pred=None, gt=None, step=None):
-        if item in ['hist', 'seq', 'arrow', '   ']:
+        if item in ['hist', 'seq', 'arrow', '   ', 'audio', 'confusion']:
+            if item == 'audio':
+                log_spec = imgs[0]
+                audio_clip = imgs[1]
+                spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
+                # print(spec_nomel.shape)
+                # print(audio_clip.shape)
+                
+                # plt.figure(0)
+                fig_audio, arrs_audio = plt.subplots(2, figsize=(6, 3))
+                # print(x)
+                ## plot mel spec
+                arrs_audio[0].imshow(log_spec[0][0])
+                ## plot rfft
+                x = torch.fft.rfftfreq(len(audio_clip[0][0]), 1 / 44100)
+                arrs_audio[1].plot(x[:10000], np.abs(spec_nomel[0][0])[:10000])
+                fig_audio.tight_layout()
+                
+                imgs = fig_audio
+
             imgs.savefig(os.path.join(self.subdirs[item], f"{step}.png"))
+            plt.close(imgs)
             return
         for i in range(self.framestack):
             img = imgs[i]
             if item == 'v':
                 img = imgs[i].cpu().permute(1, 2, 0).numpy()
             elif item == 't':
+                # just the above tactile resolution
                 img = imgs[i].cpu().permute(2, 1, 0).numpy()
             img = np.uint8(img * 255)
             if item == 'v':

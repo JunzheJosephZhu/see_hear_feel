@@ -199,7 +199,6 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                         a_out = self.a_pool(a_out)
                     outs.append(a_out)
                 mlp_inp = torch.concat(outs, 1)
-                print(mlp_inp.shape)
         
         weights = None        
         if self.use_mha:

@@ -87,14 +87,14 @@ def baselineValidate(args):
     val_loader = DataLoader(val_set, 1, num_workers=4) #, collate_fn=collate_fn
     with torch.no_grad():
         # construct model
-        v_encoder = make_vision_encoder(args.embed_dim_v)
+        v_encoder = make_vision_encoder(args.encoder_dim)
         if args.use_flow:
-            t_encoder = make_tactile_flow_encoder(args.embed_dim_t)
+            t_encoder = make_tactile_flow_encoder(args.encoder_dim)
         else:
-            t_encoder = make_tactile_encoder(args.embed_dim_v)
+            t_encoder = make_tactile_encoder(args.encoder_dim)
             # t_encoder = make_tactile_encoder(args.embed_dim_t)
         # a_encoder = make_audio_encoder(2048)
-        a_encoder = make_audio_encoder(args.num_stack * 512)
+        a_encoder = make_audio_encoder(args.num_stack * args.encoder_dim)
         v_encoder.eval()
         t_encoder.eval()
         a_encoder.eval()
@@ -133,37 +133,37 @@ def baselineValidate(args):
         video_saver = MakeVideo(dir=model_dir, framestack=args.num_stack, name=args.exp_name, args=args, length=len(val_loader))
         video_saver.initialize_sep()
 
-    for batch, batch_idx in tqdm(val_loader):
+    for batch in tqdm(val_loader):
         # if cnt < 200:
         #     cnt += 1
         #     continue
         # v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
         v_input, t_input, log_spec, keyboard, audio_clip = batch
         if args.save_video:
-            spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
-            # print(spec_nomel.shape)
-            # print(audio_clip.shape)
+            # spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
+            # # print(spec_nomel.shape)
+            # # print(audio_clip.shape)
             
-            # plt.figure(0)
-            fig_audio, arrs_audio = plt.subplots(2, figsize=(4, 2))
-            # print(x)
-            ## plot mel spec
-            arrs_audio[0].imshow(log_spec[0][0])
-            arrs_audio[1].imshow(log_spec[0][1])
-            ## plot rfft
-            # x = torch.fft.rfftfreq(len(audio_clip[0][1]), 1 / 44100)
-            # arrs_audio[0].plot(x[:10000], np.abs(spec_nomel[0][0])[:10000])
-            # arrs_audio[1].plot(x[:10000], np.abs(spec_nomel[0][1])[:10000])
-            # arrs_audio[0].set_ylim([0,2])
-            # arrs_audio[1].set_ylim([0,2])
+            # # plt.figure(0)
+            # fig_audio, arrs_audio = plt.subplots(2, figsize=(6, 3))
+            # # print(x)
+            # ## plot mel spec
+            # arrs_audio[0].imshow(log_spec[0][0])
+            # # arrs_audio[1].imshow(log_spec[0][1])
+            # ## plot rfft
+            # x = torch.fft.rfftfreq(len(audio_clip[0][0]), 1 / 44100)
+            # # # arrs_audio[0].plot(x[:10000], np.abs(spec_nomel[0][0])[:10000])
+            # arrs_audio[1].plot(x[:10000], np.abs(spec_nomel[0][0])[:10000])
+            # # arrs_audio[0].set_ylim([0,2])
+            # # arrs_audio[1].set_ylim([0,2])
             
-            
-            # plt.imshow(spec_nomel[0][0])
-            video_saver.save_obs(fig_audio, item='audio', step=cnt)
-            # plt.show()
-            # plt.pause(.001)
-            # plt.draw()
-            plt.close(fig_audio)
+            # # plt.imshow(spec_nomel[0][0])
+            # video_saver.save_obs(fig_audio, item='audio', step=cnt)
+            # # plt.show()
+            # # plt.pause(.001)
+            # # plt.draw()
+            # plt.close(fig_audio)
+            video_saver.save_obs([log_spec, audio_clip], item='audio', step=cnt)
         
         v_input = Variable(v_input).cuda()
         t_input = Variable(t_input).cuda()
@@ -187,7 +187,8 @@ def baselineValidate(args):
         keyboard = keyboard.numpy()
         action_logits, weights = actor(v_input, t_input, a_input, True)
         action_logits = action_logits.detach().cpu().numpy()
-        weights = weights.detach().cpu().numpy()
+        if weights != None:
+            weights = weights.detach().cpu().numpy()
             
         if args.loss_type == 'cce':
             pred_label = np.argmax(action_logits)
@@ -248,43 +249,43 @@ def baselineValidate(args):
             video_saver.save_obs(t_input, 't')
 
             ## arrow
-            mywidth = .08
-            fig_arr, ax_arr = plt.subplots(figsize=(4, 2))
-            ax_arr.set_xlim(-4, 4)
-            ax_arr.set_ylim(-2, 2)
-            ax_arr.plot([0, 0], [-2, 2], 'k', linewidth=.5)
-            # x, y
-            for shift in [-2, 2]:
-                ax_arr.plot([shift, shift], [0, 2], 'k', linewidth=.2)
-                ax_arr.text(x=shift, y=2, s='x', fontsize=7)
-                ax_arr.plot([shift, shift + 2], [0, 0], 'k', linewidth=.2)
-                ax_arr.text(x=shift + 2, y=0, s='y', fontsize=7)
+            # mywidth = .08
+            # fig_arr, ax_arr = plt.subplots(figsize=(4, 2))
+            # ax_arr.set_xlim(-4, 4)
+            # ax_arr.set_ylim(-2, 2)
+            # ax_arr.plot([0, 0], [-2, 2], 'k', linewidth=.5)
+            # # x, y
+            # for shift in [-2, 2]:
+            #     ax_arr.plot([shift, shift], [0, 2], 'k', linewidth=.2)
+            #     ax_arr.text(x=shift, y=2, s='x', fontsize=7)
+            #     ax_arr.plot([shift, shift + 2], [0, 0], 'k', linewidth=.2)
+            #     ax_arr.text(x=shift + 2, y=0, s='y', fontsize=7)
 
-            if keyboard[0] != 0 or keyboard[1] != 0:
-                ax_arr.arrow(-2, 0, keyboard[1], keyboard[0], color='b', width=mywidth)
-            if pred_action[0] != 0 or pred_action[1] != 0:
-                ax_arr.arrow(2, 0, pred_action[1], pred_action[0], color='r', width=mywidth)
-            # z
-            ax_arr.text(x=-3.9, y=0, s='z:', color='b', fontsize=7)
-            if keyboard[2] != 0:
-                ax_arr.arrow(-3.5, 0, 0, keyboard[2], color='b', width=mywidth)
-            ax_arr.text(x=0.1, y=0, s='z:', color='r', fontsize=7)
-            if pred_action[2] != 0:
-                ax_arr.arrow(0.5, 0, 0, pred_action[2], color='r', width=mywidth)
+            # if keyboard[0] != 0 or keyboard[1] != 0:
+            #     ax_arr.arrow(-2, 0, keyboard[1], keyboard[0], color='b', width=mywidth)
+            # if pred_action[0] != 0 or pred_action[1] != 0:
+            #     ax_arr.arrow(2, 0, pred_action[1], pred_action[0], color='r', width=mywidth)
+            # # z
+            # ax_arr.text(x=-3.9, y=0, s='z:', color='b', fontsize=7)
+            # if keyboard[2] != 0:
+            #     ax_arr.arrow(-3.5, 0, 0, keyboard[2], color='b', width=mywidth)
+            # ax_arr.text(x=0.1, y=0, s='z:', color='r', fontsize=7)
+            # if pred_action[2] != 0:
+            #     ax_arr.arrow(0.5, 0, 0, pred_action[2], color='r', width=mywidth)
             
-            if args.action_dim == 4:
-                # dz
-                ax_arr.text(x=-2, y=1.7, s='dz:', color='b', fontsize=7)
-                if keyboard[3] != 0:
-                    ax_arr.arrow(-2, 1.5, keyboard[3], 0, color='b', width=mywidth)
-                ax_arr.text(x=2, y=1.7, s='dz:', color='r', fontsize=7)
-                if pred_action[3] != 0:
-                    ax_arr.arrow(2, 1.5, pred_action[3], 0, color='r', width=mywidth)
+            # if args.action_dim == 4:
+            #     # dz
+            #     ax_arr.text(x=-2, y=1.7, s='dz:', color='b', fontsize=7)
+            #     if keyboard[3] != 0:
+            #         ax_arr.arrow(-2, 1.5, keyboard[3], 0, color='b', width=mywidth)
+            #     ax_arr.text(x=2, y=1.7, s='dz:', color='r', fontsize=7)
+            #     if pred_action[3] != 0:
+            #         ax_arr.arrow(2, 1.5, pred_action[3], 0, color='r', width=mywidth)
 
-            ax_arr.set_title(f"gt {keyboard}, pred {pred_action}")
+            # ax_arr.set_title(f"gt {keyboard}, pred {pred_action}")
 
-            video_saver.save_obs(fig_arr, 'arrow', step=cnt-1)
-            plt.close(fig_arr)
+            # video_saver.save_obs(fig_arr, 'arrow', step=cnt-1)
+            # plt.close(fig_arr)
 
             ## time history
             # fig, axs = plt.subplots(args.action_dim + 1, 1, figsize=(5, 5), sharex='col')
@@ -292,7 +293,7 @@ def baselineValidate(args):
             if args.action_dim == 4:
                 titles.append('dz')
             elif args.pouring:
-                titles = [f"acc: {acc}", 'x', 'dy']
+                titles = ['class', 'x', 'dy']
             for i in range(len(titles)):
                 if i < 1:
                     if gt_label == pred_label:
@@ -341,7 +342,7 @@ def baselineValidate(args):
             plt.close(fig)
             
             # Confusion matrix
-            if weights != None:
+            if weights.all() != None:
                 weights = weights[0]
                 modalities = args.ablation.split('_')
                 use_vision = 'v' in modalities
@@ -358,9 +359,10 @@ def baselineValidate(args):
                 if use_audio:
                     used_input.append('a_in')
                     output.append('a_out')
-                df_cm = pd.DataFrame(weights.cpu().numpy(), index = output, columns=used_input)
-                plt.figure(figsize = (20, 14))
-                fig_ = sn.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
+                df_cm = pd.DataFrame(weights, index = output, columns=used_input)
+                plt.figure(figsize = (5, 4))
+                sn.set(font_scale=1.4)
+                fig_ = sn.heatmap(df_cm, annot=True, cmap="YlGnBu", annot_kws={"fontsize":20}).get_figure()
                 
                 video_saver.save_obs(fig_, 'confusion', step=cnt-1)
                 
