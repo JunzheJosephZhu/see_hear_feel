@@ -46,7 +46,8 @@ class ImiBaselineLearn_Ablation(LightningModule):
         elif self.loss_type == 'cce':
             # [batch, 3, num_dims]
             if not self.config.pouring:
-                pred = pred.reshape(batch_size, pow(3, action_dim))
+                # pred = pred.reshape(batch_size, pow(3, action_dim))
+                pred = pred.reshape(batch_size, 6)
             else:
                 pred = pred.reshape(batch_size, 4)
         return self.loss_cal(pred, demo)
@@ -77,6 +78,15 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard[keyboard == 4] = 2
                 keyboard[keyboard == 5] = 2
                 keyboard[keyboard == 6] = 3
+            elif self.config.action_dim == 6:
+                tmp = torch.zeros((keyboard.shape[0])).type(torch.cuda.LongTensor)
+                tmp[keyboard[:, 0] == 0] = 0
+                tmp[keyboard[:, 0] == 2] = 1
+                tmp[keyboard[:, 1] == 0] = 2
+                tmp[keyboard[:, 1] == 2] = 3
+                tmp[keyboard[:, 2] == 0] = 4
+                tmp[keyboard[:, 2] == 2] = 5
+                keyboard = Variable(tmp).cuda()
         action_pred, weights = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
         # print("keyboard", keyboard)
         # print("pred", action_pred)
@@ -116,6 +126,15 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 keyboard[keyboard == 4] = 2
                 keyboard[keyboard == 5] = 2
                 keyboard[keyboard == 6] = 3
+            elif self.config.action_dim == 6:
+                tmp = torch.zeros((keyboard.shape[0])).type(torch.cuda.LongTensor)
+                tmp[keyboard[:, 0] == 0] = 0
+                tmp[keyboard[:, 0] == 2] = 1
+                tmp[keyboard[:, 1] == 0] = 2
+                tmp[keyboard[:, 1] == 2] = 3
+                tmp[keyboard[:, 2] == 0] = 4
+                tmp[keyboard[:, 2] == 2] = 5
+                keyboard = Variable(tmp).cuda()
         # with torch.no_grad(): # torch lightning module does this under the hood
         action_logits, weights = self.actor(v_input, t_input, a_input, True)  # , idx)
         # print(f"action logits shape {action_logits.shape}")

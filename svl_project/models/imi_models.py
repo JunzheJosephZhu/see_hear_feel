@@ -131,7 +131,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     torch.nn.ReLU(),
                     torch.nn.Linear(1024, 1024),
                     torch.nn.ReLU(),
-                    torch.nn.Linear(1024, pow(3, args.action_dim))
+                    torch.nn.Linear(1024, 6)
                 )
         elif args.loss_type == 'mse':
             print("loss: mse")
@@ -199,7 +199,6 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                         a_out = self.a_pool(a_out)
                     outs.append(a_out)
                 mlp_inp = torch.concat(outs, 1)
-                print(mlp_inp.shape)
         
         weights = None        
         if self.use_mha:
