@@ -284,7 +284,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             log_spec = log_spec.sum(dim=-2, keepdim=True)
         # log_spec /= log_spec.sum(dim=-2, keepdim=True)
         # print(log_spec.shape)
-        # print(log_spec.sum(axis=-2))
+        print((log_spec**2).sum(axis=-2))
 
         keyboard = self.timestamps["action_history"][end]
         if self.pouring:
@@ -319,7 +319,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         #     x = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
         # print(x)
 
-        return v_framestack, tactile_framestack, log_spec, keyboard
+        return v_framestack, tactile_framestack, log_spec, keyboard, audio_clip
 
 if __name__ == "__main__":
     import argparse
