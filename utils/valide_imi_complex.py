@@ -187,8 +187,8 @@ def baselineValidate(args):
         keyboard = keyboard.numpy()
         action_logits, weights = actor(v_input, t_input, a_input, True)
         action_logits = action_logits.detach().cpu().numpy()
-        if weights != None:
-            weights = weights.detach().cpu().numpy()
+        # if weights.all() != None:
+        weights = weights.detach().cpu().numpy()
             
         if args.loss_type == 'cce':
             pred_label = np.argmax(action_logits)
@@ -342,7 +342,7 @@ def baselineValidate(args):
             plt.close(fig)
             
             # Confusion matrix
-            if weights.all() != None:
+            if weights.all()!= None: #weights.all() != None:
                 weights = weights[0]
                 modalities = args.ablation.split('_')
                 use_vision = 'v' in modalities

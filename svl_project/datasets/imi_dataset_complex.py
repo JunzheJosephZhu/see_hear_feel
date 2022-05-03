@@ -281,7 +281,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             log_spec /= ((log_spec**2).mean(dim=-2, keepdim=True))**0.5
         # log_spec /= log_spec.sum(dim=-2, keepdim=True)
         # print(log_spec.shape)
-        # print(log_spec.sum(axis=-2))
+        print((log_spec**2).sum(axis=-2))
 
         keyboard = self.timestamps["action_history"][end]
         if self.pouring:

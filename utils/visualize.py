@@ -18,10 +18,10 @@ import torch
 import shutil
 import seaborn as sn
 
-tstamp = '2022-05-01 19:06:17.959690'
+tstamp = '2022-05-02 20:40:16.687281'
 DIR = '../test_recordings/' + tstamp
 # DIR = '../data_0424/test_recordings/' + tstamp
-f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
+# f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # action_path = os.path.join(DIR, 'timestamp.json')
 action_hist = None
 # if os.path.exists(action_path):
@@ -45,7 +45,7 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [5]
+test_items = [2,3,5,9]
 ablation = 'v_t_a'
 
 
@@ -66,7 +66,7 @@ class Tests():
             print(f"{self.test_item} shape: {f[self.test_item].shape}")
             self.path = os.path.join(self.dir, self.test_item)
             if self.test_item in ['cam_gripper_color', 'cam_fixed_color', 'left_gelsight_frame']:
-                self.test_img()
+                self.test_img(os.path.join(self.dir, self.test_item))
             elif self.test_item == 'left_gelsight_flow':
                 self.test_flow()
             elif self.test_item.startswith('audio'):
@@ -174,19 +174,23 @@ class Tests():
             audio_buffer_arr = np.clip(audio_buffer_arr,
                                        a_min=0,
                                        a_max=0.5)
-            # plt.plot(x_lim, audio_buffer_arr)
-            # plt.title(self.test_item)
-            step = int(len(audio_buffer_arr)/44100)
-            for i in range(step):
-                plt.figure(i)
-                spec_nomel = torch.fft.rfft(torch.tensor(audio_buffer_arr[i*44100:(i+1)*44100]).type(torch.FloatTensor))
-                x = torch.fft.rfftfreq(len(audio_buffer_arr[i*44100:(i+1)*44100]), 1 / 44100)
-                plt.plot(x[:10000], np.abs(spec_nomel[:10000]))
-                plt.show()
+            plt.plot(x_lim, audio_buffer_arr)
+            plt.title(self.test_item)
+            plt.show()
+            # step = int(len(audio_buffer_arr)/44100)
+            # for i in range(step):
+            #     plt.figure(i)
+            #     spec_nomel = torch.fft.rfft(torch.tensor(audio_buffer_arr[i*44100:(i+1)*44100]).type(torch.FloatTensor))
+            #     x = torch.fft.rfftfreq(len(audio_buffer_arr[i*44100:(i+1)*44100]), 1 / 44100)
+            #     plt.plot(x[:10000], np.abs(spec_nomel[:10000]))
+            #     plt.show()                      a_max=0.5)
+            plt.plot(x_lim, audio_buffer_arr)
+            plt.title(self.test_item)
+            plt.show
 
         plt.savefig(f"{self.path}.png")
 
-    def test_img(self):
+    def test_img(self, dir):
         if self.test_item == 'left_gelsight_frame':
             resolution = 300, 400  # 400, 300
             font_scale = .7
@@ -196,6 +200,9 @@ class Tests():
             font_scale = 0.7
             thick_scale = 1
         if self.store:
+            if os.path.exists(dir):
+                shutil.rmtree(dir)
+            os.mkdir(dir)
             video_writer = cv2.VideoWriter(
                 self.path + '.avi', cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10, resolution
             )
@@ -256,10 +263,13 @@ class Tests():
                         self.font, font_scale/2, self.color, thick_scale, self.thickness
                         )
             if self.store:
+                if self.test_item == 'left_gelsight_frame':
+                    cv2.imwrite(os.path.join(dir, f"{cnt}.png"), img)
                 video_writer.write(img)
             else:
                 cv2.imshow(self.test_item, img)
                 cv2.waitKey(100)
+            cnt += 1
 
     def test_flow(self):
         cnt = 0
@@ -306,15 +316,18 @@ class Tests():
                 if item_idx <= 2:
                     clip_dict[item] = clip_dict[item].resize(height=400)
             # # and these are audios
-            # else:
-            #     clip_dict[item] = mpe.AudioFileClip(os.path.join(self.dir, item + '.wav'))
             elif item_idx == 9:
                 clip_dict[item] = mpe.VideoFileClip(os.path.join(self.dir, item + '.avi'))
+            else:
+                clip_dict[item] = mpe.AudioFileClip(os.path.join(self.dir, item + '.wav'))
+
                 
         
         # broken gelsight flow
         comp_clip = mpe.clips_array([
-            [clip_dict['cam_fixed_color'], clip_dict['confusion_matrix'], clip_dict['left_gelsight_frame']]
+            [clip_dict['cam_fixed_color'], 
+             clip_dict['confusion_matrix'], 
+             clip_dict['left_gelsight_frame']]
         ])
 
         # comp_clip = mpe.clips_array([
@@ -324,7 +337,7 @@ class Tests():
         # ])
         # comp_clip = comp_clip.resize(width=480)
         
-        final_video = comp_clip#.set_audio(clip_dict['audio_holebase_left'])
+        final_video = comp_clip.set_audio(clip_dict['audio_holebase_left'])
         final_video.write_videofile(os.path.join(self.dir, "final_video_holebase.mp4"))
 
 
@@ -335,7 +348,7 @@ class Analysis():
             self.items = ['hist', 'seq', 'arrow', 'audio', 'confusion']
         else:
             self.items = items
-        # self._save_vt_video()
+        self._save_vt_video()
         for item in self.items:
             self._save_video_from(item)
     
@@ -424,17 +437,17 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--store", action="store_true")
     p.add_argument("--video", action="store_true")
-    p.add_argument("--data_folder", default='../test_recordings/2022-05-01 19:06:17.959690')
+    p.add_argument("--data_folder", default='../testing_models/pour/ablation_0429_0430/imi_learn_ablation_vf_t_a_pour_mha/checkpoints/exp1')
     args = p.parse_args()
 
-    # ## save histogram video demo
-    # analyze_video = Analysis(args.data_folder, ['seq', 'audio','confusion'])
+    ## save histogram video demo
+    analyze_video = Analysis(args.data_folder, ['seq', 'audio','confusion']) #'audio','confusion'
     
-    # # ## compose validation videos
-    # analyze_video.save_log_video(items=['seq', 'audio', 'confusion'])
+    # ## compose validation videos
+    analyze_video.save_log_video(items=['seq', 'audio','confusion']) #'audio', 'confusion'
 
-    # # # # ## add hist video
-    # analyze_video.add_log_video()
+    # # # ## add hist video
+    analyze_video.add_log_video()
 
     ## compose human demo / data
-    Tests(args)
+    # Tests(args)

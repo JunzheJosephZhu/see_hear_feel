@@ -101,24 +101,17 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             self.layernorm = nn.LayerNorm(self.layernorm_embed_shape)
             self.t_pool = nn.MaxPool1d(self.layernorm_embed_shape // self.t_embeds_shape)
             self.a_pool = nn.MaxPool1d(self.layernorm_embed_shape // self.a_embeds_shape)
-            # self.t_pool = nn.AvgPool1d(self.v_embeds_shape // self.t_embeds_shape)
-            # self.t_fc = nn.Linear(self.v_embeds_shape, self.t_embeds_shape)
         
         if self.use_mha:
             print("mha: True")
             self.num_heads = args.num_heads
-            # self.layernorm = torch.nn.LayerNorm(self.layernorm_embed_shape)
             self.mha = MultiheadAttention(self.layernorm_embed_shape, self.num_heads)
-        # else:
-        #     print("mha: False; layernorm: False")
-        #     self.layernorm = nn.LayerNorm(self.embed_dim)
 
         if args.loss_type == 'cce':
             print("loss: cce")
             if args.pouring:
                 self.mlp = torch.nn.Sequential(
                     torch.nn.Linear(self.embed_dim, 1024),
-                    # torch.nn.Linear(self.v_embeds_shape, 1024),
                     torch.nn.ReLU(),
                     torch.nn.Linear(1024, 1024),
                     torch.nn.ReLU(),
@@ -127,7 +120,6 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             else:
                 self.mlp = torch.nn.Sequential(
                     torch.nn.Linear(self.embed_dim, 1024),
-                    # torch.nn.Linear(self.v_embeds_shape, 1024),
                     torch.nn.ReLU(),
                     torch.nn.Linear(1024, 1024),
                     torch.nn.ReLU(),
@@ -145,15 +137,6 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             )
 
     def forward(self, v_inp, t_inp, a_inp, freeze): #, idx):
-        # debugging dataloader
-        # print(f"\nFORWARD, idx shape: {len(idx), idx[0].shape}")
-        # print(idx[0].cpu().numpy())
-        # print(f"{v_inp.shape[0]} imgs found with shape {v_inp[0].shape}")
-        # for i in range(v_inp.shape[0]):
-        #     img = v_inp[i]
-        #     print(img.permute(1, 2, 0).cpu().numpy().shape)
-        #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
-        #     cv2.waitKey(100)
         with torch.set_grad_enabled(self.training and not freeze):
             if self.use_vision:
                 v_embeds = self.v_encoder(v_inp)
@@ -200,44 +183,15 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                     outs.append(a_out)
                 mlp_inp = torch.concat(outs, 1)
         
-        weights = None        
+        weights = None
         if self.use_mha:
             # batch first=False, (L, N, E)
             sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
             outs = sublayer_out
             if not self.no_res_con:
                 outs = outs + mlp_inp            
-            # ## option 1: average
-            # # mlp_inp = torch.mean(out, dim=0)
-            # ## option 2: concat
             mlp_inp = torch.concat([outs[i] for i in range(outs.shape[0])], 1)
-            
-                    
-        # adding pooling layer to downsample
-  
-        # else:
-        #     mlp_inp = torch.concat(embeds, dim=-1)
-        #     # out = torch.stack(embeds, dim=0)
-        #     mlp_inp = self.layernorm(mlp_inp)
-        #     # print(out.shape)
-        #     # mlp_inp = torch.concat([out[i] for i in range(out.size(0))], 1)
-
-        # print(embeds[0].shape)
-        # plt.plot(v_embeds.cpu().detach().numpy()[0], 'b')
-        # plt.plot(t_embeds.cpu().detach().numpy()[0], 'r')
-
-        # print(f"mlp inp shape {mlp_inp.shape}")
-        # mlp_temp = mlp_inp.cpu().detach().numpy()
-        # plt.figure()
-        # plt.plot(mlp_temp[0])
-        # plt.show()
-        
-        ## MHA debugging
-        # plt.figure()
-        # mha_temp = weights.cpu().detach().numpy()
-        # print(f"mha {mha_temp[0]}")
-        # plt.imshow(mha_temp[0])
-
+                
         action_logits = self.mlp(mlp_inp)
         # print(action_logits)
         return action_logits, weights
