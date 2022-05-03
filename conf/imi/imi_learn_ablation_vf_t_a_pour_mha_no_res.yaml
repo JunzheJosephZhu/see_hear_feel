@@ -27,3 +27,4 @@ use_layernorm: True
 pouring: True
 cam_to_use: fixed
 # norm_audio: True
+no_res_con: True

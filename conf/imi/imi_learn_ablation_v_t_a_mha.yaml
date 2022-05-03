@@ -22,7 +22,7 @@ num_heads: 8
 use_holebase: True
 action_dim: 6
 #use_flow: True
-#use_mha: True
+use_mha: True
 use_layernorm: True
 # pouring: True
 cam_to_use: fixed

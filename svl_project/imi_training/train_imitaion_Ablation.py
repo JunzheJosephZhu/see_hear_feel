@@ -1,5 +1,6 @@
 from email.policy import default
 import sys
+from telnetlib import KERMIT
 from tomlkit import key
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
@@ -62,6 +63,19 @@ def main(args):
             keyboard[keyboard == 4] = 2
             keyboard[keyboard == 5] = 2
             keyboard[keyboard == 6] = 3
+        elif args.action_dim == 6:
+            if keyboard[0] == 0:
+                keyboard = 0
+            elif keyboard[0] == 2:
+                keyboard = 1
+            elif keyboard[1] == 0:
+                keyboard = 2
+            elif keyboard[1] == 2:
+                keyboard = 3
+            elif keyboard[2] == 0:
+                keyboard = 4
+            elif keyboard[2] == 2:
+                keyboard = 5
         train_label.append(keyboard)
 
     class_sample_count = np.zeros(pow(3, args.action_dim))
@@ -134,7 +148,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0424/test_recordings")
+    p.add("--data_folder", default="data/data_0502/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -152,6 +166,8 @@ if __name__ == "__main__":
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--pool_a_t", default=False, action="store_true")
     p.add("--no_res_con", default=False, action="store_true")
+    p.add("--norm_freq", default=False, action="store_true")
+
 
 
     

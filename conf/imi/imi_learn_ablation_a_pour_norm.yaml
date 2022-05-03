@@ -26,4 +26,4 @@ action_dim: 2
 use_layernorm: True
 pouring: True
 cam_to_use: fixed
-# norm_audio: True
+norm_audio: True

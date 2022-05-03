@@ -61,13 +61,13 @@ class ImitationDatasetLabelCount(BaseDataset):
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], dy_space[keyboard[4]]])
         else:
-            x_space = {-.0004: 0, 0: 1, .0004: 2}
-            y_space = {-.0002: 0, 0: 1, .0002: 2}
+            x_space = {-.0005: 0, 0: 1, .0005: 2}
+            y_space = {-.0005: 0, 0: 1, .0005: 2}
             # z_space = {-.0005: 0, 0: 1, .0005: 2}
             # r_space = {-.005: 0, 0: 1, .005: 2}
             # keyboard = torch.as_tensor(
             #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-            z_space = {-.0002: 0, 0: 1, .0002: 2}
+            z_space = {-.0005: 0, 0: 1, .0005: 2}
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], y_space[keyboard[1]], z_space[keyboard[2]]])
         return keyboard
@@ -142,6 +142,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         self.action_dim = args.action_dim
         self.pouring = args.pouring
         self.norm_audio = args.norm_audio
+        self.norm_freq = args.norm_freq
         
 
     def get_episode(self, idx, load_audio=True):
@@ -279,6 +280,8 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         log_spec = torch.log(spec + EPS)
         if self.norm_audio:
             log_spec /= ((log_spec**2).mean(dim=-2, keepdim=True))**0.5
+        elif self.norm_freq:
+            log_spec = log_spec.sum(dim=-2, keepdim=True)
         # log_spec /= log_spec.sum(dim=-2, keepdim=True)
         # print(log_spec.shape)
         print((log_spec**2).sum(axis=-2))
@@ -290,13 +293,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], dy_space[keyboard[4]]])
         else:
-            x_space = {-.0004: 0, 0: 1, .0004: 2}
-            y_space = {-.0002: 0, 0: 1, .0002: 2}
+            x_space = {-.0005: 0, 0: 1, .0005: 2}
+            y_space = {-.0005: 0, 0: 1, .0005: 2}
             # z_space = {-.0005: 0, 0: 1, .0005: 2}
             # r_space = {-.005: 0, 0: 1, .005: 2}
             # keyboard = torch.as_tensor(
             #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-            z_space = {-.0002: 0, 0: 1, .0002: 2}
+            z_space = {-.0005: 0, 0: 1, .0005: 2}
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], y_space[keyboard[1]], z_space[keyboard[2]]])
 
