@@ -198,7 +198,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                # T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.0),
+                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.05),
             ])
             
             # no random crop on tactile
