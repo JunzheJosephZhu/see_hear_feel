@@ -156,7 +156,6 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             embeds.append(t_embeds)
         if self.use_audio:
             embeds.append(a_embeds) 
-
         # stack all embedding used
         mlp_inp = torch.stack(embeds, dim=0)
         

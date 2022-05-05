@@ -18,10 +18,10 @@ import torch
 import shutil
 import seaborn as sn
 
-tstamp = '2022-05-02 20:40:16.687281'
+tstamp = '2022-05-04 16:54:23.532309'
 DIR = '../test_recordings/' + tstamp
 # DIR = '../data_0424/test_recordings/' + tstamp
-# f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
+f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # action_path = os.path.join(DIR, 'timestamp.json')
 action_hist = None
 # if os.path.exists(action_path):
@@ -45,7 +45,7 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [2,3,5,9]
+test_items = [5]
 ablation = 'v_t_a'
 
 
@@ -184,9 +184,9 @@ class Tests():
             #     x = torch.fft.rfftfreq(len(audio_buffer_arr[i*44100:(i+1)*44100]), 1 / 44100)
             #     plt.plot(x[:10000], np.abs(spec_nomel[:10000]))
             #     plt.show()                      a_max=0.5)
-            plt.plot(x_lim, audio_buffer_arr)
-            plt.title(self.test_item)
-            plt.show
+            # plt.plot(x_lim, audio_buffer_arr)
+            # plt.title(self.test_item)
+            # plt.show
 
         plt.savefig(f"{self.path}.png")
 
@@ -324,12 +324,21 @@ class Tests():
                 
         
         # broken gelsight flow
-        comp_clip = mpe.clips_array([
-            [clip_dict['cam_fixed_color'], 
-             clip_dict['confusion_matrix'], 
-             clip_dict['left_gelsight_frame']]
-        ])
-
+        if 9 in test_items: 
+            comp_clip = mpe.clips_array([
+                [clip_dict['cam_fixed_color'], 
+                 clip_dict['cam_gripper_color'], 
+                clip_dict['confusion_matrix'], 
+                clip_dict['left_gelsight_frame']]
+            ])
+        else:
+            comp_clip = mpe.clips_array([
+                [
+                    # clip_dict['cam_fixed_color'], 
+                clip_dict['cam_gripper_color'], 
+                # clip_dict['confusion_matrix'], 
+                clip_dict['left_gelsight_frame']]
+            ])
         # comp_clip = mpe.clips_array([
         #     [clip_dict['cam_fixed_color'], clip_dict['cam_gripper_color']],
         #     [clip_dict['left_gelsight_frame'], clip_dict['left_gelsight_flow']]
@@ -441,13 +450,13 @@ if __name__ == '__main__':
     args = p.parse_args()
 
     ## save histogram video demo
-    analyze_video = Analysis(args.data_folder, ['seq', 'audio','confusion']) #'audio','confusion'
+    # analyze_video = Analysis(args.data_folder, ['seq', 'audio','confusion']) #'audio','confusion'
     
-    # ## compose validation videos
-    analyze_video.save_log_video(items=['seq', 'audio','confusion']) #'audio', 'confusion'
+    # # ## compose validation videos
+    # analyze_video.save_log_video(items=['seq', 'audio','confusion']) #'audio', 'confusion'
 
-    # # # ## add hist video
-    analyze_video.add_log_video()
+    # # # # ## add hist video
+    # analyze_video.add_log_video()
 
     ## compose human demo / data
-    # Tests(args)
+    Tests(args)

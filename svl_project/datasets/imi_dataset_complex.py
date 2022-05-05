@@ -192,14 +192,14 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             # load camera frames
             transform = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
+                T.ColorJitter(brightness=0.2, contrast=0.02, saturation=0.02, hue=0.2),
             ])
             img = transform(self.load_image(self.trial, "cam_fixed_color", end))
             i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.05, contrast=0.0, saturation=0.0, hue=0.05),
+                T.ColorJitter(brightness=0.02, contrast=0.0, saturation=0.0, hue=0.02),
             ])
             
             # no random crop on tactile
@@ -219,10 +219,10 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             if not self.use_flow:
                 tactile_framestack = torch.stack(
                     [(transform_gel(
-                        self.load_image(self.trial, "left_gelsight_frame", timestep)
+                        self.load_image(self.trial, "left_gelsight_frame", timestep))
                         ## input difference between current frame and initial (static) frame instead of the frame itself
-                        - self.gelsight_offset
-                    ) + 0.5).clamp(0, 1)  for
+                        - transform_gel(self.gelsight_offset)
+                     + 0.5).clamp(0, 1)  for
                     timestep in cam_idx], dim=0)
                 # cv2.imshow("1",tactile_framestack.cpu().permute(0,2,3,1).numpy()[0,:,:,:])
                 # cv2.waitKey(100)
@@ -284,7 +284,6 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             log_spec = log_spec.sum(dim=-2, keepdim=True)
         # log_spec /= log_spec.sum(dim=-2, keepdim=True)
         # print(log_spec.shape)
-        print((log_spec**2).sum(axis=-2))
 
         keyboard = self.timestamps["action_history"][end]
         if self.pouring:

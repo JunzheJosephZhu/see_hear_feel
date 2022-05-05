@@ -36,6 +36,13 @@ pouring_action_map = {0 : 0,
                       2 : 5,
                       3 : 6}
 
+key_insertion_action_map = {0 : [0, 1, 1],
+                      1 : [2, 1, 1],
+                      2 : [1, 0, 1],
+                      3 : [1, 2, 1],
+                      4 : [1, 1, 0],
+                      5 : [1, 1, 2],}
+
 def collate_fn(batch):
     len_batch = len(batch) # original batch length
     batch = list(filter (lambda x:x is not None, batch)) # filter out all the Nones
@@ -194,13 +201,28 @@ def baselineValidate(args):
             pred_label = np.argmax(action_logits)
             if args.pouring:
                 pred_label = pouring_action_map[pred_label]
-            gt_label = 0
-            pred_temp = pred_label
-            pred_action = np.zeros(args.action_dim)
-            for d in range(args.action_dim):
-                gt_label += 3 ** d * keyboard[0][args.action_dim - d - 1]
-                pred_action[args.action_dim - d - 1] = pred_temp % 3
-                pred_temp //= 3
+                gt_label = 0
+                pred_temp = pred_label
+                pred_action = np.zeros(args.action_dim)
+                for d in range(args.action_dim):
+                    gt_label += 3 ** d * keyboard[0][args.action_dim - d - 1]
+                    pred_action[args.action_dim - d - 1] = pred_temp % 3
+                    pred_temp //= 3
+            else:
+                pred_label = key_insertion_action_map[pred_label]
+                if keyboard[0] == 0:
+                    gt_label = 0
+                elif keyboard[0] == 2:
+                    gt_label = 1
+                elif keyboard[1] == 0:
+                    gt_label = 2
+                elif keyboard[1] == 2:
+                    gt_label = 3
+                elif keyboard[2] == 0:
+                    gt_label = 4
+                elif keyboard[2] == 2:
+                    gt_label = 5
+                pred_action = pred_label
             # print(f"keyboard {keyboard}, label {gt_label}")
             # print(f"pred_action {pred_action}, label {pred_label}")
         elif args.loss_type == 'mse':

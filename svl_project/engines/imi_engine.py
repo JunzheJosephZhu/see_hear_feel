@@ -87,6 +87,7 @@ class ImiBaselineLearn_Ablation(LightningModule):
                 tmp[keyboard[:, 2] == 0] = 4
                 tmp[keyboard[:, 2] == 2] = 5
                 keyboard = Variable(tmp).cuda()
+                print(tmp)
         action_pred, weights = self.actor(v_input, t_input, a_input, self.current_epoch < self.config.freeze_till)  # , idx)
         # print("keyboard", keyboard)
         # print("pred", action_pred)
