@@ -40,7 +40,7 @@ cd svl_fs
 ###################
 echo "running command : <RUN_COMMAND>"
 # pour
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_pour.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/pour/imi_learn_ablation_vf_pour.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_pour.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour.yaml
@@ -49,7 +49,6 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour_mha.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour_mha.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha_no_res.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour_mha_norm.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha_norm.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour_mha_norm.yaml
@@ -57,7 +56,7 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_pour_norm.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_pour_norm_freq.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour_mha_norm_freq.yaml
-python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha_norm_freq.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha_norm_freq.yaml
 
 
 
@@ -69,7 +68,7 @@ python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_mha.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_a_mha.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a_mha.yaml
+python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a_mha.yaml
 
 
 
