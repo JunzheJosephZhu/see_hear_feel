@@ -61,13 +61,13 @@ class ImitationDatasetLabelCount(BaseDataset):
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], dy_space[keyboard[4]]])
         else:
-            x_space = {-.0005: 0, 0: 1, .0005: 2}
-            y_space = {-.0005: 0, 0: 1, .0005: 2}
+            x_space = {-.0004: 0, 0: 1, .0004: 2}
+            y_space = {-.0004: 0, 0: 1, .0004: 2}
             # z_space = {-.0005: 0, 0: 1, .0005: 2}
             # r_space = {-.005: 0, 0: 1, .005: 2}
             # keyboard = torch.as_tensor(
             #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-            z_space = {-.0005: 0, 0: 1, .0005: 2}
+            z_space = {-.0009: 0, 0: 1, .0009: 2}
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], y_space[keyboard[1]], z_space[keyboard[2]]])
         return keyboard
@@ -199,7 +199,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
 
             transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.02, contrast=0.0, saturation=0.0, hue=0.02),
+                T.ColorJitter(brightness=0.02, contrast=0.02, saturation=0.02, hue=0.02),
             ])
             
             # no random crop on tactile
@@ -284,6 +284,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             log_spec = log_spec.sum(dim=-2, keepdim=True)
         # log_spec /= log_spec.sum(dim=-2, keepdim=True)
         # print(log_spec.shape)
+        # print((log_spec**2).sum(axis=-2))
 
         keyboard = self.timestamps["action_history"][end]
         if self.pouring:
@@ -292,22 +293,20 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], dy_space[keyboard[4]]])
         else:
-            x_space = {-.0005: 0, 0: 1, .0005: 2}
-            y_space = {-.0005: 0, 0: 1, .0005: 2}
+            x_space = {-.0004: 0, 0: 1, .0004: 2}
+            y_space = {-.0004: 0, 0: 1, .0004: 2}
             # z_space = {-.0005: 0, 0: 1, .0005: 2}
             # r_space = {-.005: 0, 0: 1, .005: 2}
             # keyboard = torch.as_tensor(
             #     [xy_space[keyboard[0]], xy_space[keyboard[1]], z_space[keyboard[2]], r_space[keyboard[3]]])
-            z_space = {-.0005: 0, 0: 1, .0005: 2}
+            z_space = {-.0009: 0, 0: 1, .0009: 2}
             keyboard = torch.as_tensor(
                 [x_space[keyboard[0]], y_space[keyboard[1]], z_space[keyboard[2]]])
 
         if self.num_cam == 2:
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         else:
-            if not self.pouring:
-                v_framestack = cam_fixed_framestack
-            elif self.cam_to_use == 'fixed':
+            if self.cam_to_use == 'fixed':
                 v_framestack = cam_fixed_framestack
             elif self.cam_to_use == 'gripper':
                 v_framestack = cam_gripper_framestack

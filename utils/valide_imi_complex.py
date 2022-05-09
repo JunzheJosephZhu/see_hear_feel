@@ -126,11 +126,16 @@ def baselineValidate(args):
     real_actions = []
     pred_labels = []
     real_labels = []
-    pred_label_cnts = np.zeros(3 ** args.action_dim)
-    real_label_cnts = np.zeros(3 ** args.action_dim)
-    
-    label_correct = np.zeros(3 ** args.action_dim)
-    label_total = np.zeros(3 ** args.action_dim)
+    if args.pouring:
+        pred_label_cnts = np.zeros(3 ** args.action_dim)
+        real_label_cnts = np.zeros(3 ** args.action_dim)
+        label_correct = np.zeros(3 ** args.action_dim)
+        label_total = np.zeros(3 ** args.action_dim)
+    else:
+        pred_label_cnts = np.zeros(6)
+        real_label_cnts = np.zeros(6)
+        label_correct = np.zeros(6)
+        label_total = np.zeros(6)
     
     debug_info = True
     
@@ -180,8 +185,6 @@ def baselineValidate(args):
         t_input.squeeze_(0)
         s_v = v_input.shape
         s_t = t_input.shape
-        # v_input = torch.reshape(v_input, (s_v[-4]*s_v[-5], 3, s_v[-2], s_v[-1]))
-        # t_input = torch.reshape(t_input, (s_t[-4]*s_t[-5], s_t[-3], s_t[-2], s_t[-1]))
         
         ## debugging
         # print(s_v)
@@ -189,13 +192,13 @@ def baselineValidate(args):
         #     img = v_input[i].cpu().permute(1, 2, 0).numpy()
         #     img = cv2.resize(img, (320, 240), interpolation=cv2.INTER_LINEAR)
         #     cv2.imshow('fixed ' + str(i), img)
-        # cv2.waitKey(200)
+        #     cv2.waitKey(200)
         
         keyboard = keyboard.numpy()
         action_logits, weights = actor(v_input, t_input, a_input, True)
         action_logits = action_logits.detach().cpu().numpy()
-        # if weights.all() != None:
-        weights = weights.detach().cpu().numpy()
+        if weights is not None:
+            weights = weights.detach().cpu().numpy()
             
         if args.loss_type == 'cce':
             pred_label = np.argmax(action_logits)
@@ -209,20 +212,16 @@ def baselineValidate(args):
                     pred_action[args.action_dim - d - 1] = pred_temp % 3
                     pred_temp //= 3
             else:
-                pred_label = key_insertion_action_map[pred_label]
-                if keyboard[0] == 0:
-                    gt_label = 0
-                elif keyboard[0] == 2:
-                    gt_label = 1
-                elif keyboard[1] == 0:
-                    gt_label = 2
-                elif keyboard[1] == 2:
-                    gt_label = 3
-                elif keyboard[2] == 0:
-                    gt_label = 4
-                elif keyboard[2] == 2:
-                    gt_label = 5
-                pred_action = pred_label
+                pred_action = np.array(key_insertion_action_map[pred_label])
+                tmp = np.zeros(keyboard.shape[0])
+                # print(tmp)
+                tmp[keyboard[:, 0] == 0] = 0
+                tmp[keyboard[:, 0] == 2] = 1
+                tmp[keyboard[:, 1] == 0] = 2
+                tmp[keyboard[:, 1] == 2] = 3
+                tmp[keyboard[:, 2] == 0] = 4
+                tmp[keyboard[:, 2] == 2] = 5
+                gt_label = int(tmp[0])
             # print(f"keyboard {keyboard}, label {gt_label}")
             # print(f"pred_action {pred_action}, label {pred_label}")
         elif args.loss_type == 'mse':
@@ -237,7 +236,7 @@ def baselineValidate(args):
             debug_info = False
         ## test exact match
         match = True
-        for i in range(args.action_dim):
+        for i in range(pred_action.shape[0]):
             if pred_action[i] != keyboard[i]:
                 match = False
                 break
@@ -248,7 +247,7 @@ def baselineValidate(args):
             total_wrong += 1
         label_total[gt_label] += 1
         ## test partial match
-        for i in range(args.action_dim):
+        for i in range(pred_action.shape[0]):
             if pred_action[i] == keyboard[i]:
                 cor[i] += 1
             else:
@@ -269,53 +268,16 @@ def baselineValidate(args):
             # video_saver.append_frame(v_input, t_input, 'v', pred_action, keyboard)
             video_saver.save_obs(v_input, 'v', pred_action, keyboard, cnt-1)
             video_saver.save_obs(t_input, 't')
-
-            ## arrow
-            # mywidth = .08
-            # fig_arr, ax_arr = plt.subplots(figsize=(4, 2))
-            # ax_arr.set_xlim(-4, 4)
-            # ax_arr.set_ylim(-2, 2)
-            # ax_arr.plot([0, 0], [-2, 2], 'k', linewidth=.5)
-            # # x, y
-            # for shift in [-2, 2]:
-            #     ax_arr.plot([shift, shift], [0, 2], 'k', linewidth=.2)
-            #     ax_arr.text(x=shift, y=2, s='x', fontsize=7)
-            #     ax_arr.plot([shift, shift + 2], [0, 0], 'k', linewidth=.2)
-            #     ax_arr.text(x=shift + 2, y=0, s='y', fontsize=7)
-
-            # if keyboard[0] != 0 or keyboard[1] != 0:
-            #     ax_arr.arrow(-2, 0, keyboard[1], keyboard[0], color='b', width=mywidth)
-            # if pred_action[0] != 0 or pred_action[1] != 0:
-            #     ax_arr.arrow(2, 0, pred_action[1], pred_action[0], color='r', width=mywidth)
-            # # z
-            # ax_arr.text(x=-3.9, y=0, s='z:', color='b', fontsize=7)
-            # if keyboard[2] != 0:
-            #     ax_arr.arrow(-3.5, 0, 0, keyboard[2], color='b', width=mywidth)
-            # ax_arr.text(x=0.1, y=0, s='z:', color='r', fontsize=7)
-            # if pred_action[2] != 0:
-            #     ax_arr.arrow(0.5, 0, 0, pred_action[2], color='r', width=mywidth)
             
-            # if args.action_dim == 4:
-            #     # dz
-            #     ax_arr.text(x=-2, y=1.7, s='dz:', color='b', fontsize=7)
-            #     if keyboard[3] != 0:
-            #         ax_arr.arrow(-2, 1.5, keyboard[3], 0, color='b', width=mywidth)
-            #     ax_arr.text(x=2, y=1.7, s='dz:', color='r', fontsize=7)
-            #     if pred_action[3] != 0:
-            #         ax_arr.arrow(2, 1.5, pred_action[3], 0, color='r', width=mywidth)
-
-            # ax_arr.set_title(f"gt {keyboard}, pred {pred_action}")
-
-            # video_saver.save_obs(fig_arr, 'arrow', step=cnt-1)
-            # plt.close(fig_arr)
-
             ## time history
             # fig, axs = plt.subplots(args.action_dim + 1, 1, figsize=(5, 5), sharex='col')
-            titles = ['class', 'x', 'y', 'z']
-            if args.action_dim == 4:
-                titles.append('dz')
-            elif args.pouring:
+            # titles = ['class', 'x', 'y', 'z']
+            # if args.action_dim == 4:
+            #     titles.append('dz')
+            if args.pouring:
                 titles = ['class', 'x', 'dy']
+            else:
+                titles = ['class', 'x', 'y', 'z']
             for i in range(len(titles)):
                 if i < 1:
                     if gt_label == pred_label:
@@ -340,31 +302,31 @@ def baselineValidate(args):
 
             video_saver.save_obs(video_saver.fig_seq, 'seq', step=cnt-1)
 
-            ## histogram
-            fig, axs = plt.subplots(figsize=(5, 5))
-            axs.set_ylim(0, 300)
-            axs.plot([0, 3 ** args.action_dim], [0, 0], 'k', linewidth=.5)
-            nonzero_labels = list(np.where(pred_label_cnts + real_label_cnts > 0)[0])
-            # print(nonzero_labels)
-            for label in nonzero_labels:
-                if pred_label_cnts[label] > 0 or real_label_cnts[label] > 0:
-                    # print(f"plot label {label}, real cnt {real_label_cnts[label]}, pred cnt {pred_label_cnts[label]}")
-                    axs.plot([label, label], [0, real_label_cnts[label]], 'b')
-                    axs.plot([label+.5, label+.5], [0, pred_label_cnts[label]], 'r')
-                    max_label = max(real_label_cnts[label], pred_label_cnts[label])
-                    axs.text(x=label, y=-5, s=str(label), fontsize=7)
-                    action = label_to_action(label)
-                    axs.text(x=label, y=max_label, s=f"{action}", rotation=30, fontsize=7)
-            axs.set_title(f"gt {keyboard}, pred {pred_action}, step {cnt-1}")
-            axs.set_ylabel('count of occurrence')
-            axs.set_xlabel('class')
+            # ## histogram
+            # fig, axs = plt.subplots(figsize=(5, 5))
+            # axs.set_ylim(0, 300)
+            # axs.plot([0, 3 ** args.action_dim], [0, 0], 'k', linewidth=.5)
+            # nonzero_labels = list(np.where(pred_label_cnts + real_label_cnts > 0)[0])
+            # # print(nonzero_labels)
+            # for label in nonzero_labels:
+            #     if pred_label_cnts[label] > 0 or real_label_cnts[label] > 0:
+            #         # print(f"plot label {label}, real cnt {real_label_cnts[label]}, pred cnt {pred_label_cnts[label]}")
+            #         axs.plot([label, label], [0, real_label_cnts[label]], 'b')
+            #         axs.plot([label+.5, label+.5], [0, pred_label_cnts[label]], 'r')
+            #         max_label = max(real_label_cnts[label], pred_label_cnts[label])
+            #         axs.text(x=label, y=-5, s=str(label), fontsize=7)
+            #         action = label_to_action(label)
+            #         axs.text(x=label, y=max_label, s=f"{action}", rotation=30, fontsize=7)
+            # axs.set_title(f"gt {keyboard}, pred {pred_action}, step {cnt-1}")
+            # axs.set_ylabel('count of occurrence')
+            # axs.set_xlabel('class')
             
-            video_saver.save_obs(fig, 'hist', step=cnt-1)
+            # video_saver.save_obs(fig, 'hist', step=cnt-1)
         
-            plt.close(fig)
+            # plt.close(fig)
             
             # Confusion matrix
-            if weights.all()!= None: #weights.all() != None:
+            if weights is not None: #weights.all() != None:
                 weights = weights[0]
                 modalities = args.ablation.split('_')
                 use_vision = 'v' in modalities
@@ -401,12 +363,11 @@ def baselineValidate(args):
     real = np.asarray(real_actions)
     
     ## plot prediction history
-    fig, axs = plt.subplots(args.action_dim + 1, 1, figsize=(15, 10), sharex='col')
-    titles = [f"acc: {acc}", 'x', 'y', 'z']
-    if args.action_dim == 4:
-        titles.append('dz')
-    elif args.pouring:
+    if args.pouring:
         titles = [f"acc: {acc}", 'x', 'dy']
+    else:
+        titles = [f"acc: {acc}", 'x', 'y', 'z']
+    fig, axs = plt.subplots(len(titles), 1, figsize=(15, 10), sharex='col')
     for i in range(len(titles)):
         if i < 1:
             axs[i].plot(real_labels, 'b+', label='real')
@@ -420,21 +381,21 @@ def baselineValidate(args):
     fig.savefig(os.path.join(model_dir, f"{args.exp_name}_seq.png"))
     
     ## trying better visualization
-    fig, axs = plt.subplots()
-    axs.plot([0, 3 ** args.action_dim], [0, 0], 'k', linewidth=.5)
-    for label in range(3 ** args.action_dim):
-        if pred_label_cnts[label] > 0 or real_label_cnts[label] > 0:
-            print(f"plot label {label}, real cnt {real_label_cnts[label]}, pred cnt {pred_label_cnts[label]}")
-            axs.plot([label, label], [0, real_label_cnts[label]], 'b')
-            axs.plot([label+.5, label+.5], [0, pred_label_cnts[label]], 'r')
-            max_label = max(real_label_cnts[label], pred_label_cnts[label])
-            axs.text(x=label, y=-5, s=str(label), fontsize=7)
-            action = label_to_action(label)
-            axs.text(x=label, y=max_label, s=f"{action}", rotation=30, fontsize=7)
-    axs.set_ylabel('count of occurrence')
-    axs.set_xlabel('class')
-    axs.set_title(f'acc: {acc}')
-    fig.savefig(os.path.join(model_dir, f"{args.exp_name}_labeldist.png"))
+    # fig, axs = plt.subplots()
+    # axs.plot([0, 3 ** args.action_dim], [0, 0], 'k', linewidth=.5)
+    # for label in range(3 ** args.action_dim):
+    #     if pred_label_cnts[label] > 0 or real_label_cnts[label] > 0:
+    #         print(f"plot label {label}, real cnt {real_label_cnts[label]}, pred cnt {pred_label_cnts[label]}")
+    #         axs.plot([label, label], [0, real_label_cnts[label]], 'b')
+    #         axs.plot([label+.5, label+.5], [0, pred_label_cnts[label]], 'r')
+    #         max_label = max(real_label_cnts[label], pred_label_cnts[label])
+    #         axs.text(x=label, y=-5, s=str(label), fontsize=7)
+    #         action = label_to_action(label)
+    #         axs.text(x=label, y=max_label, s=f"{action}", rotation=30, fontsize=7)
+    # axs.set_ylabel('count of occurrence')
+    # axs.set_xlabel('class')
+    # axs.set_title(f'acc: {acc}')
+    # fig.savefig(os.path.join(model_dir, f"{args.exp_name}_labeldist.png"))
     
     fig.show()
 
@@ -486,6 +447,7 @@ if __name__ == "__main__":
     p.add("--exp_name", default=None)
     p.add("--save_video", default=False, action='store_true')
     p.add("--norm_audio", default=False, action='store_true')
+    p.add("--norm_freq", default=False, action='store_true')
     p.add("--pool_a_t", default=False, action='store_true')
     p.add("--no_res_con", default=False, action='store_true')
     

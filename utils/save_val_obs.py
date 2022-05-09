@@ -22,7 +22,10 @@ class MakeVideo():
             self.save_dir = self.dir
         else:
             self.save_dir = os.path.join(self.dir, self.name)
-        self.action_dim = args.action_dim
+        if args.pouring:
+            self.action_dim = args.action_dim
+        else:
+            self.action_dim = 3
         self.length = length
         if os.path.exists(self.save_dir):
             shutil.rmtree(self.save_dir)

@@ -1,6 +1,4 @@
-from email.mime import audio
 import sys
-from turtle import width
 
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
@@ -18,22 +16,21 @@ import torch
 import shutil
 import seaborn as sn
 
-tstamp = '2022-05-04 16:54:23.532309'
-DIR = '../test_recordings/' + tstamp
-# DIR = '../data_0424/test_recordings/' + tstamp
+tstamp = '2022-05-05 20:52:51.004694_4'
+# DIR = '../test_recordings/' + tstamp
+DIR = '../test_recordings/key_v_a_mha/suc/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
-# action_path = os.path.join(DIR, 'timestamp.json')
-action_hist = None
-# if os.path.exists(action_path):
-    # action_hist_file = pd.read_csv(action_path)
-    # action_hist = action_hist_file['action_history']
-# with open(os.path.join(DIR, "timestamps.json")) as ts:
-#     action_hist_file = json.load(ts)
-
-# print(action_hist)
-# print(action_hist[0].tolist()[0])
-# tstamp = '2022-03-31 20:55:52.238120'
-# f = h5py.File('./data_0331/test_recordings/' + tstamp + '/data.hdf5', 'r')
+# load action history
+print(f"data.hdf5 keys: {f.keys()}")
+with open(os.path.join(DIR, 'timestamps.json')) as j:
+    json_data = json.load(j)
+print(f"timestamps.json keys: {json_data.keys()}")
+try:
+    action_history = json_data['action_history']
+    print(f"Found action history with {len(action_history)} entries")
+except:
+    action_history = None
+    
 item_list = {
     1: 'cam_gripper_color',
     2: 'cam_fixed_color',
@@ -45,78 +42,49 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [5]
-ablation = 'v_t_a'
+test_items = [1,3,5,9]
+ablation = 'v_a'
 
 
 class Tests():
     def __init__(self, args):
-        self.dir = os.path.join('../test_recordings', tstamp)
-        # self.dir = os.path.join('../data_0424/test_recordings', tstamp)
         self.video = args.video
-        if args.video and (not args.store):
+        self.store = args.store
+        if self.video and (not self.store):
             self.make_video()
             return
-        self.store = args.store
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.color = 0, 255, 255
         self.thickness = cv2.LINE_8
         for i in test_items:
             self.test_item = item_list[i]
             print(f"{self.test_item} shape: {f[self.test_item].shape}")
-            self.path = os.path.join(self.dir, self.test_item)
+            self.path = os.path.join(DIR, self.test_item)
+            if os.path.exists(self.path):
+                shutil.rmtree(self.path)
+            os.mkdir(self.path)
             if self.test_item in ['cam_gripper_color', 'cam_fixed_color', 'left_gelsight_frame']:
-                self.test_img(os.path.join(self.dir, self.test_item))
+                self.test_img()
             elif self.test_item == 'left_gelsight_flow':
                 self.test_flow()
             elif self.test_item.startswith('audio'):
                 self.test_audio()
             elif self.test_item == 'confusion_matrix':
-                print('con')
-                dir = os.path.join(self.dir, 'confusion_matrix')
-                if not self.video:
-                    if os.path.exists(dir):
-                        shutil.rmtree(dir)
-                    os.mkdir(dir)
-                print('dir')
-                self.test_confusion_matrix(dir)
-        # plt.show()
+                self.test_confusion_matrix()
+        shutil.rmtree(self.path)
+        plt.show()
         f.close()
-        # if args.video:
-        #     self.make_video()
+        if args.video:
+            self.make_video()
     
-    def test_confusion_matrix(self, dir):
+    def test_confusion_matrix(self):
         figsize = 3, 2
-        if self.video and not self.store:
-            print('video')
-            resolution = 300, 200
+        cnt = 0
+        if self.store:
             video_writer = cv2.VideoWriter(
                 self.path + '.avi', cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10,
-                resolution#, False
+                (figsize[0] * 100, figsize[1] * 100)
             )
-            figs = os.listdir(dir)
-            print(figs[:10])
-            # figs.sort()
-            # print(figs[:10])
-            for idx in tqdm(range(len(figs))):
-                # print('xxx')
-                img_path = os.path.join(dir, f"{idx}.png")
-                img_read = cv2.imread(img_path)
-                cv2.imshow('read', img_read)
-                cv2.waitKey(1)
-                # print(img_read)
-                # img_read = np.uint8(img_read * 255)
-                # print(img_read.shape)
-                # img_read = img_read[:, :, :3]
-                # img_read = cv2.cvtColor(img_read, cv2.COLOR_BGR2RGB)
-                video_writer.write(img_read)
-            return
-        cnt = 0
-        # if self.store:
-        #     video_writer = cv2.VideoWriter(
-        #         self.path + '.avi', cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10,
-        #         (figsize[0] * 100, figsize[1] * 100), False
-        #     )
         for s in tqdm(f[self.test_item].iter_chunks()):
             weights = f[self.test_item][s]
             # print(f"weights {weights} {weights.shape}")
@@ -140,18 +108,15 @@ class Tests():
             plt.figure(figsize=figsize)
             sn.set(font_scale=1)
             img = sn.heatmap(df_cm, annot=True, cmap="YlGnBu", annot_kws={"fontsize":10}).get_figure()
-            img.savefig(os.path.join(dir, f"{cnt}.png"))
+            img.savefig(os.path.join(self.path, f"{cnt}.png"))
             plt.close(img)
-            # img = plt.imread(os.path.join(dir, f"{cnt}.png"))
-            # img = np.uint8(img * 255)
-            # img = img[:, :, :3]
-            # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img_path = os.path.join(self.path, f"{cnt}.png")
+            img_read = cv2.imread(img_path)
             
             if self.store:
-                pass
-                # video_writer.write(img)
+                video_writer.write(img_read)
             else:
-                cv2.imshow(self.test_item, img)
+                cv2.imshow(self.test_item, img_read)
                 cv2.waitKey(100)
             cnt += 1
 
@@ -166,7 +131,6 @@ class Tests():
                 samplerate=fs
             )
         else:
-            # if self.test_item == 'audio_holebase_right':
             plt.figure()
             audio_buffer_arr = audio_buffer[:]
             x_lim = np.arange(0, len(audio_buffer)) / 4410
@@ -177,20 +141,8 @@ class Tests():
             plt.plot(x_lim, audio_buffer_arr)
             plt.title(self.test_item)
             plt.show()
-            # step = int(len(audio_buffer_arr)/44100)
-            # for i in range(step):
-            #     plt.figure(i)
-            #     spec_nomel = torch.fft.rfft(torch.tensor(audio_buffer_arr[i*44100:(i+1)*44100]).type(torch.FloatTensor))
-            #     x = torch.fft.rfftfreq(len(audio_buffer_arr[i*44100:(i+1)*44100]), 1 / 44100)
-            #     plt.plot(x[:10000], np.abs(spec_nomel[:10000]))
-            #     plt.show()                      a_max=0.5)
-            # plt.plot(x_lim, audio_buffer_arr)
-            # plt.title(self.test_item)
-            # plt.show
 
-        plt.savefig(f"{self.path}.png")
-
-    def test_img(self, dir):
+    def test_img(self):
         if self.test_item == 'left_gelsight_frame':
             resolution = 300, 400  # 400, 300
             font_scale = .7
@@ -200,9 +152,6 @@ class Tests():
             font_scale = 0.7
             thick_scale = 1
         if self.store:
-            if os.path.exists(dir):
-                shutil.rmtree(dir)
-            os.mkdir(dir)
             video_writer = cv2.VideoWriter(
                 self.path + '.avi', cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10, resolution
             )
@@ -253,8 +202,8 @@ class Tests():
             #                     thickness=2,
             #                     tipLength=0.3)
             # print(img)
-            if self.test_item == 'cam_fixed_color' and action_hist != None:
-                str = f"action: {action_hist[cnt]}"
+            if self.test_item.startswith('cam') and action_history != None:
+                str = f"action: {action_history[cnt]}"
             else:
                 str = self.test_item
             cv2.putText(img,
@@ -264,7 +213,7 @@ class Tests():
                         )
             if self.store:
                 if self.test_item == 'left_gelsight_frame':
-                    cv2.imwrite(os.path.join(dir, f"{cnt}.png"), img)
+                    cv2.imwrite(os.path.join(self.path, f"{cnt}.png"), img)
                 video_writer.write(img)
             else:
                 cv2.imshow(self.test_item, img)
@@ -308,51 +257,36 @@ class Tests():
         import moviepy.editor as mpe
         final_video = None
         clip_dict = {}
-        for item_idx in test_items:#item_list.keys():
+        for item_idx in test_items:
             item = item_list[item_idx]
             # these are videos
             if item_idx <= 4:
-                clip_dict[item] = mpe.VideoFileClip(os.path.join(self.dir, item + '.avi'))
+                clip_dict[item] = mpe.VideoFileClip(os.path.join(DIR, item + '.avi'))
                 if item_idx <= 2:
                     clip_dict[item] = clip_dict[item].resize(height=400)
-            # # and these are audios
             elif item_idx == 9:
-                clip_dict[item] = mpe.VideoFileClip(os.path.join(self.dir, item + '.avi'))
+                clip_dict[item] = mpe.VideoFileClip(os.path.join(DIR, item + '.avi'))
+            # # and these are audios
             else:
-                clip_dict[item] = mpe.AudioFileClip(os.path.join(self.dir, item + '.wav'))
+                clip_dict[item] = mpe.AudioFileClip(os.path.join(DIR, item + '.wav'))
 
-                
-        
-        # broken gelsight flow
-        if 9 in test_items: 
-            comp_clip = mpe.clips_array([
-                [clip_dict['cam_fixed_color'], 
-                 clip_dict['cam_gripper_color'], 
-                clip_dict['confusion_matrix'], 
-                clip_dict['left_gelsight_frame']]
-            ])
-        else:
-            comp_clip = mpe.clips_array([
-                [
-                    # clip_dict['cam_fixed_color'], 
-                clip_dict['cam_gripper_color'], 
-                # clip_dict['confusion_matrix'], 
-                clip_dict['left_gelsight_frame']]
-            ])
-        # comp_clip = mpe.clips_array([
-        #     [clip_dict['cam_fixed_color'], clip_dict['cam_gripper_color']],
-        #     [clip_dict['left_gelsight_frame'], clip_dict['left_gelsight_flow']]
-        #     # [clip_dict['cam_gripper_color'], clip_dict['left_gelsight_frame']]
-        # ])
-        # comp_clip = comp_clip.resize(width=480)
-        
-        final_video = comp_clip.set_audio(clip_dict['audio_holebase_left'])
-        final_video.write_videofile(os.path.join(self.dir, "final_video_holebase.mp4"))
+        video_items = [i for i in test_items if i <=4 or i == 9]
+        clips = [clip_dict[item_list[i]] for i in video_items]
+        comp_clip = mpe.clips_array([clips])
+        final_video = None
+        for i in test_items:
+            if i > 4 and i < 9:
+                audio_name = item_list[i]
+                final_video = comp_clip.set_audio(clip_dict[audio_name])
+                break
+        if final_video is None:
+            final_video = comp_clip
+        final_video.write_videofile(os.path.join(DIR, "final_video_holebase.mp4"))
 
 
 class Analysis():
     def __init__(self, dir=None, items=None):
-        self.dir = dir
+        DIR = dir
         if items is None:
             self.items = ['hist', 'seq', 'arrow', 'audio', 'confusion']
         else:
@@ -362,7 +296,7 @@ class Analysis():
             self._save_video_from(item)
     
     def _save_video_from(self, item=None):
-        img_dir = os.path.join(self.dir, item)
+        img_dir = os.path.join(DIR, item)
         print(img_dir)
         imgs = os.listdir(img_dir)
         min_idx = 0
@@ -378,7 +312,7 @@ class Analysis():
         elif item == 'confusion':
             resolution = 500, 400
         video_writer = cv2.VideoWriter(
-            os.path.join(self.dir, item + '.avi'),
+            os.path.join(DIR, item + '.avi'),
             cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10, resolution  # , False
         )
         for idx in tqdm(range(min_idx, max_idx)):
@@ -391,7 +325,7 @@ class Analysis():
 
 
     def _save_vt_video(self):
-        items = os.listdir(self.dir)
+        items = os.listdir(DIR)
         logs = ['hist', 'seq', 'arrow', 'audio', 'confusion']
         for log in logs:
             if log in items:
@@ -402,7 +336,7 @@ class Analysis():
         t_list = []
         for item in items:
             print(item)
-            clip = mpe.VideoFileClip(os.path.join(self.dir, item))
+            clip = mpe.VideoFileClip(os.path.join(DIR, item))
             if item[0] == 'v':
                 v_list.append(clip)
             elif item[0] == 't':
@@ -415,7 +349,7 @@ class Analysis():
         comp_clip = mpe.clips_array([[v_list[0], t_list[0]],
                                     [v_list[1], t_list[1]],
                                     [v_list[2], t_list[2]]])
-        comp_clip.write_videofile(os.path.join(self.dir, "vt.mp4"))
+        comp_clip.write_videofile(os.path.join(DIR, "vt.mp4"))
 
     def save_log_video(self, items=None):
         paths = {}
@@ -424,38 +358,38 @@ class Analysis():
             items = ['arrow', 'seq']
         clip_arr = []
         for item in items:
-            paths[item] = os.path.join(self.dir, item + '.avi')
+            paths[item] = os.path.join(DIR, item + '.avi')
             clips[item] = mpe.VideoFileClip(paths[item])
             clip_arr.append([clips[item]])
         # comp_clip = mpe.clips_array([[clips['arrow']],
         #                              [clips['seq']]])
         comp_clip = mpe.clips_array(clip_arr)
-        comp_clip.write_videofile(os.path.join(self.dir, "logs.mp4"))
+        comp_clip.write_videofile(os.path.join(DIR, "logs.mp4"))
 
     def add_log_video(self):
-        logs_path = os.path.join(self.dir, 'logs.mp4')
-        vt_path = os.path.join(self.dir, 'vt.mp4')
+        logs_path = os.path.join(DIR, 'logs.mp4')
+        vt_path = os.path.join(DIR, 'vt.mp4')
 
         logs = mpe.VideoFileClip(logs_path)  # .resize(height=500)
         vt = mpe.VideoFileClip(vt_path).resize(width=1080, height=705)
         comp_clip = mpe.clips_array([[vt, logs]])
-        comp_clip.write_videofile(os.path.join(self.dir, "vt_logs.mp4"))
+        comp_clip.write_videofile(os.path.join(DIR, "vt_logs.mp4"))
 
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--store", action="store_true")
     p.add_argument("--video", action="store_true")
-    p.add_argument("--data_folder", default='../testing_models/pour/ablation_0429_0430/imi_learn_ablation_vf_t_a_pour_mha/checkpoints/exp1')
+    p.add_argument("--data_folder", default='../testing_models/key_insertion/exp05042022/imi_learn_ablation_v/checkpoints/ep0')
     args = p.parse_args()
 
     ## save histogram video demo
-    # analyze_video = Analysis(args.data_folder, ['seq', 'audio','confusion']) #'audio','confusion'
+    # analyze_video = Analysis(args.data_folder, ['seq', 'audio']) #'audio','confusion'
     
-    # # ## compose validation videos
-    # analyze_video.save_log_video(items=['seq', 'audio','confusion']) #'audio', 'confusion'
+    # # # ## compose validation videos
+    # analyze_video.save_log_video(items=['seq', 'audio']) #'audio', 'confusion'
 
-    # # # # ## add hist video
+    # # # # # ## add hist video
     # analyze_video.add_log_video()
 
     ## compose human demo / data
