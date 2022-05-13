@@ -49,6 +49,7 @@ class Analysis():
             cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10, resolution  # , False
         )
         for idx in tqdm(range(min_idx, max_idx)):
+            # idx = idx_ + args.start_idx
             img_path = os.path.join(img_dir, f"{str(idx)}.png")
             img_read = plt.imread(img_path)
             img_read = np.uint8(img_read * 255)
@@ -103,13 +104,14 @@ class Analysis():
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--data_folder", default=None)
+    p.add_argument("--start_idx", default=0, type=int)
     args = p.parse_args()
 
     ## save histogram video demo
-    analyze_video = Analysis(args.data_folder, ['seq', 'audio']) #'audio','confusion'
+    analyze_video = Analysis(args.data_folder, ['seq', 'audio', 'confusion']) #'audio','confusion'
     
     ## compose validation videos
-    analyze_video.save_log_video(items=['seq', 'audio']) #'audio', 'confusion'
+    analyze_video.save_log_video(items=['seq', 'audio', 'confusion']) #'audio', 'confusion'
 
     ## add hist video
     analyze_video.add_log_video()

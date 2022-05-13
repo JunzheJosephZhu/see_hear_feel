@@ -1,3 +1,4 @@
+from email.policy import default
 from re import L
 import sys
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
@@ -83,7 +84,7 @@ def baselineValidate(args):
                                              i,
                                              args.data_folder,
                                              train=False)
-             for i in range(min(20, len(val_csv)))])
+             for i in range(min(10, len(val_csv)))])
     else:
         val_set = ImitationDatasetFramestackMulti(args.val_csv,
                                                   args,
@@ -116,7 +117,7 @@ def baselineValidate(args):
         actor.cuda()
         actor.eval()
 
-    cnt = 0
+    cnt = 0 #-args.start_idx
     cor = np.zeros(args.action_dim)
     wrong = np.zeros(args.action_dim)
     total_wrong = 0
@@ -146,7 +147,7 @@ def baselineValidate(args):
         video_saver.initialize_sep()
 
     for batch in tqdm(val_loader):
-        # if cnt < 200:
+        # if cnt < 150:
         #     cnt += 1
         #     continue
         # v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
@@ -357,8 +358,8 @@ def baselineValidate(args):
     acc = cor / (cor + wrong)
     print(f"each direction acc: {acc}")
     acc = total_cor / (total_wrong + total_cor)
-    print(f"EM = {acc}")
     print(f"class acc: {label_correct / label_total}")
+    print(f"EM = {np.sum(label_correct) / np.sum(label_total)}")
     predict = np.asarray(pred_actions)
     real = np.asarray(real_actions)
     
@@ -379,6 +380,7 @@ def baselineValidate(args):
         axs[i].legend()
     print(args.pretrained.split('/')[:-1] + [f'{args.exp_name}.png'])
     fig.savefig(os.path.join(model_dir, f"{args.exp_name}_seq.png"))
+    plt.close(fig)
     
     ## trying better visualization
     # fig, axs = plt.subplots()
@@ -397,7 +399,7 @@ def baselineValidate(args):
     # axs.set_title(f'acc: {acc}')
     # fig.savefig(os.path.join(model_dir, f"{args.exp_name}_labeldist.png"))
     
-    fig.show()
+    # fig.show()
 
 if __name__ == "__main__":
     import configargparse
@@ -411,6 +413,7 @@ if __name__ == "__main__":
     p.add("--period", default=3)
     p.add("--epochs", default=100)
     p.add("--num_workers", default=4, type=int)
+    p.add("--start_idx", default=0, type=int)
     # model
     # p.add("--embed_dim", required=True, type=int)
     p.add("--pretrained", required=True)

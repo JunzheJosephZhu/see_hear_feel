@@ -16,9 +16,9 @@ import torch
 import shutil
 import seaborn as sn
 
-tstamp = '2022-05-05 20:52:51.004694_4'
-# DIR = '../test_recordings/' + tstamp
-DIR = '../test_recordings/key_v_a_mha/suc/' + tstamp
+tstamp = '2022-05-12 17:27:19.588014'
+DIR = '../test_recordings/' + tstamp
+# DIR = '../data_0504/test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
 print(f"data.hdf5 keys: {f.keys()}")
@@ -42,8 +42,8 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [1,3,5,9]
-ablation = 'v_a'
+test_items = [1,3,5]
+ablation = 'v'
 
 
 class Tests():
