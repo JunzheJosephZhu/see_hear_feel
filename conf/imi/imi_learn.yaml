@@ -1,12 +1,18 @@
-embed_dim: 128
-pretrained: "/exp/metric_learn/checkpoints/last.ckpt"
-freeze_till: 0
-num_stack: 4
-frameskip: 3
+encoder_dim: 256
+num_stack: 3
+frameskip: 5
 crop_percent: 0.1
-conv_bottleneck: 64
-resized_height: 120
-resized_width: 160
-num_camera: 2
-total_episode: 70
-
+conv_bottleneck: 128
+resized_height_v: 120
+resized_width_v: 160
+resized_height_t: 75 #75 #150
+resized_width_t: 100 #100 #200
+ablation: vf_t_ah
+gamma: 0.9
+num_heads: 8
+action_dim: 2
+norm_audio: True
+use_mha: True
+exp_name: "default"
+task: "pouring"
+aux_multiplier: 1

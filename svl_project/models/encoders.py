@@ -4,6 +4,7 @@ import torch
 from torch import nn
 # from perceiver_pytorch import Perceiver
 import torch.nn.functional as F
+import torchaudio
 
 class CoordConv(nn.Module):
     """Add coordinates in [0,1] to an image, like CoordConv paper."""
@@ -45,6 +46,23 @@ class Encoder(nn.Module):
             x = self.fc(x)
         return x
 
+class Spec_Encoder(Encoder):
+    def __init__(self, feature_extractor, out_dim=None, norm_audio=False):
+        super().__init__(feature_extractor, out_dim)
+        self.norm_audio = norm_audio
+        sr = 16000
+        self.mel = torchaudio.transforms.MelSpectrogram(
+            sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
+        )
+
+    def forward(self, waveform):
+        EPS = 1e-8
+        spec = self.mel(waveform.float())
+        log_spec = torch.log(spec + EPS)
+        assert log_spec.size(-2) == 64
+        if self.norm_audio:
+            log_spec /= log_spec.sum(dim=-2, keepdim=True) # [1, 64, 100]
+        return super().forward(log_spec)
 
 class Tactile_Flow_Encoder(nn.Module):
     def __init__(self, feature_extractor, out_dim):
@@ -67,14 +85,6 @@ def make_vision_encoder(out_dim=None):
     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
     # return Vision_Encoder(vision_extractor, out_dim)
     return Encoder(vision_extractor, out_dim)
-
-# def make_vision_encoder_downsampled(conv_bottleneck, out_dim):
-#     vision_extractor = resnet18(pretrained=False)
-#     vision_extractor.conv1 = nn.Conv2d(
-#         5, 64, kernel_size=7, stride=1, padding=3, bias=False
-#     )
-#     vision_extractor = create_feature_extractor(vision_extractor, ["layer4.1.relu_1"])
-#     return Encoder(vision_extractor)
 
 def make_tactile_encoder(out_dim):
     tactile_extractor = resnet18(pretrained=True)
@@ -99,15 +109,14 @@ def make_tactile_flow_encoder(out_dim):
     tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
     return Tactile_Flow_Encoder(tactile_extractor, out_dim)
 
-def make_audio_encoder(out_dim=None):
+
+def make_audio_encoder(out_dim=None, norm_audio=False):
     audio_extractor = resnet18(pretrained=True)
     audio_extractor.conv1 = nn.Conv2d(
-        3, 64, kernel_size=7, stride=1, padding=3, bias=False
+        4, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["layer4.1.relu_1"])
-    return Encoder(audio_extractor, out_dim)
-    # return Encoder(audio_extractor)
-
+    return Spec_Encoder(audio_extractor, out_dim, norm_audio)
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))

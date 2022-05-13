@@ -8,50 +8,7 @@ import cv2
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-
-
-class Imitation_Baseline_Actor_Tuning(torch.nn.Module):
-    def __init__(self, v_encoder, args):
-        super().__init__()
-        self.v_encoder = v_encoder
-        self.mlp = None
-        self.embed_dim = args.embed_dim * args.num_stack * args.num_camera
-        if args.loss_type == 'cce':
-            self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(self.embed_dim, 512),
-                torch.nn.ReLU(),
-                torch.nn.Linear(512, 256),
-                torch.nn.ReLU(),
-                torch.nn.Linear(256, 9 * args.action_dim)
-            )
-        elif args.loss_type == 'mse':
-            self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(self.embed_dim, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Linear(1024, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Linear(1024, args.action_dim),
-                torch.nn.Tanh()
-            )
-
-    def forward(self, v_inp, freeze): #, idx):
-        # debugging dataloader
-        # print(f"\nFORWARD, idx shape: {len(idx), idx[0].shape}")
-        # print(idx[0].cpu().numpy())
-        # print(f"{v_inp.shape[0]} imgs found with shape {v_inp[0].shape}")
-        # for i in range(v_inp.shape[0]):
-        #     img = v_inp[i]
-        #     print(img.permute(1, 2, 0).cpu().numpy().shape)
-        #     cv2.imshow('input'+ str(i), img.cpu().permute(1, 2, 0).numpy())
-        #     cv2.waitKey(100)
-        if freeze:
-            with torch.no_grad():
-                v_embeds = self.v_encoder(v_inp).detach()
-        else:
-            v_embeds = self.v_encoder(v_inp)
-        mlp_inp = torch.reshape(v_embeds, (-1, self.embed_dim))
-        action_logits = self.mlp(mlp_inp)
-        return action_logits
+task2actiondim = {"pouring": 2, }
 
 class Imitation_Actor_Ablation(torch.nn.Module):
     def __init__(self, v_encoder, t_encoder, a_encoder, args):
@@ -60,159 +17,89 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.t_encoder = t_encoder
         self.a_encoder = a_encoder
         self.mlp = None
-        self.v_embeds_shape = args.embed_dim_v * args.num_stack #* args.num_camera
-        self.t_embeds_shape = args.embed_dim_t * args.num_stack
-        self.a_embeds_shape = args.embed_dim_a
         self.layernorm_embed_shape = args.encoder_dim * args.num_stack
         self.ablation = args.ablation
         self.use_vision = False
         self.use_tactile = False
         self.use_audio = False
         self.use_mha = args.use_mha
-        self.use_layernorm = args.use_layernorm
-        self.pool_a_t = args.pool_a_t
-        self.no_res_con = args.no_res_con
-                
+        self.query = nn.Parameter(torch.randn(1, 1, self.layernorm_embed_shape))
+            
         ## load models
         self.modalities = self.ablation.split('_')
         print(f"Using modalities: {self.modalities}")
-        print(f"Using tactile flow: {args.use_flow}")
-        self.embed_dim = 0
-        self.use_vision = 'v' in self.modalities
-        self.use_tactile = 't' in self.modalities
-        self.use_audio = 'a' in self.modalities
-        if self.use_vision:
-            if not self.use_mha and self.pool_a_t:
-                self.embed_dim += self.v_embeds_shape
-            else:
-                self.embed_dim += self.layernorm_embed_shape
-        if self.use_tactile:
-            if not self.use_mha and self.pool_a_t:
-                self.embed_dim += self.t_embeds_shape
-            else:
-                self.embed_dim += self.layernorm_embed_shape
-        if self.use_audio:
-            if not self.use_mha and self.pool_a_t:
-                self.embed_dim += self.a_embeds_shape
-            else:
-                self.embed_dim += self.layernorm_embed_shape
-        if self.use_layernorm:
-            print("mha: False; layernorm: True")
-            self.layernorm = nn.LayerNorm(self.layernorm_embed_shape)
-            self.t_pool = nn.MaxPool1d(self.layernorm_embed_shape // self.t_embeds_shape)
-            self.a_pool = nn.MaxPool1d(self.layernorm_embed_shape // self.a_embeds_shape)
-        
-        if self.use_mha:
-            print("mha: True")
-            self.num_heads = args.num_heads
-            self.mha = MultiheadAttention(self.layernorm_embed_shape, self.num_heads)
+        self.embed_dim = self.layernorm_embed_shape * len(self.modalities)
+        self.layernorm = nn.LayerNorm(self.layernorm_embed_shape)
+        self.mha = MultiheadAttention(self.layernorm_embed_shape, args.num_heads)
+        self.bottleneck = nn.Linear(self.embed_dim, self.layernorm_embed_shape) # if we dont use mha
 
-        if args.loss_type == 'cce':
-            print("loss: cce")
-            if args.pouring:
-                self.mlp = torch.nn.Sequential(
-                    torch.nn.Linear(self.embed_dim, 1024),
-                    torch.nn.ReLU(),
-                    torch.nn.Linear(1024, 1024),
-                    torch.nn.ReLU(),
-                    torch.nn.Linear(1024, 4)
-                )
-            else:
-                self.mlp = torch.nn.Sequential(
-                    torch.nn.Linear(self.embed_dim, 1024),
-                    torch.nn.ReLU(),
-                    torch.nn.Linear(1024, 1024),
-                    torch.nn.ReLU(),
-                    torch.nn.Linear(1024, 6)
-                )
-        elif args.loss_type == 'mse':
-            print("loss: mse")
-            self.mlp = torch.nn.Sequential(
-                torch.nn.Linear(self.embed_dim, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Linear(1024, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Linear(1024, args.action_dim),
-                torch.nn.Tanh()
-            )
+        action_dim = 3 ** task2actiondim[args.task]
 
-    def forward(self, v_inp, t_inp, a_inp, freeze): #, idx):
-        with torch.set_grad_enabled(self.training and not freeze):
-            if self.use_vision:
-                v_embeds = self.v_encoder(v_inp)
-                v_embeds = torch.reshape(v_embeds, (-1, self.layernorm_embed_shape))
-            if self.use_tactile:
-                t_embeds = self.t_encoder(t_inp)
-                t_embeds = torch.reshape(t_embeds, (-1, self.layernorm_embed_shape))
-            if self.use_audio:
-                a_embeds = self.a_encoder(a_inp)
-                a_embeds = torch.reshape(a_embeds, (-1, self.layernorm_embed_shape))
-    
-        ## to enable more combinations
-        embeds = []
-        if self.use_vision:
-            embeds.append(v_embeds)
-        if self.use_tactile:
-            embeds.append(t_embeds)
-        if self.use_audio:
-            embeds.append(a_embeds) 
-        # stack all embedding used
-        mlp_inp = torch.stack(embeds, dim=0)
-        
-        mlp_inp = mlp_inp        
-        if self.use_layernorm:
-            out = self.layernorm(mlp_inp)
-            if not self.use_mha:
-                i = 0
-                outs = []
-                if self.use_vision:
-                    v_out = out[i]
-                    outs.append(v_out)
-                    i += 1
-                if self.use_tactile:
-                    t_out = out[i]
-                    if self.pool_a_t:
-                        t_out = self.t_pool(t_out)
-                    outs.append(t_out)
-                    i += 1
-                if self.use_audio:
-                    a_out = out[i]
-                    if self.pool_a_t:
-                        a_out = self.a_pool(a_out)
-                    outs.append(a_out)
-                mlp_inp = torch.concat(outs, 1)
-        
-        weights = None
-        if self.use_mha:
-            # batch first=False, (L, N, E)
-            sublayer_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
-            outs = sublayer_out
-            if not self.no_res_con:
-                outs = outs + mlp_inp            
-            mlp_inp = torch.concat([outs[i] for i in range(outs.shape[0])], 1)
-                
-        action_logits = self.mlp(mlp_inp)
-        # print(action_logits)
-        return action_logits, weights
-
-class Imitation_Pose_Baseline_Actor(torch.nn.Module):
-    def __init__(self, embed_dim, action_dim):
-        super().__init__()
         self.mlp = torch.nn.Sequential(
-            torch.nn.Linear(3, 64),
+            torch.nn.Linear(self.layernorm_embed_shape, 1024),
             torch.nn.ReLU(),
-            torch.nn.Linear(64, embed_dim),
+            torch.nn.Linear(1024, 1024),
             torch.nn.ReLU(),
-            torch.nn.Linear(embed_dim, 3 * action_dim),
-            # torch.nn.Linear(embed_dim, action_dim),
-            torch.nn.Tanh()
+            torch.nn.Linear(1024, action_dim)
         )
+        self.aux_mlp = torch.nn.Linear(self.layernorm_embed_shape, 6)
 
-    def forward(self, pose_inp, freeze):
-        action_logits = self.mlp(pose_inp)
-        # print("action_logits: {}".format(action_logits))
-        # actions = self.mlp(pose_inp)
-        return action_logits
+
+    def forward(self, inputs):
+        '''
+        Args:
+            cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h
+            vf_inp: [batch, num_frames, 3, H, W]
+            vg_inp: [batch, num_frames, 3, H, W]
+            t_inp: [batch, num_frames, 3, H, W]
+            a_inp: [batch, 1, T]
+        
+        '''
+
+        vf_inp, vg_inp, t_inp, audio_g, audio_h = inputs
+        batch, num_stack, _, Hv, Wv = vf_inp.shape
+        batch, num_stack, _, Ht, Wt = t_inp.shape
+        vf_inp = vf_inp.view(batch * num_stack, 3, Hv, Wv) 
+        vg_inp = vg_inp.view(batch * num_stack, 3, Hv, Wv) 
+        t_inp = t_inp.view(batch * num_stack, 3, Ht, Wt)
+
+        embeds = []
+        if "vf" in self.modalities:
+            vf_embeds = self.v_encoder(vf_inp) # [batch * num_frames, encoder_dim]
+            vf_embeds = vf_embeds.view(-1, self.layernorm_embed_shape) # [batch, encoder_dim * num_stack]
+            embeds.append(vf_embeds)
+        if "vg" in self.modalities:
+            vg_embeds = self.v_encoder(vg_inp) # [batch * num_frames, encoder_dim]
+            vg_embeds = vg_embeds.view(-1, self.layernorm_embed_shape) # [batch, encoder_dim * num_stack]
+            embeds.append(vg_embeds)
+        if "t" in self.modalities:
+            t_embeds = self.t_encoder(t_inp)
+            t_embeds = t_embeds.view(-1, self.layernorm_embed_shape)
+            embeds.append(t_embeds)
+        if "ah" in self.modalities:
+            ah_embeds = self.a_encoder(audio_h)
+            ah_embeds = ah_embeds.view(-1, self.layernorm_embed_shape)
+            embeds.append(ah_embeds)
+        if "ag" in self.modalities:
+            ag_embeds = self.a_encoder(audio_g)
+            ag_embeds = ag_embeds.view(-1, self.layernorm_embed_shape)
+            embeds.append(ag_embeds)
+        
+        
+        if self.use_mha:
+            mlp_inp = torch.stack(embeds, dim=0) # [3, batch, D]
+            # batch first=False, (L, N, E)
+            query = self.query.repeat(1, batch, 1) # [1, 1, D] -> [1, batch, D]
+            mha_out, weights = self.mha(query, mlp_inp, mlp_inp) # [1, batch, D]        
+            mlp_inp = mha_out.squeeze(0) # [batch, D]
+        else:
+            mlp_inp = torch.cat(embeds, dim=-1)
+            mlp_inp = self.bottleneck(mlp_inp)
+            weights = None
+
+        action_logits = self.mlp(mlp_inp)
+        xyzrpy = self.aux_mlp(mlp_inp)
+        return action_logits, xyzrpy, weights
 
 if __name__ == "__main__":
     pass
