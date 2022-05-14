@@ -8,10 +8,10 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import torch
 
 # from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
+from svl_project.datasets.imi_dataset import ImitationDataset, ImitationDatasetLabelCount
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
-from svl_project.engines.imi_engine import ImiBaselineLearn_Ablation
+from svl_project.engines.imi_engine import ImiEngine
 from torch.utils.data import DataLoader
 from itertools import cycle
 import os
@@ -31,11 +31,6 @@ def strip_sd(state_dict, prefix):
 
 
 def main(args):
-
-    print(sys.getrecursionlimit())
-    sys.setrecursionlimit(8000)
-    print(sys.getrecursionlimit())
-    
     train_csv = pd.read_csv(args.train_csv)
     val_csv = pd.read_csv(args.val_csv)
     if args.num_episode is None:
@@ -44,71 +39,36 @@ def main(args):
     else:
         train_num_episode = args.num_episode
         val_num_episode = args.num_episode
+    print("ckpt0")
 
     train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    train_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDatasetFramestackMulti(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
+    print("ckpt1")
+
+    train_set = torch.utils.data.ConcatDataset([ImitationDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDataset(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
+    print("ckpt2")
 
     # create weighted sampler to balance samples
     train_label = []
     for keyboard in train_label_set:
-        if args.action_dim == 4:
-            keyboard = keyboard[0] * 27 + keyboard[1] * 9 + keyboard[2] * 3 + keyboard[3]
-        elif args.action_dim == 3:
-            keyboard = keyboard[0] * 9 + keyboard[1] * 3 + keyboard[2]
-        elif args.action_dim == 2:
-            keyboard = keyboard[0] * 3 + keyboard[1]
-            keyboard[keyboard == 0] = 0
-            keyboard[keyboard == 3] = 1
-            keyboard[keyboard == 4] = 2
-            keyboard[keyboard == 5] = 2
-            keyboard[keyboard == 6] = 3
-        elif args.action_dim == 6:
-            if keyboard[0] == 0:
-                keyboard = 0
-            elif keyboard[0] == 2:
-                keyboard = 1
-            elif keyboard[1] == 0:
-                keyboard = 2
-            elif keyboard[1] == 2:
-                keyboard = 3
-            elif keyboard[2] == 0:
-                keyboard = 4
-            elif keyboard[2] == 2:
-                keyboard = 5
         train_label.append(keyboard)
-
     class_sample_count = np.zeros(pow(3, args.action_dim))
     for t in np.unique(train_label):
         class_sample_count[t] = len(np.where(train_label == t)[0])
-
     weight = 1. / (class_sample_count + 1e-5)
     samples_weight = np.array([weight[t] for t in train_label])
-
     samples_weight = torch.from_numpy(samples_weight)
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
     val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False)
     
-    ## v encoder
-    v_encoder = make_vision_encoder(args.encoder_dim) # 3,4/4,5
-    if args.pretrained_v is not None:
-        print("loading pretrained v...")
-        state_dict_v = torch.load(args.pretrained_v, map_location="cpu")["state_dict"]
-        v_encoder.load_state_dict(strip_sd(state_dict_v, "vae.encoder."))
-    ## t encoder
-    if args.use_flow:
-        t_encoder = make_tactile_flow_encoder(args.encoder_dim)
-    else:
-        t_encoder = make_tactile_encoder(args.encoder_dim)
-        if args.pretrained_t is not None:
-            print("loading pretrained t...")
-            state_dict_t = torch.load(args.pretrained_t, map_location="cpu")["state_dict"]
-            t_encoder.load_state_dict(strip_sd(state_dict_t, "vae.encoder."))
-    ## a encoder
-    # audio dont have framestack, so just make it output size multiply by num stack
-    a_encoder = make_audio_encoder(args.encoder_dim * args.num_stack)
+    # v encoder
+    v_encoder = make_vision_encoder(args.encoder_dim)
+    # t encoder
+    t_encoder = make_tactile_encoder(args.encoder_dim)
+    # a encoder
+    a_encoder = make_audio_encoder(args.encoder_dim * args.num_stack, args.norm_audio)
     
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
@@ -116,13 +76,13 @@ def main(args):
     # save config
     exp_dir = save_config(args)
     # pl stuff
-    pl_module = ImiBaselineLearn_Ablation(imi_model, optimizer, train_loader, val_loader, scheduler, args)
+    pl_module = ImiEngine(imi_model, optimizer, train_loader, val_loader, scheduler, args)
     start_training(args, exp_dir, pl_module)
 
 if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn_ablation.yaml")
+    p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
     p.add("--batch_size", default=32)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
@@ -132,41 +92,29 @@ if __name__ == "__main__":
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
     p.add("--conv_bottleneck", required=True, type=int)
-    p.add("--embed_dim_v", required=True, type=int)
-    p.add("--embed_dim_t", required=True, type=int)
-    p.add("--embed_dim_a", required=True, type=int)
+    p.add("--exp_name", required=True, type=str)
     p.add("--encoder_dim", required=True, type=int)
     p.add("--action_dim", default=3, type=int)
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
-    p.add("--loss_type", default="cce")
-    p.add("--pretrained_v", default=None)
-    p.add("--pretrained_t", default=None)
-    p.add("--freeze_till", required=True, type=int)
     p.add("--use_mha", default=False, action="store_true")
-    p.add("--use_layernorm", default=False, action="store_true")
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0504/test_recordings")
+    p.add("--data_folder", default="data/data_0502/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
     p.add("--resized_width_t", required=True, type=int)
     p.add("--num_episode", default=None, type=int)
     p.add("--crop_percent", required=True, type=float)
-    p.add("--num_camera", required=True, type=int)
-    p.add("--total_episode", required=True, type=int)
     p.add("--ablation", required=True)
     p.add("--num_heads", required=True, type=int)
     p.add("--use_flow", default=False, action="store_true")
     p.add("--use_holebase", default=False, action="store_true")
-    p.add("--pouring", default=False, action="store_true")
-    p.add("--cam_to_use", default='fixed')
+    p.add("--task", type=str)
     p.add("--norm_audio", default=False, action="store_true")
-    p.add("--pool_a_t", default=False, action="store_true")
-    p.add("--no_res_con", default=False, action="store_true")
-    p.add("--norm_freq", default=False, action="store_true")
+    p.add("--aux_multiplier", type=float)
 
 
 
@@ -174,16 +122,5 @@ if __name__ == "__main__":
 
 
     args = p.parse_args()
-    # v
     main(args)
-    # args.frameskip = 15
-    # main(args)
-    # args.frameskip = 18
-    # main(args)
-
-    # args.use_flow = True
-    # args.ablation = 't'
-    # main(args)
-    # args.ablation = 'v_t_a'
-    # main(args)
 

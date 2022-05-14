@@ -34,7 +34,7 @@ import random
 from PIL import Image, ImageEnhance, ImageOps
 
 EPS = 1e-8
-START = 240
+
 
 def augment_image(image):
     enhancer = ImageEnhance.Brightness(image)
@@ -174,15 +174,13 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         # if self.ablation == 't' or True:
         #     return self.num_frames - self.approach_end
         # else:
-        return self.num_frames - START
-        # return self.num_frames
+        return self.num_frames
 
     def __getitem__(self, idx):
         # idx = idx + self.approach_end
         # if idx < self.num_frames / 2 and (self.ablation == 't' or self.ablation == 'a'):
         #     print("only use data that contact the surface")
         #     return self.__getitem__(torch.randint(low = int(self.num_frames/2), high=int(self.num_frames),size=()).numpy())
-        idx += START
         end = idx  # torch.randint(high=num_frames, size=()).item()
         start = end - self.max_len
         if start < 0:

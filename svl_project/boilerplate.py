@@ -22,14 +22,14 @@ def start_training(args, exp_dir, pl_module, monitor="val/acc"):
     exp_time = datetime.now().strftime("%m-%d-%H:%M:%S") + "-v" + str(np.random.randint(0, 1000))
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
-        filename=exp_time+"{epoch}-{step}",
+        filename=exp_time + "-{epoch}-{step}",
         save_top_k=2,
         save_last=True,
         monitor=monitor,
         mode='max'
     )
 
-    logger = TensorBoardLogger(save_dir=exp_dir, version=exp_time, name="lightning_logs")
+    logger = TensorBoardLogger(save_dir=exp_dir, version=exp_time + args.exp_name, name="lightning_logs")
     trainer = Trainer(
         max_epochs=args.epochs,
         callbacks=[checkpoint],

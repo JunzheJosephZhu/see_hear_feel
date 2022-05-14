@@ -7,7 +7,7 @@ import torch
 from svl_project.datasets.imi_dataset_complex import ImitationDatasetFramestack, ImitationDatasetFramestackMulti, ImitationDatasetSingleCam
 from svl_project.models.encoders import make_vision_encoder, make_audio_encoder, make_tactile_encoder
 from svl_project.models.imi_models import Imitation_Baseline_Actor_Tuning, Imitation_Actor_Ablation
-from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning, ImiBaselineLearn_Ablation
+from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning, ImiBaselineLearn
 from torch.utils.data import DataLoader
 from itertools import cycle
 import os
@@ -36,7 +36,7 @@ def main(args):
     # save config
     exp_dir = save_config(args)
     # pl stuff
-    pl_module = ImiBaselineLearn_Ablation(imi_model, optimizer, train_loader, val_loader, scheduler, args)
+    pl_module = ImiBaselineLearn(imi_model, optimizer, train_loader, val_loader, scheduler, args)
     start_training(args, exp_dir, pl_module)
 
 if __name__ == "__main__":

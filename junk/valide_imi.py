@@ -6,7 +6,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import cv2
 import torch
 import numpy as np
-from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationOverfitDataset, ImitationDatasetFramestack
+from svl_project.datasets.imi_dataset import ImitationDataset, ImitationOverfitDataset, ImitationDatasetFramestack
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_tactile_flow_encoder, make_audio_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiBaselineLearn_Tuning
@@ -34,7 +34,7 @@ def baselineValidate(args):
     # val_set = torch.utils.data.ConcatDataset(
     #     [ImitationOverfitDataset(args.val_csv, i, args.data_folder) for i in range(len(val_csv))])
     val_set = torch.utils.data.ConcatDataset(
-        [ImitationDatasetFramestackMulti(args.val_csv,
+        [ImitationDataset(args.val_csv,
                                          args,
                                          i,
                                          args.data_folder,
