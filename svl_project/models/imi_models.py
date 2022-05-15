@@ -62,6 +62,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         vf_inp = vf_inp.view(batch * num_stack, 3, Hv, Wv) 
         vg_inp = vg_inp.view(batch * num_stack, 3, Hv, Wv) 
         t_inp = t_inp.view(batch * num_stack, 3, Ht, Wt)
+        # only using the left holebase
 
         embeds = []
         if "vf" in self.modalities:

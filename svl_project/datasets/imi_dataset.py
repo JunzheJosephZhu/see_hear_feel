@@ -119,7 +119,8 @@ class ImitationDataset(BaseDataset):
         audio_end = end * self.resolution
         audio_start = audio_end - self.audio_len  # why self.sr // 2, and start + sr
         audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end)
-        audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end)
+        # we are only using left holebase, so only return this channel, audio encoder has been changed from 4 to 3
+        audio_clip_h = self.clip_resample(self.audio_holebase[0].unsqueeze(0), audio_start, audio_end)
 
         # load labels
         keyboard = self.timestamps["action_history"][end]

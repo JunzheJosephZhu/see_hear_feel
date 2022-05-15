@@ -8,6 +8,8 @@ exp*/
 *.pt
 
 data
+data*
+data/
 exp_2022_1_24_multi
 exp_2022_1_29_baseline
 exp_baseline_reg_2022_1_31

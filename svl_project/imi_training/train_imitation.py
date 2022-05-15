@@ -39,14 +39,10 @@ def main(args):
     else:
         train_num_episode = args.num_episode
         val_num_episode = args.num_episode
-    print("ckpt0")
-
+        
     train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    print("ckpt1")
-
     train_set = torch.utils.data.ConcatDataset([ImitationDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
     val_set = torch.utils.data.ConcatDataset([ImitationDataset(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
-    print("ckpt2")
 
     # create weighted sampler to balance samples
     train_label = []
