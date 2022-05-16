@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-task2actiondim = {"pouring": 2, }
+task2actiondim = {"pouring": 2, "insertion": 3}
 
 class Imitation_Actor_Ablation(torch.nn.Module):
     def __init__(self, v_encoder, t_encoder, a_encoder, args):
