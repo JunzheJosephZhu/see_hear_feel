@@ -67,11 +67,11 @@ class ImitationDataset(BaseDataset):
             self.start_frame = 0
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.ColorJitter(brightness=0.2, contrast=0.02, saturation=0.02, hue=0.2),
+                T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.02, contrast=0.02, saturation=0.02, hue=0.02),
+                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.0),
             ])
             
         else:
@@ -139,7 +139,7 @@ class ImitationDataset(BaseDataset):
             z_space = {-.0010: 0, 0: 1, .0010: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         # 6 D pose
-        xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1]
+        xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
         optical_flow = 0
 
         return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
