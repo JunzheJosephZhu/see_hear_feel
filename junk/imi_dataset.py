@@ -192,7 +192,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
             # load camera frames
             transform = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.ColorJitter(brightness=0.2, contrast=0.0, saturation=0.0, hue=0.2),
+                T.ColorJitter(brightness=0.2, contrast=0.02, saturation=0.02, hue=0.2),
             ])
             img = transform(self.load_image(self.trial, "cam_fixed_color", end))
             i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))

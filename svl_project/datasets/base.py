@@ -24,6 +24,7 @@ class BaseDataset(Dataset):
         self.gelsight_offset = torch.as_tensor(np.array(Image.open("gelsight_offset.png"))).float().permute(2, 0, 1) / 255
         pass
 
+
     def get_episode(self, idx, load_audio=True):
         """
         Return:
@@ -32,17 +33,23 @@ class BaseDataset(Dataset):
             audio tracks
             number of frames in episode
         """
-        format_time = self.logs.iloc[idx].Time.replace(":", "_")
+        format_time = self.logs.iloc[idx].Time#.replace(":", "_")
+        # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
-            self.timestamps = json.load(ts)
+            timestamps = json.load(ts)
         if load_audio:
-            audio_gripper = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
-            audio_holebase = sf.read(os.path.join(trial, 'audio_gripper_right.wav'))[0]
-            audio = torch.as_tensor(np.stack([audio_gripper, audio_holebase], 0))#.float()
+            audio_gripper_left = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
+            audio_gripper_right = sf.read(os.path.join(trial, 'audio_gripper_right.wav'))[0]
+            audio_holebase_left = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
+            audio_holebase_right = sf.read(os.path.join(trial, 'audio_holebase_right.wav'))[0]
+            audio_gripper = torch.as_tensor(np.stack([audio_gripper_left, audio_gripper_right], 0))
+            audio_holebase = torch.as_tensor(np.stack([audio_holebase_left, audio_holebase_right], 0))
         else:
-            audio = None
-        return trial, self.timestamps, audio, len(self.timestamps["action_history"])
+            audio_gripper = None
+            audio_holebase = None
+        return trial, timestamps, audio_gripper, audio_holebase, len(timestamps["action_history"])
+
 
     def __getitem__(self, idx):
         raise NotImplementedError
@@ -74,7 +81,7 @@ class BaseDataset(Dataset):
         return image
 
     @staticmethod
-    def clip_audio(audio, audio_start, audio_end):
+    def clip_resample(audio, audio_start, audio_end):
         left_pad, right_pad = torch.Tensor([]), torch.Tensor([])
         if audio_start < 0:
             left_pad = torch.zeros((audio.shape[0], -audio_start))
@@ -85,6 +92,7 @@ class BaseDataset(Dataset):
         audio_clip = torch.cat(
             [left_pad, audio[:, audio_start:audio_end], right_pad], dim=1
         )
+        audio_clip = torchaudio.functional.resample(audio_clip, 44100, 16000)
         return audio_clip
 
     def __len__(self):
