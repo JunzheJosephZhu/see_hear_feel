@@ -28,7 +28,7 @@ class ImitationDatasetLabelCount(BaseDataset):
         else:
             x_space = {-.0004: 0, 0: 1, .0004: 2}
             y_space = {-.0004: 0, 0: 1, .0004: 2}
-            z_space = {-.0009: 0, 0: 1, .0009: 2}
+            z_space = {-.001: 0, 0: 1, .001: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         return keyboard
 
@@ -75,13 +75,14 @@ class ImitationDataset(BaseDataset):
             ])
             
         else:
-            self.start_frame = 240
+            self.start_frame = self.num_frames - 100
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.CenterCrop((self.resized_height_v, self.resized_width_v))
+                T.CenterCrop((self._crop_height_v, self._crop_width_v))
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
+                T.CenterCrop((self._crop_height_t, self._crop_width_t))
             ])
 
 
@@ -114,6 +115,10 @@ class ImitationDataset(BaseDataset):
             img = self.transform_cam(self.load_image(self.trial, "cam_fixed_color", end))
             i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))
             cam_gripper_framestack = cam_gripper_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
+            cam_fixed_framestack = cam_fixed_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
+            img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
+            i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
+            tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
 
         # load audio
         audio_end = end * self.resolution
@@ -131,10 +136,11 @@ class ImitationDataset(BaseDataset):
         else:
             x_space = {-.0004: 0, 0: 1, .0004: 2}
             y_space = {-.0004: 0, 0: 1, .0004: 2}
-            z_space = {-.0009: 0, 0: 1, .0009: 2}
+            z_space = {-.0010: 0, 0: 1, .0010: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
-        xyzrpy = self.timestamps["pose_history"][end]
-        optical_flow = None
+        # 6 D pose
+        xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1]
+        optical_flow = 0
 
         return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
 
