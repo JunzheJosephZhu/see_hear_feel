@@ -21,7 +21,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
 import pandas as pd
 import numpy as np
-
+import time
 
 def strip_sd(state_dict, prefix):
     """
@@ -31,6 +31,8 @@ def strip_sd(state_dict, prefix):
 
 
 def main(args):
+    torch.multiprocessing.set_sharing_strategy("file_system")
+    
     train_csv = pd.read_csv(args.train_csv)
     val_csv = pd.read_csv(args.val_csv)
     if args.num_episode is None:
@@ -56,8 +58,8 @@ def main(args):
     samples_weight = torch.from_numpy(samples_weight)
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
-    val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler, persistent_workers=True, pin_memory=True)
+    val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False, persistent_workers=True, pin_memory=True)
     
     # v encoder
     v_encoder = make_vision_encoder(args.encoder_dim)
@@ -79,7 +81,7 @@ if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=32)
+    p.add("--batch_size", default=16)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)

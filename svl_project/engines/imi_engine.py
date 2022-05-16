@@ -47,7 +47,7 @@ class ImiEngine(LightningModule):
         loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
         self.log_dict({"val/immi_loss": immi_loss, "val/aux_loss": aux_loss})
         action_pred = torch.argmax(action_logits, dim=1)
-        if weights is not None and  batch_idx < 324:
+        if weights is not None and  batch_idx < 100:
             weights = weights[0]
             df_cm = pd.DataFrame(weights.cpu().numpy(), index = range(weights.shape[0]), columns=range(weights.shape[1]))
             plt.figure(figsize = (10,7))

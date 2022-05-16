@@ -57,23 +57,22 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         '''
 
         vf_inp, vg_inp, t_inp, audio_g, audio_h = inputs
-        batch, num_stack, _, Hv, Wv = vf_inp.shape
-        batch, num_stack, _, Ht, Wt = t_inp.shape
-        vf_inp = vf_inp.view(batch * num_stack, 3, Hv, Wv) 
-        vg_inp = vg_inp.view(batch * num_stack, 3, Hv, Wv) 
-        t_inp = t_inp.view(batch * num_stack, 3, Ht, Wt)
-        # only using the left holebase
-
         embeds = []
         if "vf" in self.modalities:
+            batch, num_stack, _, Hv, Wv = vf_inp.shape
+            vf_inp = vf_inp.view(batch * num_stack, 3, Hv, Wv) 
             vf_embeds = self.v_encoder(vf_inp) # [batch * num_frames, encoder_dim]
             vf_embeds = vf_embeds.view(-1, self.layernorm_embed_shape) # [batch, encoder_dim * num_stack]
             embeds.append(vf_embeds)
         if "vg" in self.modalities:
+            batch, num_stack, _, Hv, Wv = vg_inp.shape
+            vg_inp = vg_inp.view(batch * num_stack, 3, Hv, Wv) 
             vg_embeds = self.v_encoder(vg_inp) # [batch * num_frames, encoder_dim]
             vg_embeds = vg_embeds.view(-1, self.layernorm_embed_shape) # [batch, encoder_dim * num_stack]
             embeds.append(vg_embeds)
         if "t" in self.modalities:
+            batch, num_stack, _, Ht, Wt = t_inp.shape
+            t_inp = t_inp.view(batch * num_stack, 3, Ht, Wt)
             t_embeds = self.t_encoder(t_inp)
             t_embeds = t_embeds.view(-1, self.layernorm_embed_shape)
             embeds.append(t_embeds)
@@ -85,7 +84,6 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             ag_embeds = self.a_encoder(audio_g)
             ag_embeds = ag_embeds.view(-1, self.layernorm_embed_shape)
             embeds.append(ag_embeds)
-        
         
         if self.use_mha:
             mlp_inp = torch.stack(embeds, dim=0) # [3, batch, D]

@@ -8,6 +8,7 @@ from svl_project.datasets.base import BaseDataset
 import numpy as np
 import random
 from PIL import Image, ImageEnhance
+import time
 
 class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
@@ -63,15 +64,17 @@ class ImitationDataset(BaseDataset):
         self.action_dim = args.action_dim
         self.task = args.task
         
+        self.modalities = args.ablation.split('_')
+
         if self.train:
             self.start_frame = 0
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.ColorJitter(brightness=0.2, contrast=0.02, saturation=0.02, hue=0.2),
+                T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.02, contrast=0.02, saturation=0.02, hue=0.02),
+                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.0),
             ])
             
         else:
@@ -98,35 +101,51 @@ class ImitationDataset(BaseDataset):
         frame_idx[frame_idx < 0] = 0
 
         # images
-        cam_gripper_framestack = torch.stack(
-                [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep))
+        # to speed up data loading, do not load img if not using
+        cam_gripper_framestack = 0
+        cam_fixed_framestack = 0
+        tactile_framestack = 0
+        if "vg" in self.modalities:
+            cam_gripper_framestack = torch.stack(
+                    [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep))
+                        for timestep in frame_idx], dim=0)
+        if "vf" in self.modalities:
+            cam_fixed_framestack = torch.stack(
+                    [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep))
                     for timestep in frame_idx], dim=0)
-        cam_fixed_framestack = torch.stack(
-                [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep))
-                 for timestep in frame_idx], dim=0)
-        tactile_framestack = torch.stack(
-            [(self.transform_gel(
-                self.load_image(self.trial, "left_gelsight_frame", timestep) - self.gelsight_offset
-            ) + 0.5).clamp(0, 1) for
-            timestep in frame_idx], dim=0)
+        if "t" in self.modalities:            
+            tactile_framestack = torch.stack(
+                [(self.transform_gel(
+                    self.load_image(self.trial, "left_gelsight_frame", timestep) - self.gelsight_offset
+                ) + 0.5).clamp(0, 1) for
+                timestep in frame_idx], dim=0)
 
         # random cropping
         if self.train:
             img = self.transform_cam(self.load_image(self.trial, "cam_fixed_color", end))
             i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))
-            cam_gripper_framestack = cam_gripper_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
-            cam_fixed_framestack = cam_fixed_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
-            img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
-            i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
-            tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
+            if "vg"in self.modalities:
+                cam_gripper_framestack = cam_gripper_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
+            if "vf"in self.modalities:
+                cam_fixed_framestack = cam_fixed_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
+            if "t" in self.modalities:
+                img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
+                i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
+                tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
 
         # load audio
         audio_end = end * self.resolution
         audio_start = audio_end - self.audio_len  # why self.sr // 2, and start + sr
-        audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end)
+    
+        # to speed up data loading, do not resample audio if not using
+        audio_clip_g = 0
+        audio_clip_h = 0
+        if "ag" in self.modalities:
+            audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end)
         # we are only using left holebase, so only return this channel, audio encoder has been changed from 4 to 3
-        audio_clip_h = self.clip_resample(self.audio_holebase[0].unsqueeze(0), audio_start, audio_end)
-
+        if "ah" in self.modalities:
+            audio_clip_h = self.clip_resample(self.audio_holebase[0].unsqueeze(0), audio_start, audio_end)
+        
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
@@ -139,9 +158,8 @@ class ImitationDataset(BaseDataset):
             z_space = {-.0010: 0, 0: 1, .0010: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         # 6 D pose
-        xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1]
+        xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
         optical_flow = 0
-
         return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
 
 if __name__ == "__main__":
