@@ -306,9 +306,7 @@ class ImitationDatasetFramestackMulti(BaseDataset):
         if self.num_cam == 2:
             v_framestack = torch.cat((cam_gripper_framestack, cam_fixed_framestack), dim=0)
         else:
-            if not self.pouring:
-                v_framestack = cam_fixed_framestack
-            elif self.cam_to_use == 'fixed':
+            if self.cam_to_use == 'fixed':
                 v_framestack = cam_fixed_framestack
             elif self.cam_to_use == 'gripper':
                 v_framestack = cam_gripper_framestack

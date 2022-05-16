@@ -7,7 +7,7 @@ embed_dim_a: 512
 #pretrained: None # "/exp/metric_learn/checkpoints/last.ckpt"
 freeze_till: 5
 num_stack: 3
-frameskip: 5
+frameskip: 8
 crop_percent: 0.1
 conv_bottleneck: 128
 resized_height_v: 120

@@ -68,7 +68,7 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_mha.yaml
 # python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_a_mha.yaml
-python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a_mha.yaml
+# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a_mha.yaml
 
 
 
