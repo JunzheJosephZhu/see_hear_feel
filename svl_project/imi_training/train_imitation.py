@@ -21,6 +21,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
 import pandas as pd
 import numpy as np
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 
 def strip_sd(state_dict, prefix):
