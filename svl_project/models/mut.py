@@ -72,7 +72,7 @@ class Attention(nn.Module):
 
 class Block(nn.Module):
 
-    def __init__(self, dim, heads, mlp_dim, qkv_bias=False, drop=0., attn_drop=0.,
+    def __init__(self, dim, heads, dim_head, mlp_dim, qkv_bias=False, drop=0., attn_drop=0.,
                  drop_path=0.1, norm_layer=nn.LayerNorm, attention_type='divided_space_time'):
         super().__init__()
         self.attention_type = attention_type
@@ -86,7 +86,7 @@ class Block(nn.Module):
         if self.attention_type == 'divided_space_time':
             self.temporal_norm1 = norm_layer(dim)
             self.temporal_attn = Attention(
-              dim, heads=heads, qkv_bias=qkv_bias, dropout=attn_drop, dim_head=dim)
+              dim, heads=heads, qkv_bias=qkv_bias, dropout=attn_drop, dim_head=dim_head)
             self.temporal_fc = nn.Linear(dim, dim)
 
         ## drop path
@@ -168,7 +168,7 @@ class Audio_Encoder(nn.Module):
         return x
 
 class MuT(nn.Module):
-    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, num_classes, dim, depth, qkv_bias, heads, mlp_dim, modal_enc_dim, time_enc_dim, ablation, channels = 3, audio_channels = 2, dim_head = 64, dropout = 0., emb_dropout = 0., drop_path=0.1):
+    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, num_classes, dim, depth, qkv_bias, heads, mlp_dim, ablation, channels = 3, audio_channels = 2, dim_head = 64, dropout = 0., emb_dropout = 0., drop_path=0.1):
         super().__init__()
         image_height, image_width = pair(image_size)
         tactile_height, tactile_width = pair(tactile_size)
@@ -205,29 +205,26 @@ class MuT(nn.Module):
         num_patches_t = (tactile_height // patch_height) * (tactile_width // patch_width)
 
         # within_image positional encoding
-        self.pos_embed_vf = nn.Parameter(torch.randn(1, 1, num_patches_v, dim))
-        self.pos_embed_vg = nn.Parameter(torch.randn(1, 1, num_patches_v, dim))
-        self.pos_embed_ah = nn.Parameter(torch.randn(1, 1, num_patches_a, dim))
-        self.pos_embed_ag = nn.Parameter(torch.randn(1, 1, num_patches_a, dim))
+        self.pos_embed_v = nn.Parameter(torch.randn(1, 1, num_patches_v, dim))
+        self.pos_embed_a = nn.Parameter(torch.randn(1, 1, num_patches_a, dim))
         self.pos_embed_t = nn.Parameter(torch.randn(1, 1, num_patches_t, dim))
-        # modality specific encodings
-        self.modal_enc_vf = nn.Parameter(torch.randn(1, 1, num_patches_v, modal_enc_dim))
-        self.modal_enc_vg = nn.Parameter(torch.randn(1, 1, num_patches_v, modal_enc_dim))
-        self.modal_enc_ah = nn.Parameter(torch.randn(1, 1, num_patches_a, modal_enc_dim))
-        self.modal_enc_ag = nn.Parameter(torch.randn(1, 1, num_patches_a, modal_enc_dim))
-        self.modal_enc_t = nn.Parameter(torch.randn(1, 1, num_patches_t, modal_enc_dim)
+        # stream specific encodings
+        self.modal_enc_vf = nn.Parameter(torch.randn(1, 1, 1, dim))
+        self.modal_enc_vg = nn.Parameter(torch.randn(1, 1, 1, dim))
+        self.modal_enc_ah = nn.Parameter(torch.randn(1, 1, 1, dim))
+        self.modal_enc_ag = nn.Parameter(torch.randn(1, 1, 1, dim))
+        self.modal_enc_t = nn.Parameter(torch.randn(1, 1, 1, dim)
         )
         # time encoding
-        self.time_encoding = nn.Parameter(torch.randn(1, num_stack, 1, time_enc_dim))
+        self.time_encoding = nn.Parameter(torch.randn(1, num_stack, 1, dim))
         # class token
-        self.cls_token = nn.Parameter(torch.randn(1, 1, dim + modal_enc_dim + time_enc_dim))
+        self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
 
-        self.in_linear = nn.Linear(dim + modal_enc_dim + time_enc_dim, dim)
         self.dropout = nn.Dropout(emb_dropout)
 
         self.blocks = nn.ModuleList([
             Block(
-                dim=dim, heads=heads, mlp_dim=mlp_dim, qkv_bias=qkv_bias,
+                dim=dim, heads=heads, dim_head=dim_head, mlp_dim=mlp_dim, qkv_bias=qkv_bias,
                 drop=dropout, attn_drop=dropout, drop_path=drop_path)
             for _ in range(depth)])
 
@@ -261,49 +258,37 @@ class MuT(nn.Module):
         # visual
         if "vf" in self.modalities:
             vf_patch = self.to_patch_embedding_v(vf_inp) # [batch, num_frames, num_patches_v, dim]
-            vf_patch += self.pos_embed_vf
-            vf_modal_enc = repeat(self.modal_enc_vf, '1 1 n d -> b l n d', b=batch_size, l=num_frames) # [batch, num_frames, num_patches_v, modal_enc_dim]
-            vf_embed = torch.cat([vf_patch, vf_modal_enc], dim=-1) # [batch, num_frames, num_patches_v, dim + modal_enc_dim]
-            embeds.append(vf_embed)
+            vf_patch += self.pos_embed_v + self.modal_enc_vf
+            embeds.append(vf_patch)
         if "vg" in self.modalities:
             vg_patch = self.to_patch_embedding_v(vg_inp)
-            vg_patch += self.pos_embed_vg
-            vg_modal_enc = repeat(self.modal_enc_vg, '1 1 n d -> b l n d', b=batch_size, l=num_frames)
-            vg_embed = torch.cat([vg_patch, vg_modal_enc], dim=-1)
-            embeds.append(vg_embed)
+            vg_patch += self.pos_embed_v + self.modal_enc_vg
+            embeds.append(vg_patch)
         # tactile
         if "t" in self.modalities:
             t_patch = self.to_patch_embedding_t(t_inp)
-            t_patch += self.pos_embed_t
-            t_modal_enc = repeat(self.modal_enc_t, '1 1 n d -> b l n d', b=batch_size, l=num_frames)
-            t_embed = torch.cat([t_patch, t_modal_enc], dim=-1)
-            embeds.append(t_embed)
+            t_patch += self.pos_embed_t + self.modal_enc_t
+            embeds.append(t_patch)
         # audio
         a_patches_to_keep = num_frames * self.num_patches_a
         if "ah" in self.modalities:
             ah_patch = self.to_patch_embedding_a(audio_h) # [batch, T // prod(strides), dim]
             ah_patch = ah_patch[:, -a_patches_to_keep:, :].view(batch_size, num_frames, self.num_patches_a, ah_patch.size(-1))
-            ah_patch += self.pos_embed_ah
-            ah_modal_enc = repeat(self.modal_enc_ah, '1 1 n d -> b l n d', b=batch_size, l=num_frames)
-            ah_embed = torch.cat([ah_patch, ah_modal_enc], dim=-1)
-            embeds.append(ah_embed)
+            ah_patch += self.pos_embed_a + self.modal_enc_ah
+            embeds.append(ah_patch)
         if "ag" in self.modalities:
             ag_patch = self.to_patch_embedding_a(audio_g)
             ag_patch = ag_patch[:, -a_patches_to_keep:, :].view(batch_size, num_frames, self.num_patches_a, ag_patch.size(-1))
-            ag_patch += self.pos_embed_ag
-            ag_modal_enc = repeat(self.modal_enc_ag, '1 1 n d -> b l n d', b=batch_size, l=num_frames)
-            ag_embed = torch.cat([ag_patch, ag_modal_enc], dim=-1)
-            embeds.append(ag_embed)
+            ag_patch += self.pos_embed_a + self.modal_enc_ag
+            embeds.append(ag_patch)
         embeds = torch.cat(embeds, dim=2) # [batch, num_frames, total_patches, dim + modal_enc_dim]
         total_patches = embeds.size(2) # total number of patches for one frameskip
-        time_enc = repeat(self.time_encoding, '1 l 1 d -> b l n d', b=batch_size, n=total_patches) # [batch, num_frames, total_patches, time_enc_dim]
-        embeds = torch.cat([embeds, time_enc], dim=-1) # [batch, num_frames, total_patches, dim + modal_enc_dim + time_enc_dim]
+        embeds += self.time_encoding
         embeds = embeds.view(batch_size, num_frames * total_patches, -1) # [batch, num_frames * total_patches, dim + modal_enc_dim + time_enc_dim]
         
 
         cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b=batch_size) # [batch, 1, dim + modal_enc_dim + time_enc_dim]
         x = torch.cat((cls_tokens, embeds), dim=1)
-        x = self.in_linear(x) # [batch, 1 + num_frames * total_patches, dim]
         x = self.dropout(x)
 
         for blk in self.blocks:
@@ -318,7 +303,7 @@ if __name__ == "__main__":
     '''
     Base model from the paper: Hidden size=768, mlp_size=3072, heads=12, depth=16
     '''
-    model = MuT(image_size=(224, 224), tactile_size=(96, 96), patch_size=16, num_stack=10, frameskip=5, fps=10, num_classes=27, dim=20, depth=5, heads=8, qkv_bias=False, mlp_dim=20, modal_enc_dim=100, time_enc_dim=100, ablation="vf_t_ah").cuda()
+    model = MuT(image_size=(224, 224), tactile_size=(96, 96), patch_size=16, num_stack=10, frameskip=5, fps=10, num_classes=27, dim=20, depth=5, heads=8, qkv_bias=False, mlp_dim=20, ablation="vf_t_ah").cuda()
     vf_inp = torch.zeros((4, 10, 3, 224, 224)).float().cuda()
     vg_inp = None
     t_inp = torch.zeros((4, 10, 3, 96, 96)).float().cuda()
