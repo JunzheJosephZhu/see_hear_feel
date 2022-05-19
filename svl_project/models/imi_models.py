@@ -17,7 +17,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.t_encoder = t_encoder
         self.a_encoder = a_encoder
         self.mlp = None
-        self.layernorm_embed_shape = args.encoder_dim * args.num_stack
+        self.layernorm_embed_shape = args.encoder_dim * (args.num_stack - 1)
         self.ablation = args.ablation
         self.use_vision = False
         self.use_tactile = False
@@ -71,8 +71,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             vg_embeds = vg_embeds.view(-1, self.layernorm_embed_shape) # [batch, encoder_dim * num_stack]
             embeds.append(vg_embeds)
         if "t" in self.modalities:
-            batch, num_stack, _, Ht, Wt = t_inp.shape
-            t_inp = t_inp.view(batch * num_stack, 3, Ht, Wt)
+            batch, num_stack, Ct, Ht, Wt = t_inp.shape
+            t_inp = t_inp.view(batch * num_stack, Ct, Ht, Wt)
             t_embeds = self.t_encoder(t_inp)
             t_embeds = t_embeds.view(-1, self.layernorm_embed_shape)
             embeds.append(t_embeds)

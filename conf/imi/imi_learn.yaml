@@ -7,7 +7,7 @@ resized_height_v: 120
 resized_width_v: 160
 resized_height_t: 75 #75 #150
 resized_width_t: 100 #100 #200
-ablation: vg_t_ah
+ablation: vg_t
 gamma: 0.9
 num_heads: 8
 action_dim: 2
@@ -17,3 +17,4 @@ exp_name: default
 task: "pouring"
 aux_multiplier: 1.0
 minus_first: True
+use_flow: True
