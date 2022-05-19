@@ -61,7 +61,6 @@ class ImitationDataset(BaseDataset):
         self.gelsight_offset = torch.as_tensor(
             np.array(Image.open(os.path.join(self.data_folder, 'gs_offset.png')))).float().permute(2, 0,
                                                                                                    1) / 255
-        self.action_dim = args.action_dim
         self.task = args.task
         self.minus_first = args.minus_first
         self.use_flow = args.use_flow

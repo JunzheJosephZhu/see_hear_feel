@@ -46,6 +46,7 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t --ablation t --aux_multiplier 0.0
+python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t_img --ablation t --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_ah --ablation vg_ah --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _ah --ablation ah --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_ah --ablation vg_t_ah --aux_multiplier 0.0
