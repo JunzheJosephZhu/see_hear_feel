@@ -17,7 +17,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.t_encoder = t_encoder
         self.a_encoder = a_encoder
         self.mlp = None
-        self.layernorm_embed_shape = args.encoder_dim * (args.num_stack - 1)
+        self.layernorm_embed_shape = args.encoder_dim * (args.num_stack)
         self.ablation = args.ablation
         self.use_vision = False
         self.use_tactile = False

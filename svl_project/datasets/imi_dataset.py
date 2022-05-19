@@ -61,7 +61,6 @@ class ImitationDataset(BaseDataset):
         self.gelsight_offset = torch.as_tensor(
             np.array(Image.open(os.path.join(self.data_folder, 'gs_offset.png')))).float().permute(2, 0,
                                                                                                    1) / 255
-        self.action_dim = args.action_dim
         self.task = args.task
         self.minus_first = args.minus_first
         self.use_flow = args.use_flow
@@ -109,7 +108,12 @@ class ImitationDataset(BaseDataset):
         tactile_framestack = 0
         # load first frame for better alignment
         if self.minus_first:
-            offset = self.load_image(self.trial, "left_gelsight_frame", 0)
+            if self.use_flow:
+                offset = torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(0) + ".pt"))).type(
+                        torch.FloatTensor)
+            else:
+                offset = self.load_image(self.trial, "left_gelsight_frame", 0)
         else:
             offset = self.gelsight_offset
 
@@ -126,7 +130,7 @@ class ImitationDataset(BaseDataset):
                 tactile_framestack = torch.stack(
                     [torch.from_numpy(
                         torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
-                        torch.FloatTensor)
+                        torch.FloatTensor) - offset
                     for timestep in frame_idx], dim=0)
             else:     
                 tactile_framestack = torch.stack(
@@ -150,12 +154,12 @@ class ImitationDataset(BaseDataset):
                     tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
         
         # now using the difference between each frame for framestack   
-        if "vg"in self.modalities:
-            cam_gripper_framestack = torch.stack([cam_gripper_framestack[i] - cam_gripper_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
-        if "vf"in self.modalities: 
-            cam_fixed_framestack = torch.stack([cam_fixed_framestack[i] - cam_fixed_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
-        if "t" in self.modalities:
-            tactile_framestack = torch.stack([tactile_framestack[i] - tactile_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
+        # if "vg"in self.modalities:
+        #     cam_gripper_framestack = torch.stack([cam_gripper_framestack[i] - cam_gripper_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
+        # if "vf"in self.modalities: 
+        #     cam_fixed_framestack = torch.stack([cam_fixed_framestack[i] - cam_fixed_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
+        # if "t" in self.modalities:
+        #     tactile_framestack = torch.stack([tactile_framestack[i] - tactile_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
            
         # load audio
         audio_end = end * self.resolution
