@@ -4,6 +4,7 @@ import yaml
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.profiler import SimpleProfiler
 from datetime import datetime
 import numpy as np
 
@@ -21,7 +22,7 @@ def save_config(args):
 def start_training(args, exp_dir, pl_module, monitor="val/acc"):
     exp_time = datetime.now().strftime("%m-%d-%H:%M:%S") + "-v" + str(np.random.randint(0, 1000))
     checkpoint = ModelCheckpoint(
-        dirpath=os.path.join(exp_dir, "checkpoints"),
+        dirpath=os.path.join(exp_dir, "checkpoints_", args.exp_name),
         filename=exp_time + "-{epoch}-{step}",
         save_top_k=2,
         save_last=True,
@@ -30,6 +31,7 @@ def start_training(args, exp_dir, pl_module, monitor="val/acc"):
     )
 
     logger = TensorBoardLogger(save_dir=exp_dir, version=exp_time + args.exp_name, name="lightning_logs")
+    profiler = SimpleProfiler(dirpath=exp_dir, filename=exp_time + args.exp_name)
     trainer = Trainer(
         max_epochs=args.epochs,
         callbacks=[checkpoint],
@@ -38,7 +40,8 @@ def start_training(args, exp_dir, pl_module, monitor="val/acc"):
         strategy="dp",
         check_val_every_n_epoch=1,
         log_every_n_steps=1,
-        logger=logger
+        logger=logger,
+        profiler=profiler
     )
     trainer.fit(
         pl_module,

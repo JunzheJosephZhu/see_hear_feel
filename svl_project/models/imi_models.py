@@ -33,14 +33,14 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.mha = MultiheadAttention(self.layernorm_embed_shape, args.num_heads)
         self.bottleneck = nn.Linear(self.embed_dim, self.layernorm_embed_shape) # if we dont use mha
 
-        action_dim = 3 ** task2actiondim[args.task]
+        # action_dim = 3 ** task2actiondim[args.task]
 
         self.mlp = torch.nn.Sequential(
             torch.nn.Linear(self.layernorm_embed_shape, 1024),
             torch.nn.ReLU(),
             torch.nn.Linear(1024, 1024),
             torch.nn.ReLU(),
-            torch.nn.Linear(1024, action_dim)
+            torch.nn.Linear(1024, 3 ** args.action_dim)
         )
         self.aux_mlp = torch.nn.Linear(self.layernorm_embed_shape, 6)
 
@@ -57,35 +57,35 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         '''
 
         vf_inp, vg_inp, t_inp, audio_g, audio_h = inputs
-        batch, num_stack, _, Hv, Wv = vf_inp.shape
-        batch, num_stack, _, Ht, Wt = t_inp.shape
-        vf_inp = vf_inp.view(batch * num_stack, 3, Hv, Wv) 
-        vg_inp = vg_inp.view(batch * num_stack, 3, Hv, Wv) 
-        t_inp = t_inp.view(batch * num_stack, 3, Ht, Wt)
-        # only using the left holebase
-
         embeds = []
         if "vf" in self.modalities:
+            batch, num_stack, _, Hv, Wv = vf_inp.shape
+            vf_inp = vf_inp.view(batch * num_stack, 3, Hv, Wv) 
             vf_embeds = self.v_encoder(vf_inp) # [batch * num_frames, encoder_dim]
             vf_embeds = vf_embeds.view(-1, self.layernorm_embed_shape) # [batch, encoder_dim * num_stack]
             embeds.append(vf_embeds)
         if "vg" in self.modalities:
+            batch, num_stack, _, Hv, Wv = vg_inp.shape
+            vg_inp = vg_inp.view(batch * num_stack, 3, Hv, Wv) 
             vg_embeds = self.v_encoder(vg_inp) # [batch * num_frames, encoder_dim]
             vg_embeds = vg_embeds.view(-1, self.layernorm_embed_shape) # [batch, encoder_dim * num_stack]
             embeds.append(vg_embeds)
         if "t" in self.modalities:
+            batch, num_stack, _, Ht, Wt = t_inp.shape
+            t_inp = t_inp.view(batch * num_stack, 3, Ht, Wt)
             t_embeds = self.t_encoder(t_inp)
             t_embeds = t_embeds.view(-1, self.layernorm_embed_shape)
             embeds.append(t_embeds)
         if "ah" in self.modalities:
+            batch, _, _ = audio_h.shape
             ah_embeds = self.a_encoder(audio_h)
             ah_embeds = ah_embeds.view(-1, self.layernorm_embed_shape)
             embeds.append(ah_embeds)
         if "ag" in self.modalities:
+            batch, _, _ = audio_g.shape
             ag_embeds = self.a_encoder(audio_g)
             ag_embeds = ag_embeds.view(-1, self.layernorm_embed_shape)
             embeds.append(ag_embeds)
-        
         
         if self.use_mha:
             mlp_inp = torch.stack(embeds, dim=0) # [3, batch, D]

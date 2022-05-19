@@ -23,9 +23,7 @@ class ImiEngine(LightningModule):
 
         self.loss_cce = torch.nn.CrossEntropyLoss()
 
-        self.wrong = 1
-        self.correct = 0
-        self.total = 0
+        self.save_hyperparameters(vars(config))
         print("baseline learn")
 
     def compute_loss(self, demo, pred_logits, xyz_gt, xyz_pred):
@@ -38,14 +36,14 @@ class ImiEngine(LightningModule):
         inputs, demo, xyzrpy_gt, optical_flow = batch
         action_logits, xyzrpy_pred, weights = self.actor(inputs)  # , idx)
         loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
-        self.log_dict({"train/immi_loss": immi_loss, "train/aux_loss": aux_loss})
+        self.log_dict({"train/immi_loss": immi_loss, "train/aux_loss": aux_loss, "train/train_loss": loss})
         return loss
 
     def validation_step(self, batch, batch_idx):
         inputs, demo, xyzrpy_gt, optical_flow = batch  # , idx = batch
         action_logits, xyzrpy_pred, weights = self.actor(inputs)  # , idx)
         loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
-        self.log_dict({"val/immi_loss": immi_loss, "val/aux_loss": aux_loss})
+        self.log_dict({"val/immi_loss": immi_loss, "val/aux_loss": aux_loss, "val/val_loss": loss})
         action_pred = torch.argmax(action_logits, dim=1)
         if weights is not None and  batch_idx < 100:
             weights = weights[0]

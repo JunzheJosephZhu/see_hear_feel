@@ -21,7 +21,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
 import pandas as pd
 import numpy as np
-
+import time
 
 def strip_sd(state_dict, prefix):
     """
@@ -58,8 +58,8 @@ def main(args):
     samples_weight = torch.from_numpy(samples_weight)
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
-    train_loader = DataLoader(train_set, args.batch_size, num_workers=10, sampler=sampler, persistent_workers=True, pin_memory=True)
-    val_loader = DataLoader(val_set, 1, num_workers=10, shuffle=False, persistent_workers=True, pin_memory=True)
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler, persistent_workers=True, pin_memory=True)
+    val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False, persistent_workers=True, pin_memory=True)
     
     # v encoder
     v_encoder = make_vision_encoder(args.encoder_dim)
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=65, type=int)
+    p.add("--epochs", default=40, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0515/test_recordings")
+    p.add("--data_folder", default="data/data_0518/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -113,6 +113,7 @@ if __name__ == "__main__":
     p.add("--task", type=str)
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--aux_multiplier", type=float)
+    p.add("--minus_first", default=False, action="store_true")
 
 
 
