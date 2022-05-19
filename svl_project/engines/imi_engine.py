@@ -38,6 +38,8 @@ class ImiEngine(LightningModule):
         inputs, demo, xyzrpy_gt, optical_flow = batch
         action_logits, xyzrpy_pred, weights = self.actor(inputs)  # , idx)
         loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
+        print(f"action logits {action_logits}")
+        print(f"demo {demo}")
         self.log_dict({"train/immi_loss": immi_loss, "train/aux_loss": aux_loss})
         return loss
 

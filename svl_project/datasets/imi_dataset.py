@@ -148,6 +148,7 @@ class ImitationDataset(BaseDataset):
         
         # load labels
         keyboard = self.timestamps["action_history"][end]
+        print(f"dataset - keyboard in {keyboard}")
         if self.task == "pouring":
             x_space = {-.0008: 0, 0: 1, .0008: 2}
             dy_space = {-.006: 0, 0: 1, .006: 2}
@@ -160,6 +161,7 @@ class ImitationDataset(BaseDataset):
         # 6 D pose
         xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
         optical_flow = 0
+        print(f"dataset - keyboard out {keyboard}")
         return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
 
 if __name__ == "__main__":
