@@ -150,12 +150,12 @@ class ImitationDataset(BaseDataset):
                     tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
         
         # now using the difference between each frame for framestack   
-        if "vg"in self.modalities:
-            cam_gripper_framestack = torch.stack([cam_gripper_framestack[i] - cam_gripper_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
-        if "vf"in self.modalities: 
-            cam_fixed_framestack = torch.stack([cam_fixed_framestack[i] - cam_fixed_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
-        if "t" in self.modalities:
-            tactile_framestack = torch.stack([tactile_framestack[i] - tactile_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
+        # if "vg"in self.modalities:
+        #     cam_gripper_framestack = torch.stack([cam_gripper_framestack[i] - cam_gripper_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
+        # if "vf"in self.modalities: 
+        #     cam_fixed_framestack = torch.stack([cam_fixed_framestack[i] - cam_fixed_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
+        # if "t" in self.modalities:
+        #     tactile_framestack = torch.stack([tactile_framestack[i] - tactile_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
            
         # load audio
         audio_end = end * self.resolution
