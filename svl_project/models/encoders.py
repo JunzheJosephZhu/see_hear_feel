@@ -64,18 +64,13 @@ class Spec_Encoder(Encoder):
             log_spec /= log_spec.sum(dim=-2, keepdim=True) # [1, 64, 100]
         return super().forward(log_spec)
 
-class Tactile_Flow_Encoder(nn.Module):
+class Tactile_Flow_Encoder(Encoder):
     def __init__(self, feature_extractor, out_dim):
-        super().__init__()
-        self.feature_extractor = feature_extractor
-        self.ln = nn.Linear(512, out_dim)
+        super().__init__(feature_extractor, out_dim)
 
-    def forward(self, x):
-        x = x[:, 2:-1, :, :] - x[:, 0:2, :, :]
-        x = self.feature_extractor(x)["avgpool"]
-        x = x.squeeze(3).squeeze(2)
-        x = self.ln(x)
-        return x
+    def forward(self, flow):
+        flow = flow[..., 2:-1, :, :] - flow[..., 0:2, :, :]
+        return super().forward(flow)
 
 def make_vision_encoder(out_dim=None):
     vision_extractor = resnet18(pretrained=True)
@@ -104,9 +99,9 @@ def make_flow_encoder():
 def make_tactile_flow_encoder(out_dim):
     tactile_extractor = resnet18(pretrained=False)
     tactile_extractor.conv1 = nn.Conv2d(
-        2, 64, kernel_size=7, stride=1, padding=3, bias=False
+        4, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
-    tactile_extractor = create_feature_extractor(tactile_extractor, ["avgpool"])
+    tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
     return Tactile_Flow_Encoder(tactile_extractor, out_dim)
 
 

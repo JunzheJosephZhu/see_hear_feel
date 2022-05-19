@@ -23,9 +23,9 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
         if self.task == "pouring":
-            x_space = {-.0008: 0, 0: 1, .0008: 2}
-            dy_space = {-.006: 0, 0: 1, .006: 2}
-            keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
+            x_space = {-.0006: 0, 0: 1, 0.0006: 2}
+            dy_space = {-.003: 0, 0: 1, .009: 2}
+            keyboard = x_space[keyboard[0]] * 3 + dy_space[round(keyboard[4], 3)]
         else:
             x_space = {-.0004: 0, 0: 1, .0004: 2}
             y_space = {-.0004: 0, 0: 1, .0004: 2}
@@ -63,7 +63,9 @@ class ImitationDataset(BaseDataset):
                                                                                                    1) / 255
         self.action_dim = args.action_dim
         self.task = args.task
-        
+        self.minus_first = args.minus_first
+        self.use_flow = args.use_flow
+
         self.modalities = args.ablation.split('_')
 
         if self.train:
@@ -105,6 +107,12 @@ class ImitationDataset(BaseDataset):
         cam_gripper_framestack = 0
         cam_fixed_framestack = 0
         tactile_framestack = 0
+        # load first frame for better alignment
+        if self.minus_first:
+            offset = self.load_image(self.trial, "left_gelsight_frame", 0)
+        else:
+            offset = self.gelsight_offset
+
         if "vg" in self.modalities:
             cam_gripper_framestack = torch.stack(
                     [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep))
@@ -113,12 +121,19 @@ class ImitationDataset(BaseDataset):
             cam_fixed_framestack = torch.stack(
                     [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep))
                     for timestep in frame_idx], dim=0)
-        if "t" in self.modalities:            
-            tactile_framestack = torch.stack(
-                [(self.transform_gel(
-                    self.load_image(self.trial, "left_gelsight_frame", timestep) - self.gelsight_offset
-                ) + 0.5).clamp(0, 1) for
-                timestep in frame_idx], dim=0)
+        if "t" in self.modalities:       
+            if self.use_flow:
+                tactile_framestack = torch.stack(
+                    [torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
+                        torch.FloatTensor)
+                    for timestep in frame_idx], dim=0)
+            else:     
+                tactile_framestack = torch.stack(
+                    [(self.transform_gel(
+                        self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
+                    ) + 0.5).clamp(0, 1) for
+                    timestep in frame_idx], dim=0)
 
         # random cropping
         if self.train:
@@ -129,9 +144,12 @@ class ImitationDataset(BaseDataset):
             if "vf"in self.modalities:
                 cam_fixed_framestack = cam_fixed_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
             if "t" in self.modalities:
-                img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
-                i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
-                tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
+                if not self.use_flow:
+                    img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
+                    i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
+                    tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
+                tmp = torch.stack([tactile_framestack[i] - tactile_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
+                tactile_framestack = tmp
 
         # load audio
         audio_end = end * self.resolution
@@ -144,15 +162,16 @@ class ImitationDataset(BaseDataset):
             audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end)
         # we are only using left holebase, so only return this channel, audio encoder has been changed from 4 to 3
         if "ah" in self.modalities:
+            # spoiled code: now using right holebase mic, change to 0 will use left holebase mic
             audio_clip_h = self.clip_resample(self.audio_holebase[0].unsqueeze(0), audio_start, audio_end)
         
         # load labels
         keyboard = self.timestamps["action_history"][end]
         print(f"dataset - keyboard in {keyboard}")
         if self.task == "pouring":
-            x_space = {-.0008: 0, 0: 1, .0008: 2}
-            dy_space = {-.006: 0, 0: 1, .006: 2}
-            keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
+            x_space = {-.0006: 0, 0: 1, 0.0006: 2}
+            dy_space = {-.003: 0, 0: 1, .009: 2}
+            keyboard = x_space[keyboard[0]] * 3 + dy_space[round(keyboard[4], 3)]
         else:
             x_space = {-.0004: 0, 0: 1, .0004: 2}
             y_space = {-.0004: 0, 0: 1, .0004: 2}

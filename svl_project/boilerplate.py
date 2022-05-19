@@ -22,7 +22,7 @@ def save_config(args):
 def start_training(args, exp_dir, pl_module, monitor="val/acc"):
     exp_time = datetime.now().strftime("%m-%d-%H:%M:%S") + "-v" + str(np.random.randint(0, 1000))
     checkpoint = ModelCheckpoint(
-        dirpath=os.path.join(exp_dir, "checkpoints"),
+        dirpath=os.path.join(exp_dir, "checkpoints_", args.exp_name),
         filename=exp_time + "-{epoch}-{step}",
         save_top_k=2,
         save_last=True,
