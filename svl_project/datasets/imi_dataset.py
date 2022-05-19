@@ -109,7 +109,12 @@ class ImitationDataset(BaseDataset):
         tactile_framestack = 0
         # load first frame for better alignment
         if self.minus_first:
-            offset = self.load_image(self.trial, "left_gelsight_frame", 0)
+            if self.use_flow:
+                offset = torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(0) + ".pt"))).type(
+                        torch.FloatTensor)
+            else:
+                offset = self.load_image(self.trial, "left_gelsight_frame", 0)
         else:
             offset = self.gelsight_offset
 
@@ -126,7 +131,7 @@ class ImitationDataset(BaseDataset):
                 tactile_framestack = torch.stack(
                     [torch.from_numpy(
                         torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
-                        torch.FloatTensor)
+                        torch.FloatTensor) - offset
                     for timestep in frame_idx], dim=0)
             else:     
                 tactile_framestack = torch.stack(
@@ -148,15 +153,7 @@ class ImitationDataset(BaseDataset):
                     img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
                     i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
                     tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
-        
-        # now using the difference between each frame for framestack   
-        # if "vg"in self.modalities:
-        #     cam_gripper_framestack = torch.stack([cam_gripper_framestack[i] - cam_gripper_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
-        # if "vf"in self.modalities: 
-        #     cam_fixed_framestack = torch.stack([cam_fixed_framestack[i] - cam_fixed_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
-        # if "t" in self.modalities:
-        #     tactile_framestack = torch.stack([tactile_framestack[i] - tactile_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
-           
+                  
         # load audio
         audio_end = end * self.resolution
         audio_start = audio_end - self.audio_len  # why self.sr // 2, and start + sr
