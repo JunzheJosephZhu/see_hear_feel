@@ -64,6 +64,7 @@ class ImitationDataset(BaseDataset):
         self.action_dim = args.action_dim
         self.task = args.task
         self.minus_first = args.minus_first
+        self.use_flow = args.use_flow
 
         self.modalities = args.ablation.split('_')
 
@@ -120,12 +121,19 @@ class ImitationDataset(BaseDataset):
             cam_fixed_framestack = torch.stack(
                     [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep))
                     for timestep in frame_idx], dim=0)
-        if "t" in self.modalities:            
-            tactile_framestack = torch.stack(
-                [(self.transform_gel(
-                    self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
-                ) + 0.5).clamp(0, 1) for
-                timestep in frame_idx], dim=0)
+        if "t" in self.modalities:       
+            if self.use_flow:
+                tactile_framestack = torch.stack(
+                    [torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
+                        torch.FloatTensor)
+                    for timestep in frame_idx], dim=0)
+            else:     
+                tactile_framestack = torch.stack(
+                    [(self.transform_gel(
+                        self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
+                    ) + 0.5).clamp(0, 1) for
+                    timestep in frame_idx], dim=0)
 
         # random cropping
         if self.train:
@@ -140,9 +148,10 @@ class ImitationDataset(BaseDataset):
                 tmp = torch.stack([cam_fixed_framestack[i] - cam_fixed_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
                 cam_fixed_framestack = tmp
             if "t" in self.modalities:
-                img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
-                i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
-                tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
+                if not self.use_flow:
+                    img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
+                    i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
+                    tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
                 tmp = torch.stack([tactile_framestack[i] - tactile_framestack[i-1] for i in range(1, self.num_stack)], dim=0)
                 tactile_framestack = tmp
 
@@ -162,6 +171,7 @@ class ImitationDataset(BaseDataset):
         
         # load labels
         keyboard = self.timestamps["action_history"][end]
+        print(f"dataset - keyboard in {keyboard}")
         if self.task == "pouring":
             x_space = {-.0006: 0, 0: 1, 0.0006: 2}
             dy_space = {-.003: 0, 0: 1, .009: 2}
@@ -174,6 +184,7 @@ class ImitationDataset(BaseDataset):
         # 6 D pose
         xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
         optical_flow = 0
+        print(f"dataset - keyboard out {keyboard}")
         return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
 
 if __name__ == "__main__":

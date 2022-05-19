@@ -64,7 +64,10 @@ def main(args):
     # v encoder
     v_encoder = make_vision_encoder(args.encoder_dim)
     # t encoder
-    t_encoder = make_tactile_encoder(args.encoder_dim)
+    if args.use_flow:
+        t_encoder = make_tactile_flow_encoder(args.encoder_dim)
+    else:
+        t_encoder = make_tactile_encoder(args.encoder_dim)
     # a encoder
     a_encoder = make_audio_encoder(args.encoder_dim * (args.num_stack - 1), args.norm_audio)
     

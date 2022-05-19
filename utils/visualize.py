@@ -16,7 +16,7 @@ import torch
 import shutil
 import seaborn as sn
 
-tstamp = '2022-05-15 15:06:13.654786'
+tstamp = '2022-05-18 22:38:52.539039'
 DIR = '../test_recordings/' + tstamp
 # DIR = '../data_0504/test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
