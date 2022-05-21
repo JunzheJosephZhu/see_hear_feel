@@ -27,9 +27,9 @@ class ImitationDatasetLabelCount(BaseDataset):
             dy_space = {-.003: 0, 0: 1, .009: 2}
             keyboard = x_space[keyboard[0]] * 3 + dy_space[round(keyboard[4], 3)]
         else:
-            x_space = {-.0004: 0, 0: 1, .0004: 2}
-            y_space = {-.0004: 0, 0: 1, .0004: 2}
-            z_space = {-.001: 0, 0: 1, .001: 2}
+            x_space = {-.0003: 0, 0: 1, .0003: 2}
+            y_space = {-.0003: 0, 0: 1, .0003: 2}
+            z_space = {-.0005: 0, 0: 1, .0005: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         return keyboard
 
@@ -79,7 +79,7 @@ class ImitationDataset(BaseDataset):
             ])
             
         else:
-            self.start_frame = self.num_frames - 100
+            self.start_frame = self.num_frames - 300
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self._crop_height_v, self._crop_width_v))
@@ -174,9 +174,9 @@ class ImitationDataset(BaseDataset):
             dy_space = {-.003: 0, 0: 1, .009: 2}
             keyboard = x_space[keyboard[0]] * 3 + dy_space[round(keyboard[4], 3)]
         else:
-            x_space = {-.0004: 0, 0: 1, .0004: 2}
-            y_space = {-.0004: 0, 0: 1, .0004: 2}
-            z_space = {-.0010: 0, 0: 1, .0010: 2}
+            x_space = {-.0003: 0, 0: 1, .0003: 2}
+            y_space = {-.0003: 0, 0: 1, .0003: 2}
+            z_space = {-.0005: 0, 0: 1, .0005: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         # 6 D pose
         xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
