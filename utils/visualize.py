@@ -16,16 +16,16 @@ import torch
 import shutil
 import seaborn as sn
 
-tstamp = '2022-05-18 22:38:52.539039'
+tstamp = '2022-05-21 00:49:18.730779'
 DIR = '../test_recordings/' + tstamp
 # DIR = '../data_0504/test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
 print(f"data.hdf5 keys: {f.keys()}")
-with open(os.path.join(DIR, 'timestamps.json')) as j:
-    json_data = json.load(j)
-print(f"timestamps.json keys: {json_data.keys()}")
 try:
+    with open(os.path.join(DIR, 'timestamps.json')) as j:
+        json_data = json.load(j)
+    print(f"timestamps.json keys: {json_data.keys()}")
     action_history = json_data['action_history']
     print(f"Found action history with {len(action_history)} entries")
 except:
@@ -42,7 +42,7 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [1, 3, 5]
+test_items = [1, 3, 4, 5]
 ablation = 'v'
 
 
