@@ -1,6 +1,6 @@
 #!/bin/bash
 # Usage: sbatch run_slurm.sh
-#SBATCH --partition=svl --qos=normal
+#SBATCH --partition=svl --qos=normal --nodelist=svl5
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -39,14 +39,26 @@ cd svl_fs
 # Run your script #
 ###################
 echo "running command : <RUN_COMMAND>"
-# pour
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/pour/imi_learn_ablation_vf_pour.yaml
+# insertion
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg 
+python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_tf --use_flow --ablation vg_t
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a --ablation vg_ah 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_tf_a --use_flow --ablation vg_t_ah
 
-# key insertion
+# no_fs
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_nfs --ablation vg
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_nfs --ablation vg_t
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_nfs --ablation vg_a
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_nfs --ablation vg_t_a
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_tf_a_nfs --use_flow --ablation vg_t_a
+
+# pour
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t --ablation t --aux_multiplier 0.0
-python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t_img --ablation t --aux_multiplier 0.0
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t_flow_diff --ablation t --aux_multiplier 0.0
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t_img_diff --ablation t --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_ah --ablation vg_ah --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _ah --ablation ah --aux_multiplier 0.0
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_ah --ablation vg_t_ah --aux_multiplier 0.0

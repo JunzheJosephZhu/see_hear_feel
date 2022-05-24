@@ -29,7 +29,7 @@ class ImitationDatasetLabelCount(BaseDataset):
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
             y_space = {-.0003: 0, 0: 1, .0003: 2}
-            z_space = {-.0005: 0, 0: 1, .0005: 2}
+            z_space = {-.0008: 0, 0: 1, .0008: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         return keyboard
 
@@ -79,7 +79,7 @@ class ImitationDataset(BaseDataset):
             ])
             
         else:
-            self.start_frame = self.num_frames - 300
+            self.start_frame = self.num_frames - 150
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self._crop_height_v, self._crop_width_v))
@@ -115,7 +115,12 @@ class ImitationDataset(BaseDataset):
             else:
                 offset = self.load_image(self.trial, "left_gelsight_frame", 0)
         else:
-            offset = self.gelsight_offset
+            if self.use_flow:
+                offset = torch.from_numpy(
+                        torch.load(os.path.join(self.data_folder, "flow_offset.pt"))).type(
+                        torch.FloatTensor)
+            else:
+                offset = self.gelsight_offset
 
         if "vg" in self.modalities:
             cam_gripper_framestack = torch.stack(
@@ -176,7 +181,7 @@ class ImitationDataset(BaseDataset):
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
             y_space = {-.0003: 0, 0: 1, .0003: 2}
-            z_space = {-.0005: 0, 0: 1, .0005: 2}
+            z_space = {-.0008: 0, 0: 1, .0008: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         # 6 D pose
         xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
