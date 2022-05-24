@@ -16,9 +16,9 @@ import torch
 import shutil
 import seaborn as sn
 
-tstamp = '2022-05-21 00:49:18.730779'
+tstamp = '2022-05-23 23:25:44.040474'
+# DIR = '../test_recordings/key_v_a/' + tstamp
 DIR = '../test_recordings/' + tstamp
-# DIR = '../data_0504/test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
 print(f"data.hdf5 keys: {f.keys()}")
@@ -87,22 +87,18 @@ class Tests():
             )
         for s in tqdm(f[self.test_item].iter_chunks()):
             weights = f[self.test_item][s]
-            # print(f"weights {weights} {weights.shape}")
             modalities = ablation.split('_')
             use_vision = 'v' in modalities
             use_tactile = 't' in modalities
             use_audio = 'a' in modalities
             used_input = []
-            output = []
+            output = ['out']
             if use_vision:
                 used_input.append('v_in')
-                output.append('v_out')
             if use_tactile:
                 used_input.append('t_in')
-                output.append('t_out')
             if use_audio:
                 used_input.append('a_in')
-                output.append('a_out')
             df_cm = pd.DataFrame(weights, index = output, columns=used_input)
             
             plt.figure(figsize=figsize)
