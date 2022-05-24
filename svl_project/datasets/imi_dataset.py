@@ -44,7 +44,7 @@ class ImitationDataset(BaseDataset):
         self.fps = 10
         self.sr = 44100
         self.resolution = self.sr // self.fps  # number of audio samples in one image idx
-        self.audio_len = int(self.resolution * (max(self.max_len + 1, 10)))
+        self.audio_len = int(self.resolution * (max(self.max_len + 1, 5)))
 
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
@@ -115,7 +115,12 @@ class ImitationDataset(BaseDataset):
             else:
                 offset = self.load_image(self.trial, "left_gelsight_frame", 0)
         else:
-            offset = self.gelsight_offset
+            if self.use_flow:
+                offset = torch.from_numpy(
+                        torch.load(os.path.join(self.data_folder, "flow_offset.pt"))).type(
+                        torch.FloatTensor)
+            else:
+                offset = self.gelsight_offset
 
         if "vg" in self.modalities:
             cam_gripper_framestack = torch.stack(
