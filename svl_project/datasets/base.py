@@ -93,7 +93,7 @@ class BaseDataset(Dataset):
         audio_clip = torch.cat(
             [left_pad, audio[:, audio_start:audio_end], right_pad], dim=1
         )
-        audio_clip = torchaudio.functional.resample(audio_clip, 44100, 16000)
+        # audio_clip = torchaudio.functional.resample(audio_clip, 44100, 16000)
         return audio_clip
 
     def __len__(self):

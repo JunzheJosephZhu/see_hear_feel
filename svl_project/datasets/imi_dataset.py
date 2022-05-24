@@ -169,7 +169,7 @@ class ImitationDataset(BaseDataset):
             audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end)
         # we are only using left holebase, so only return this channel, audio encoder has been changed from 4 to 3
         if "ah" in self.modalities:
-            # spoiled code: now using right holebase mic, change to 0 will use left holebase mic
+            # spoiled code: now using left holebase mic
             audio_clip_h = self.clip_resample(self.audio_holebase[0].unsqueeze(0), audio_start, audio_end)
         
         # load labels

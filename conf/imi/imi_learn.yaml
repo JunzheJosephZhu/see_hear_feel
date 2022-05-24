@@ -1,5 +1,5 @@
 encoder_dim: 256
-num_stack: 3
+num_stack: 4
 frameskip: 6
 crop_percent: 0.1
 conv_bottleneck: 128
@@ -17,4 +17,4 @@ exp_name: default
 task: "insertion"
 aux_multiplier: 1.0
 # minus_first: True
-use_flow: True
+# use_flow: True

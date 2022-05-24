@@ -1,6 +1,6 @@
 #!/bin/bash
 # Usage: sbatch run_slurm.sh
-#SBATCH --partition=svl --qos=normal --nodelist=svl5
+#SBATCH --partition=svl --qos=normal 
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -41,7 +41,7 @@ cd svl_fs
 echo "running command : <RUN_COMMAND>"
 # insertion
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg 
-python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_tf --use_flow --ablation vg_t
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a --ablation vg_ah 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
