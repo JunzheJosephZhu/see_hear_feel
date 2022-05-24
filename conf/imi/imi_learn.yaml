@@ -7,7 +7,7 @@ resized_height_v: 90
 resized_width_v: 120
 resized_height_t: 75 #75 #150
 resized_width_t: 100 #100 #200
-ablation: vg_t_a
+ablation: vg
 gamma: 0.9
 num_heads: 8
 action_dim: 3
