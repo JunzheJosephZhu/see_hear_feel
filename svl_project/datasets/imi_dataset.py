@@ -43,7 +43,8 @@ class ImitationDataset(BaseDataset):
         self.fps = 10
         self.sr = 44100
         self.resolution = self.sr // self.fps  # number of audio samples in one image idx
-        self.audio_len = int(self.resolution * (max(self.max_len + 1, 10)))
+        # self.audio_len = int(self.resolution * (max(self.max_len + 1, 10)))
+        self.audio_len = self.num_stack * self.frameskip * self.resolution
 
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
@@ -94,8 +95,7 @@ class ImitationDataset(BaseDataset):
         start = end - self.max_len
         # compute which frames to use
         frame_idx = np.arange(start, end + 1, self.frameskip)
-        frame_idx[frame_idx < 0] = 0
-
+        frame_idx[frame_idx < 0] = -1
         # images
         cam_gripper_framestack = torch.stack(
                 [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep))
@@ -118,8 +118,8 @@ class ImitationDataset(BaseDataset):
         # load audio
         audio_end = end * self.resolution
         audio_start = audio_end - self.audio_len  # why self.sr // 2, and start + sr
-        audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end)
-        audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end)
+        audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end).float()
+        audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end).float()
 
         # load labels
         keyboard = self.timestamps["action_history"][end]
@@ -132,37 +132,49 @@ class ImitationDataset(BaseDataset):
             y_space = {-.0004: 0, 0: 1, .0004: 2}
             z_space = {-.0009: 0, 0: 1, .0009: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
-        xyzrpy = self.timestamps["pose_history"][end]
-        optical_flow = None
+        xyzrpy = torch.Tensor(self.timestamps["pose_history"][end][:6])
+        optical_flow = 0
 
-        return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
+        return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow, start
 
 if __name__ == "__main__":
-
-    parser = ArgumentParser()
-    parser.add_argument("--log_file", default="train.csv")
-    parser.add_argument("--num_stack", default=5, type=int)
-    parser.add_argument("--frameskip", default=2, type=int)
-    parser.add_argument("--data_folder", default="data/test_recordings_0220_toy")
-    args = parser.parse_args()
-
-    dataset = ImitationDataset("train.csv")
-    # print("dataset", dataset.len)
-    cnt = 0
-    zero_cnt = 0
-    t_l = []
-    num_frame = 0
-    for _ in range(11800):
-        index = torch.randint(high=10, size=()).item()
-        _, _, _, idx, t, num = dataset.__getitem__(index)
-        if idx == 0:
-            num_frame = num
-            zero_cnt += 1
-            t_l.append(t)
-        cnt += 1
-    mydic = {i: t_l.count(i) for i in t_l}
-    print(zero_cnt)
-    print(num_frame)
-    print(len(mydic))
-
-    print(mydic)
+    import configargparse
+    p = configargparse.ArgParser()
+    p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
+    p.add("--batch_size", default=32)
+    p.add("--lr", default=1e-4, type=float)
+    p.add("--gamma", default=0.9, type=float)
+    p.add("--period", default=3)
+    p.add("--epochs", default=65, type=int)
+    p.add("--resume", default=None)
+    p.add("--num_workers", default=8, type=int)
+    # imi_stuff
+    p.add("--conv_bottleneck", required=True, type=int)
+    p.add("--exp_name", required=True, type=str)
+    p.add("--encoder_dim", required=True, type=int)
+    p.add("--action_dim", default=3, type=int)
+    p.add("--num_stack", required=True, type=int)
+    p.add("--frameskip", required=True, type=int)
+    p.add("--use_mha", default=False, action="store_true")
+    # data
+    p.add("--train_csv", default="train.csv")
+    p.add("--val_csv", default="val.csv")
+    p.add("--data_folder", default="data/data_0502/test_recordings")
+    p.add("--resized_height_v", required=True, type=int)
+    p.add("--resized_width_v", required=True, type=int)
+    p.add("--resized_height_t", required=True, type=int)
+    p.add("--resized_width_t", required=True, type=int)
+    p.add("--num_episode", default=None, type=int)
+    p.add("--crop_percent", required=True, type=float)
+    p.add("--ablation", required=True)
+    p.add("--num_heads", required=True, type=int)
+    p.add("--use_flow", default=False, action="store_true")
+    p.add("--use_holebase", default=False, action="store_true")
+    p.add("--task", type=str)
+    p.add("--norm_audio", default=False, action="store_true")
+    p.add("--aux_multiplier", type=float)
+    args = p.parse_args()
+    dataset = ImitationDataset(args.train_csv, args, 0, args.data_folder)
+    for (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow in dataset:
+        # print(cam_fixed_framestack.shape)
+        pass

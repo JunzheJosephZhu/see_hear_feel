@@ -63,6 +63,8 @@ class BaseDataset(Dataset):
                 for "left_gelsight_flow", please add another method to this class using torch.load("xxx.pt")
             timestep: the timestep of frame you want to extract
         """
+        if timestep == -1:
+            timestep = 0
         img_path = os.path.join(trial, stream, str(timestep) + ".png")
         image = torch.as_tensor(np.array(Image.open(img_path))).float().permute(2, 0, 1) / 255
         return image

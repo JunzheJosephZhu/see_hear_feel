@@ -5,7 +5,7 @@ from torch import nn
 
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-
+import math
 import numpy as np
 # helpers
 def pair(t):
@@ -36,63 +36,58 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 class Attention(nn.Module):
-    def __init__(self, dim, qkv_bias, heads, dim_head, dropout):
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., with_qkv=True):
         super().__init__()
-        inner_dim = dim_head *  heads
-        project_out = not (heads == 1 and dim_head == dim)
-
-        self.heads = heads
-        self.scale = dim_head ** -0.5
-
-        self.attend = nn.Softmax(dim = -1)
-        self.dropout = nn.Dropout(dropout)
-
-        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = qkv_bias)
-
-        self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
-            nn.Dropout(dropout)
-        ) if project_out else nn.Identity()
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        self.scale = qk_scale or head_dim ** -0.5
+        self.with_qkv = with_qkv
+        if self.with_qkv:
+           self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+           self.proj = nn.Linear(dim, dim)
+           self.proj_drop = nn.Dropout(proj_drop)
+        self.attn_drop = nn.Dropout(attn_drop)
 
     def forward(self, x):
-        '''
-        x: [batch, num_tokens, dim]
-        '''
-        qkv = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
+        B, N, C = x.shape
+        if self.with_qkv:
+           qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+           q, k, v = qkv[0], qkv[1], qkv[2]
+        else:
+           qkv = x.reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
+           q, k, v  = qkv, qkv, qkv
 
-        dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn.softmax(dim=-1)
+        attn = self.attn_drop(attn)
 
-        attn = self.attend(dots)
-        attn = self.dropout(attn)
-
-        out = torch.matmul(attn, v)
-        out = rearrange(out, 'b h n d -> b n (h d)')
-        return self.to_out(out)
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        if self.with_qkv:
+           x = self.proj(x)
+           x = self.proj_drop(x)
+        return x
 
 class Block(nn.Module):
 
-    def __init__(self, dim, heads, dim_head, mlp_dim, qkv_bias=False, drop=0., attn_drop=0.,
-                 drop_path=0.1, norm_layer=nn.LayerNorm, attention_type='divided_space_time'):
+    def __init__(self, dim, heads, mlp_ratio, qkv_bias=False, drop=0., attn_drop=0.,
+                 drop_path=0.1, norm_layer=nn.LayerNorm):
         super().__init__()
-        self.attention_type = attention_type
-        assert(attention_type in ['divided_space_time', 'space_only','joint_space_time'])
 
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
-           dim, heads=heads, qkv_bias=qkv_bias, dropout=attn_drop, dim_head=dim)
+           dim, num_heads=heads, qkv_bias=qkv_bias, qk_scale=None, attn_drop=attn_drop, proj_drop=drop)
 
         ## Temporal Attention Parameters
-        if self.attention_type == 'divided_space_time':
-            self.temporal_norm1 = norm_layer(dim)
-            self.temporal_attn = Attention(
-              dim, heads=heads, qkv_bias=qkv_bias, dropout=attn_drop, dim_head=dim_head)
-            self.temporal_fc = nn.Linear(dim, dim)
+        self.temporal_norm1 = norm_layer(dim)
+        self.temporal_attn = Attention(
+            dim, num_heads=heads, qkv_bias=qkv_bias, qk_scale=None, attn_drop=attn_drop, proj_drop=drop)
+        self.temporal_fc = nn.Linear(dim, dim)
 
         ## drop path
         self.drop_path = nn.Dropout(drop_path)
         self.norm2 = norm_layer(dim)
-        self.mlp = FeedForward(dim=dim, hidden_dim=mlp_dim, dropout=drop)
+        mlp_hidden_dim = int(dim * mlp_ratio)
+        self.mlp = FeedForward(dim=dim, hidden_dim=mlp_hidden_dim, dropout=drop)
 
 
     def forward(self, x, T):
@@ -105,47 +100,43 @@ class Block(nn.Module):
         B = x.size(0)
         P = (x.size(1) - 1) // T
 
-        if self.attention_type in ['space_only', 'joint_space_time']:
-            x = x + self.drop_path(self.attn(self.norm1(x)))
-            x = x + self.drop_path(self.mlp(self.norm2(x)))
-            return x
-        elif self.attention_type == 'divided_space_time':
-            ## Temporal, class token is excluded from this part
-            xt = x[:,1:,:] # [batch, num_frames * total_patches, dim]
-            xt = rearrange(xt, 'b (t p) m -> (b p) t m',b=B, p=P, t=T)
-            res_temporal = self.drop_path(self.temporal_attn(self.temporal_norm1(xt)))
-            res_temporal = rearrange(res_temporal, '(b p) t m -> b (t p) m',b=B, p=P, t=T)
-            res_temporal = self.temporal_fc(res_temporal)
-            xt = x[:,1:,:] + res_temporal
+        ## Temporal, class token is excluded from this part
+        xt = x[:,1:,:] # [batch, num_frames * total_patches, dim]
+        xt = rearrange(xt, 'b (t p) m -> (b p) t m',b=B, p=P, t=T)
+        res_temporal = self.drop_path(self.temporal_attn(self.temporal_norm1(xt)))
+        res_temporal = rearrange(res_temporal, '(b p) t m -> b (t p) m',b=B, p=P, t=T)
+        res_temporal = self.temporal_fc(res_temporal)
+        xt = x[:,1:,:] + res_temporal
 
-            ## Spatial
-            init_cls_token = x[:,0,:].unsqueeze(1) # [batch, 1, dim]
-            cls_token = init_cls_token.repeat(1, T, 1) # [batch, T, dim]
-            cls_token = rearrange(cls_token, 'b t m -> (b t) m',b=B,t=T).unsqueeze(1) # [(b t) 1 m]
-            xs = xt
-            xs = rearrange(xs, 'b (t p) m -> (b t) p m',b=B, t=T, p=P)
-            xs = torch.cat((cls_token, xs), 1) # [(b t) p+1 m]
-            res_spatial = self.drop_path(self.attn(self.norm1(xs)))
+        ## Spatial
+        init_cls_token = x[:,0,:].unsqueeze(1) # [batch, 1, dim]
+        cls_token = init_cls_token.repeat(1, T, 1) # [batch, T, dim]
+        cls_token = rearrange(cls_token, 'b t m -> (b t) m',b=B,t=T).unsqueeze(1) # [(b t) 1 m]
+        xs = xt
+        xs = rearrange(xs, 'b (t p) m -> (b t) p m',b=B, t=T, p=P)
+        xs = torch.cat((cls_token, xs), 1) # [(b t) p+1 m]
+        res_spatial = self.drop_path(self.attn(self.norm1(xs)))
 
-            ### Taking care of CLS token
-            cls_token = res_spatial[:,0,:] # [(b t) m]
-            cls_token = rearrange(cls_token, '(b t) m -> b t m', b=B, t=T)
-            cls_token = torch.mean(cls_token,1,True) ## averaging for every frame
-            res_spatial = res_spatial[:,1:,:] # [(b t) p m]
-            res_spatial = rearrange(res_spatial, '(b t) p m -> b (t p) m',b=B, p=P, t=T)
-            res = res_spatial
-            x = xt
+        ### Taking care of CLS token
+        cls_token = res_spatial[:,0,:] # [(b t) m]
+        cls_token = rearrange(cls_token, '(b t) m -> b t m', b=B, t=T)
+        cls_token = torch.mean(cls_token,1,True) ## averaging for every frame
+        res_spatial = res_spatial[:,1:,:] # [(b t) p m]
+        res_spatial = rearrange(res_spatial, '(b t) p m -> b (t p) m',b=B, p=P, t=T)
+        res = res_spatial
+        x = xt
 
-            ## Mlp
-            x = torch.cat((init_cls_token, x), 1) + torch.cat((cls_token, res), 1)
-            x = x + self.drop_path(self.mlp(self.norm2(x)))
-            return x
+        ## Mlp
+        x = torch.cat((init_cls_token, x), 1) + torch.cat((cls_token, res), 1)
+        x = x + self.drop_path(self.mlp(self.norm2(x)))
+        return x
 
 
 class Audio_Encoder(nn.Module):
-    def __init__(self, input_channels, encoding_dim=512, strides=[5,2,2,2,2,2,2], kernel_widths=[10,3,3,3,3,2,2]):
+    def __init__(self, input_channels, last_layer_stride, encoding_dim=512, strides=[5,2,2,2,2,2,-1], kernel_widths=[10,3,3,3,3,2,2]):
         super().__init__()
         sr = 16000
+        strides[-1]=last_layer_stride
         self.output_freq = sr / np.prod(strides)
         self.layers = nn.ModuleList()
         in_channel = input_channels
@@ -167,8 +158,31 @@ class Audio_Encoder(nn.Module):
         x = x.transpose(1, 2)
         return x
 
+class TimeEncoding(nn.Module):
+
+    def __init__(self, d_model: int, num_stack, frameskip, dropout: float = 0.1, max_len: int = 5000):
+        super().__init__()
+        self.offset = num_stack * frameskip
+        self.dropout = nn.Dropout(p=dropout)
+
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(1, max_len, 1, d_model)
+        pe[0, :, 0, 0::2] = torch.sin(position * div_term)
+        pe[0, :, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x, start):
+        """
+        Args:
+            x: Tensor, shape [batch_size, seq_len, total_patches, dim]
+        """
+        for i in range(x.size(0)):
+            x[i] = x[i] + self.pe[0, start[i] + self.offset: start[i] + x.size(1) + self.offset]
+        return self.dropout(x)
+
 class MuT(nn.Module):
-    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, num_classes, dim, depth, qkv_bias, heads, mlp_dim, ablation, channels = 3, audio_channels = 2, dim_head = 64, dropout = 0., emb_dropout = 0., drop_path=0.1):
+    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, last_layer_stride, num_classes, dim, depth, qkv_bias, heads, mlp_ratio, ablation, channels, audio_channels, drop_rate = 0., attn_drop_rate = 0., drop_path_rate=0.1):
         super().__init__()
         image_height, image_width = pair(image_size)
         tactile_height, tactile_width = pair(tactile_size)
@@ -181,7 +195,6 @@ class MuT(nn.Module):
         self.modalities = ablation.split('_')
 
 
-
         self.to_patch_embedding_v = nn.Sequential(
             Rearrange('b l c (h p1) (w p2) -> b l (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
             nn.Linear(patch_dim, dim),
@@ -190,7 +203,7 @@ class MuT(nn.Module):
             Rearrange('b l c (h p1) (w p2) -> b l (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
             nn.Linear(patch_dim, dim),
         ) # tactile encoder
-        self.audio_encoder = Audio_Encoder(audio_channels)
+        self.audio_encoder = Audio_Encoder(audio_channels, last_layer_stride)
         self.to_patch_embedding_a = nn.Sequential(
             self.audio_encoder,
             nn.Linear(self.audio_encoder.encoding_dim, dim),
@@ -203,7 +216,7 @@ class MuT(nn.Module):
         num_patches_a = int(num_patches_a)
         self.num_patches_a = num_patches_a
         num_patches_t = (tactile_height // patch_height) * (tactile_width // patch_width)
-
+        print("# of audio patches", num_patches_a, "; # of vision patches", num_patches_v, "; # of tactile patches", num_patches_t)
         # within_image positional encoding
         self.pos_embed_v = nn.Parameter(torch.randn(1, 1, num_patches_v, dim))
         self.pos_embed_a = nn.Parameter(torch.randn(1, 1, num_patches_a, dim))
@@ -216,32 +229,34 @@ class MuT(nn.Module):
         self.modal_enc_t = nn.Parameter(torch.randn(1, 1, 1, dim)
         )
         # time encoding
-        self.time_encoding = nn.Parameter(torch.randn(1, num_stack, 1, dim))
+        self.time_embed = TimeEncoding(dim, num_stack, frameskip, dropout=drop_rate, max_len=1000)
         # class token
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
 
-        self.dropout = nn.Dropout(emb_dropout)
 
+
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]
         self.blocks = nn.ModuleList([
             Block(
-                dim=dim, heads=heads, dim_head=dim_head, mlp_dim=mlp_dim, qkv_bias=qkv_bias,
-                drop=dropout, attn_drop=dropout, drop_path=drop_path)
-            for _ in range(depth)])
+                dim=dim, heads=heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias,
+                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i])
+            for i in range(depth)])
 
         self.to_latent = nn.Identity()
 
+        mlp_hidden_dim = mlp_ratio * dim
         self.action_head = nn.Sequential(
             nn.LayerNorm(dim),
-            nn.Linear(dim, mlp_dim),
-            nn.Linear(mlp_dim, num_classes)
+            nn.Linear(dim, mlp_hidden_dim),
+            nn.Linear(mlp_hidden_dim, num_classes)
         )
         self.xyz_head = nn.Sequential(
             nn.LayerNorm(dim),
-            nn.Linear(dim, mlp_dim),
-            nn.Linear(mlp_dim, 6)
+            nn.Linear(dim, mlp_hidden_dim),
+            nn.Linear(mlp_hidden_dim, 6)
         )
 
-    def forward(self, inputs):
+    def forward(self, inputs, start):
         '''
         Args:
             cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h
@@ -283,13 +298,12 @@ class MuT(nn.Module):
             embeds.append(ag_patch)
         embeds = torch.cat(embeds, dim=2) # [batch, num_frames, total_patches, dim + modal_enc_dim]
         total_patches = embeds.size(2) # total number of patches for one frameskip
-        embeds += self.time_encoding
-        embeds = embeds.view(batch_size, num_frames * total_patches, -1) # [batch, num_frames * total_patches, dim + modal_enc_dim + time_enc_dim]
+        embeds = self.time_embed(embeds, start)
+        embeds = embeds.view(batch_size, num_frames * total_patches, -1) # [batch, num_frames * total_patches, dim]
         
 
-        cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b=batch_size) # [batch, 1, dim + modal_enc_dim + time_enc_dim]
+        cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b=batch_size) # [batch, 1, dim]
         x = torch.cat((cls_tokens, embeds), dim=1)
-        x = self.dropout(x)
 
         for blk in self.blocks:
             x = blk(x, num_frames)
@@ -297,18 +311,63 @@ class MuT(nn.Module):
         x =  x[:, 0]
 
         x = self.to_latent(x)
-        return self.action_head(x), self.xyz_head(x)
+        return self.action_head(x), self.xyz_head(x), None
 
 if __name__ == "__main__":
     '''
     Base model from the paper: Hidden size=768, mlp_size=3072, heads=12, depth=16
     '''
-    model = MuT(image_size=(224, 224), tactile_size=(96, 96), patch_size=16, num_stack=10, frameskip=5, fps=10, num_classes=27, dim=20, depth=5, heads=8, qkv_bias=False, mlp_dim=20, ablation="vf_t_ah").cuda()
-    vf_inp = torch.zeros((4, 10, 3, 224, 224)).float().cuda()
+    import configargparse
+    p = configargparse.ArgParser()
+    import time
+    p.add("-c", "--config", is_config_file=True, default="conf/imi/transformer.yaml")
+    p.add("--batch_size", default=32)
+    p.add("--lr", default=1e-4, type=float)
+    p.add("--gamma", default=0.9, type=float)
+    p.add("--period", default=3)
+    p.add("--epochs", default=65, type=int)
+    p.add("--resume", default=None)
+    p.add("--num_workers", default=8, type=int)
+    # imi_stuff
+    p.add("--exp_name", required=True, type=str)
+    p.add("--action_dim", default=3, type=int)
+    p.add("--num_stack", required=True, type=int)
+    p.add("--frameskip", required=True, type=int)
+    p.add("--use_mha", default=False, action="store_true")
+    # data
+    p.add("--train_csv", default="train.csv")
+    p.add("--val_csv", default="val.csv")
+    p.add("--data_folder", default="data/data_0502/test_recordings")
+    p.add("--resized_height_v", required=True, type=int)
+    p.add("--resized_width_v", required=True, type=int)
+    p.add("--resized_height_t", required=True, type=int)
+    p.add("--resized_width_t", required=True, type=int)
+    p.add("--patch_size", default=16, type=int)
+    p.add("--dim", default=768, type=int)
+    p.add("--depth", default=12, type=int)
+    p.add("--heads", default=12, type=int)
+    p.add("--mlp_ratio", default=4, type=int)
+    p.add("--qkv_bias", action="store_false", default=True)
+    p.add("--last_layer_stride", default=1, type=int)
+
+    p.add("--num_episode", default=None, type=int)
+    p.add("--crop_percent", required=True, type=float)
+    p.add("--ablation", required=True)
+    p.add("--use_flow", default=False, action="store_true")
+    p.add("--use_holebase", default=False, action="store_true")
+    p.add("--task", type=str)
+    p.add("--norm_audio", default=False, action="store_true")
+    p.add("--aux_multiplier", type=float)
+    args = p.parse_args()
+    model = MuT(image_size=(args.resized_height_v, args.resized_width_t), tactile_size=(args.resized_height_t, args.resized_width_t), patch_size=args.patch_size, num_stack=args.num_stack, frameskip=args.frameskip, fps=10, last_layer_stride=args.last_layer_stride, num_classes=3 ** args.action_dim, dim=args.dim, depth=args.depth, qkv_bias=args.qkv_bias, heads=args.heads, mlp_ratio=args.mlp_ratio, ablation=args.ablation, channels=3, audio_channels=2).cuda()
+    vf_inp = torch.zeros((3, 30, 3, 128, 96)).float().cuda()
     vg_inp = None
-    t_inp = torch.zeros((4, 10, 3, 96, 96)).float().cuda()
+    t_inp = torch.zeros((3, 30, 3, 128, 96)).float().cuda()
+    audio_h = torch.zeros((3, 2, 16000 * 150)).float().cuda()
     audio_g = None
-    audio_h = torch.zeros((4, 2, 16000 * 100)).float().cuda()
+    start = -3
     inputs = (vf_inp, vg_inp, t_inp, audio_g, audio_h)
-    a, b = model(inputs)
+    start = time.time()
+    a, b = model(inputs, -150)
+    print(time.time() - start)
     print(a.shape, b.shape)

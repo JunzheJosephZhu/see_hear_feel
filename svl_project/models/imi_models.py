@@ -45,7 +45,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.aux_mlp = torch.nn.Linear(self.layernorm_embed_shape, 6)
 
 
-    def forward(self, inputs):
+    def forward(self, inputs, _):
         '''
         Args:
             cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h

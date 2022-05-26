@@ -1,0 +1,16 @@
+num_stack: 30
+frameskip: 5
+crop_percent: 0.1
+resized_height_v: 128
+resized_width_v: 96
+resized_height_t: 128 #75 #150
+resized_width_t: 96 #100 #200
+patch_size: 16
+ablation: vf_t_ah
+gamma: 0.9
+action_dim: 2
+norm_audio: True
+use_mha: True
+exp_name: "default"
+task: "pouring"
+aux_multiplier: 1

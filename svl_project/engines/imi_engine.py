@@ -35,16 +35,16 @@ class ImiEngine(LightningModule):
 
     def training_step(self, batch, batch_idx):
         # use idx in batch for debugging
-        inputs, demo, xyzrpy_gt, optical_flow = batch
-        action_logits, xyzrpy_pred, weights = self.actor(inputs)  # , idx)
+        inputs, demo, xyzrpy_gt, optical_flow, start = batch
+        action_logits, xyzrpy_pred, weights = self.actor(inputs, start)  # , idx)
         loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
         self.log_dict({"train/immi_loss": immi_loss, "train/aux_loss": aux_loss})
         return loss
 
     def validation_step(self, batch, batch_idx):
-        inputs, demo, xyzrpy_gt, optical_flow = batch  # , idx = batch
-        action_logits, xyzrpy_pred, weights = self.actor(inputs)  # , idx)
-        loss, immi_loss, aux_loss = self.compute_loss(demo, action_pred, xyzrpy_gt, xyzrpy_pred)
+        inputs, demo, xyzrpy_gt, optical_flow, start = batch  # , idx = batch
+        action_logits, xyzrpy_pred, weights = self.actor(inputs, start)  # , idx)
+        loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
         self.log_dict({"val/immi_loss": immi_loss, "val/aux_loss": aux_loss})
         action_pred = torch.argmax(action_logits, dim=1)
         if weights != None and  batch_idx < 225:

@@ -8,9 +8,10 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import torch
 
 # from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
-from svl_project.datasets.imi_dataset import ImitationDataset, ImitationDatasetLabelCount
+from svl_project.datasets.imi_dataset import ImitationDatasetLabelCount
+from svl_project.datasets.transformer_dataset import TransformerDataset
 from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
-from svl_project.models.imi_models import Imitation_Actor_Ablation
+from svl_project.models.mut import MuT
 from svl_project.engines.imi_engine import ImiEngine
 from torch.utils.data import DataLoader
 from itertools import cycle
@@ -45,8 +46,8 @@ def main(args):
     train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
     print("ckpt1")
 
-    train_set = torch.utils.data.ConcatDataset([ImitationDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDataset(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
+    train_set = torch.utils.data.ConcatDataset([TransformerDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
+    val_set = torch.utils.data.ConcatDataset([TransformerDataset(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
     print("ckpt2")
 
     # create weighted sampler to balance samples
@@ -64,14 +65,8 @@ def main(args):
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
     val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False)
     
-    # v encoder
-    v_encoder = make_vision_encoder(args.encoder_dim)
-    # t encoder
-    t_encoder = make_tactile_encoder(args.encoder_dim)
-    # a encoder
-    a_encoder = make_audio_encoder(args.encoder_dim * args.num_stack, args.norm_audio)
-    
-    imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
+
+    imi_model = MuT(image_size=(args.resized_height_v, args.resized_width_t), tactile_size=(args.resized_height_t, args.resized_width_t), patch_size=args.patch_size, num_stack=args.num_stack, frameskip=args.frameskip, fps=10, last_layer_stride=args.last_layer_stride, num_classes=3 ** args.action_dim, dim=args.dim, depth=args.depth, qkv_bias=args.qkv_bias, heads=args.heads, mlp_ratio=args.mlp_ratio, ablation=args.ablation, channels=3, audio_channels=2).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -83,8 +78,9 @@ def main(args):
 if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
-    p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=32)
+    import time
+    p.add("-c", "--config", is_config_file=True, default="conf/imi/transformer.yaml")
+    p.add("--batch_size", default=3)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
@@ -92,9 +88,7 @@ if __name__ == "__main__":
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
-    p.add("--conv_bottleneck", required=True, type=int)
     p.add("--exp_name", required=True, type=str)
-    p.add("--encoder_dim", required=True, type=int)
     p.add("--action_dim", default=3, type=int)
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
@@ -107,17 +101,22 @@ if __name__ == "__main__":
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
     p.add("--resized_width_t", required=True, type=int)
+    p.add("--patch_size", default=16, type=int)
+    p.add("--dim", default=768, type=int)
+    p.add("--depth", default=12, type=int)
+    p.add("--heads", default=12, type=int)
+    p.add("--mlp_ratio", default=4, type=int)
+    p.add("--qkv_bias", action="store_false", default=True)
+    p.add("--last_layer_stride", default=1, type=int)
+
     p.add("--num_episode", default=None, type=int)
     p.add("--crop_percent", required=True, type=float)
     p.add("--ablation", required=True)
-    p.add("--num_heads", required=True, type=int)
     p.add("--use_flow", default=False, action="store_true")
     p.add("--use_holebase", default=False, action="store_true")
     p.add("--task", type=str)
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--aux_multiplier", type=float)
-
-
 
     
 
