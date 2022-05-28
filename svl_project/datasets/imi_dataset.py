@@ -170,8 +170,7 @@ class ImitationDataset(BaseDataset):
         # we are only using left holebase, so only return this channel, audio encoder has been changed from 4 to 3
         if "ah" in self.modalities:
             # spoiled code: now using left holebase mic
-            audio_clip_h = self.clip_resample(self.audio_holebase[0].unsqueeze(0), audio_start, audio_end)
-        
+            audio_clip_h = self.clip_resample(self.audio_holebase.unsqueeze(0), audio_start, audio_end)
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
