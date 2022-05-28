@@ -102,7 +102,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             ag_embeds = self.a_encoder(audio_g)
             ag_embeds = ag_embeds.view(-1, self.layernorm_embed_shape)
             embeds.append(ag_embeds)
-        
+            
         if self.use_mha:
             mlp_inp = torch.stack(embeds, dim=0) # [3, batch, D]
             # batch first=False, (L, N, E)

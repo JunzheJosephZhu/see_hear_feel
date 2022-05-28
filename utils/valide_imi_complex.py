@@ -26,23 +26,6 @@ from tqdm import tqdm
 from save_val_obs import MakeVideo
 import seaborn as sn
 
-# keyboard[keyboard == 0] = 0
-# keyboard[keyboard == 3] = 1
-# keyboard[keyboard == 4] = 2
-# keyboard[keyboard == 5] = 2
-# keyboard[keyboard == 6] = 3
-
-pouring_action_map = {0 : 0,
-                      1 : 3,
-                      2 : 5,
-                      3 : 6}
-
-key_insertion_action_map = {0 : [0, 1, 1],
-                      1 : [2, 1, 1],
-                      2 : [1, 0, 1],
-                      3 : [1, 2, 1],
-                      4 : [1, 1, 0],
-                      5 : [1, 1, 2],}
 
 def collate_fn(batch):
     len_batch = len(batch) # original batch length
@@ -127,16 +110,10 @@ def baselineValidate(args):
     real_actions = []
     pred_labels = []
     real_labels = []
-    if args.pouring:
-        pred_label_cnts = np.zeros(3 ** args.action_dim)
-        real_label_cnts = np.zeros(3 ** args.action_dim)
-        label_correct = np.zeros(3 ** args.action_dim)
-        label_total = np.zeros(3 ** args.action_dim)
-    else:
-        pred_label_cnts = np.zeros(6)
-        real_label_cnts = np.zeros(6)
-        label_correct = np.zeros(6)
-        label_total = np.zeros(6)
+    pred_label_cnts = np.zeros(3 ** args.action_dim)
+    real_label_cnts = np.zeros(3 ** args.action_dim)
+    label_correct = np.zeros(3 ** args.action_dim)
+    label_total = np.zeros(3 ** args.action_dim)
     
     debug_info = True
     
@@ -151,7 +128,7 @@ def baselineValidate(args):
         #     cnt += 1
         #     continue
         # v_gripper_inp, v_fixed_inp, _, _, keyboard = batch
-        v_input, t_input, log_spec, keyboard, audio_clip = batch
+        inputs, demo, _, _ = batch
         if args.save_video:
             # spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
             # # print(spec_nomel.shape)

@@ -40,12 +40,12 @@ class BaseDataset(Dataset):
         with open(os.path.join(trial, "timestamps.json")) as ts:
             timestamps = json.load(ts)
         if load_audio:
-            audio_gripper_left = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
-            audio_gripper_right = sf.read(os.path.join(trial, 'audio_gripper_right.wav'))[0]
-            audio_holebase_left = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
-            audio_holebase_right = sf.read(os.path.join(trial, 'audio_holebase_right.wav'))[0]
-            audio_gripper = torch.as_tensor(np.stack([audio_gripper_left, audio_gripper_right], 0))
-            audio_holebase = torch.as_tensor(np.stack([audio_holebase_left, audio_holebase_right], 0))
+            # audio_gripper_left = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
+            # audio_gripper_right = sf.read(os.path.join(trial, 'audio_gripper_right.wav'))[0]
+            audio_holebase = torch.as_tensor(sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0])
+            # audio_holebase_right = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
+            audio_gripper = None #torch.as_tensor(np.stack([audio_gripper_left, audio_gripper_right], 0))
+            # audio_holebase = torch.as_tensor(np.stack([audio_holebase_left, audio_holebase_right], 0))
         else:
             audio_gripper = None
             audio_holebase = None
@@ -93,7 +93,7 @@ class BaseDataset(Dataset):
         audio_clip = torch.cat(
             [left_pad, audio[:, audio_start:audio_end], right_pad], dim=1
         )
-        # audio_clip = torchaudio.functional.resample(audio_clip, 44100, 16000)
+        audio_clip = torchaudio.functional.resample(audio_clip, 44100, 16000)
         return audio_clip
 
     def __len__(self):
