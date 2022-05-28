@@ -29,7 +29,7 @@ class ImitationDatasetLabelCount(BaseDataset):
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
             y_space = {-.0003: 0, 0: 1, .0003: 2}
-            z_space = {-.0008: 0, 0: 1, .0008: 2}
+            z_space = {-.001: 0, 0: 1, .001: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         return keyboard
 
@@ -181,7 +181,7 @@ class ImitationDataset(BaseDataset):
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
             y_space = {-.0003: 0, 0: 1, .0003: 2}
-            z_space = {-.0008: 0, 0: 1, .0008: 2}
+            z_space = {-.001: 0, 0: 1, .001: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         # 6 D pose
         xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
