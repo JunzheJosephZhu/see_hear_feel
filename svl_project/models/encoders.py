@@ -50,7 +50,7 @@ class Spec_Encoder(Encoder):
     def __init__(self, feature_extractor, out_dim=None, norm_audio=False):
         super().__init__(feature_extractor, out_dim)
         self.norm_audio = norm_audio
-        sr = 44100 #16000
+        sr = 16000
         self.mel = torchaudio.transforms.MelSpectrogram(
             sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
         )

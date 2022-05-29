@@ -75,11 +75,11 @@ class ImitationDataset(BaseDataset):
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.0),
+                T.ColorJitter(brightness=0.1, contrast=0.05, saturation=0.05, hue=0.0),
             ])
             
         else:
-            self.start_frame = self.num_frames - 150
+            self.start_frame = self.num_frames - 100
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self._crop_height_v, self._crop_width_v))

@@ -12,7 +12,7 @@ def save_config(args):
     config_name = os.path.basename(args.config).split(".yaml")[0]
     now = datetime.now()
     dt = now.strftime("%m%d%Y")
-    exp_dir = os.path.join("exp" + dt + 'audio', config_name)
+    exp_dir = os.path.join("exp" + dt, config_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
@@ -24,7 +24,7 @@ def start_training(args, exp_dir, pl_module, monitor="val/acc"):
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints_", args.exp_name),
         filename=exp_time + "-{epoch}-{step}",
-        save_top_k=2,
+        save_top_k=4,
         save_last=True,
         monitor=monitor,
         mode='max'
