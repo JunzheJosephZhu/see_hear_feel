@@ -171,6 +171,7 @@ class ImitationDataset(BaseDataset):
         if "ah" in self.modalities:
             # spoiled code: now using left holebase mic
             audio_clip_h = self.clip_resample(self.audio_holebase.unsqueeze(0), audio_start, audio_end)
+        print(self.audio_holebase.unsqueeze(0).shape)
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
