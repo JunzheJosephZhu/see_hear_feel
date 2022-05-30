@@ -1,4 +1,4 @@
-num_stack: 30
+num_stack: 4
 frameskip: 5
 crop_percent: 0.1
 resized_height_v: 128
@@ -8,9 +8,16 @@ resized_width_t: 96 #100 #200
 patch_size: 16
 ablation: vf_t_ah
 gamma: 0.9
-action_dim: 2
+action_dim: 3
 norm_audio: True
 use_mha: True
 exp_name: "default"
-task: "pouring"
-aux_multiplier: 0
+task: "packing"
+aux_multiplier: 0.1
+epochs: 1000
+
+# transformer settings
+dim: 192
+drop_path: 0.2
+lr: 1e-4
+learn_time_embedding: True

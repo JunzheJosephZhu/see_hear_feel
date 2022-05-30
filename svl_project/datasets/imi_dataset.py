@@ -26,9 +26,9 @@ class ImitationDatasetLabelCount(BaseDataset):
             dy_space = {-.006: 0, 0: 1, .006: 2}
             keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
         else:
-            x_space = {-.0004: 0, 0: 1, .0004: 2}
-            y_space = {-.0004: 0, 0: 1, .0004: 2}
-            z_space = {-.0009: 0, 0: 1, .0009: 2}
+            x_space = {-.0003: 0, 0: 1, .0003: 2}
+            y_space = {-.0003: 0, 0: 1, .0003: 2}
+            z_space = {-.001: 0, 0: 1, .001: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         return keyboard
 
@@ -72,7 +72,7 @@ class ImitationDataset(BaseDataset):
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.02, contrast=0.02, saturation=0.02, hue=0.02),
+                T.ColorJitter(brightness=0.02, contrast=0.02, saturation=0.02),
             ])
             
         else:
@@ -118,8 +118,14 @@ class ImitationDataset(BaseDataset):
         # load audio
         audio_end = end * self.resolution
         audio_start = audio_end - self.audio_len  # why self.sr // 2, and start + sr
-        audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end).float()
-        audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end).float()
+        if self.audio_gripper is not None:
+            audio_clip_g = self.clip_resample(self.audio_gripper, audio_start, audio_end).float()
+        else:
+            audio_clip_g = 0
+        if self.audio_holebase is not None:
+            audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end).float()
+        else:
+            audio_clip_h = 0
 
         # load labels
         keyboard = self.timestamps["action_history"][end]
@@ -128,9 +134,9 @@ class ImitationDataset(BaseDataset):
             dy_space = {-.006: 0, 0: 1, .006: 2}
             keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
         else:
-            x_space = {-.0004: 0, 0: 1, .0004: 2}
-            y_space = {-.0004: 0, 0: 1, .0004: 2}
-            z_space = {-.0009: 0, 0: 1, .0009: 2}
+            x_space = {-.0003: 0, 0: 1, .0003: 2}
+            y_space = {-.0003: 0, 0: 1, .0003: 2}
+            z_space = {-.001: 0, 0: 1, .001: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         xyzrpy = torch.Tensor(self.timestamps["pose_history"][end][:6])
         optical_flow = 0
@@ -142,7 +148,7 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
     p.add("--batch_size", default=32)
-    p.add("--lr", default=1e-4, type=float)
+    p.add("--lr", default=1e-3, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
     p.add("--epochs", default=65, type=int)

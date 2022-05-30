@@ -25,7 +25,7 @@ echo "working directory = "$SLURM_SUBMIT_DIR
 ##########################################
 # example here if using virtualenv
 source /sailhome/josef/.bashrc
-conda activate multi_svl
+conda activate joseph
 echo "Virtual Env Activated"
 ​
 ##############################################################
