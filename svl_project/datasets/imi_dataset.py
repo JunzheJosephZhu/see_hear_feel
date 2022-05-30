@@ -13,7 +13,7 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
         super().__init__(log_file, data_folder)
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(
-            dataset_idx, load_audio=False)
+            dataset_idx)
         self.task = args.task
 
     def __len__(self):
@@ -55,7 +55,7 @@ class ImitationDataset(BaseDataset):
         self._crop_width_v = int(self.resized_width_v * (1.0 - args.crop_percent))
         self._crop_height_t = int(self.resized_height_t * (1.0 - args.crop_percent))
         self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
-        self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, ablation=args.ablation)
         
         # saving the offset
         self.gelsight_offset = torch.as_tensor(
@@ -76,7 +76,7 @@ class ImitationDataset(BaseDataset):
             ])
             
         else:
-            self.start_frame = 240
+            self.start_frame = 0
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self.resized_height_v, self.resized_width_v))

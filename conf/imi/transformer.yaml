@@ -13,4 +13,4 @@ norm_audio: True
 use_mha: True
 exp_name: "default"
 task: "pouring"
-aux_multiplier: 1
+aux_multiplier: 0

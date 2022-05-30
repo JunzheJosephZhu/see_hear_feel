@@ -234,7 +234,6 @@ class MuT(nn.Module):
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
 
 
-
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]
         self.blocks = nn.ModuleList([
             Block(
@@ -305,6 +304,7 @@ class MuT(nn.Module):
         cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b=batch_size) # [batch, 1, dim]
         x = torch.cat((cls_tokens, embeds), dim=1)
 
+        print(torch.any(torch.isnan(x)))
         for blk in self.blocks:
             x = blk(x, num_frames)
 
