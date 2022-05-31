@@ -117,6 +117,7 @@ if __name__ == "__main__":
     p.add("--task", type=str)
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--aux_multiplier", type=float)
+    p.add("--minus_first", default=False, action="store_true")
 
     
 
