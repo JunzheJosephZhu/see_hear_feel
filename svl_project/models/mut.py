@@ -272,7 +272,7 @@ class MuT(nn.Module):
         
         '''
         vf_inp, vg_inp, t_inp, audio_g, audio_h = inputs
-        batch_size, num_frames, _, Hv, Wv = vf_inp.shape
+        batch_size, num_frames, _, Hv, Wv = vg_inp.shape
 
         embeds = []
         # visual

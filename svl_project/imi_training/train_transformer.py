@@ -41,14 +41,10 @@ def main(args):
     else:
         train_num_episode = args.num_episode
         val_num_episode = args.num_episode
-    print("ckpt0")
 
     train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    print("ckpt1")
-
     train_set = torch.utils.data.ConcatDataset([TransformerDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
     val_set = torch.utils.data.ConcatDataset([TransformerDataset(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
-    print("ckpt2")
 
     # create weighted sampler to balance samples
     train_label = []
@@ -96,7 +92,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0528/test_recordings")
+    p.add("--data_folder", default="data/data_pack/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -119,6 +115,7 @@ if __name__ == "__main__":
     p.add("--task", type=str)
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--aux_multiplier", type=float)
+    p.add("--minus_first", default=False, action="store_true")
 
     
 

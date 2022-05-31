@@ -63,6 +63,9 @@ class ImitationDataset(BaseDataset):
                                                                                                    1) / 255
         self.action_dim = args.action_dim
         self.task = args.task
+        self.minus_first = args.minus_first
+        self.use_flow = args.use_flow
+        self.modalities = args.ablation.split('_')
         
         if self.train:
             self.start_frame = 0
@@ -72,17 +75,18 @@ class ImitationDataset(BaseDataset):
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.02, contrast=0.02, saturation=0.02),
+                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.2),
             ])
             
         else:
-            self.start_frame = 0
+            self.start_frame = self.num_frames - 100
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.CenterCrop((self.resized_height_v, self.resized_width_v))
+                T.CenterCrop((self._crop_height_v, self._crop_height_v))
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
+                T.CenterCrop((self._crop_height_t, self._crop_height_t))
             ])
 
 
@@ -97,23 +101,62 @@ class ImitationDataset(BaseDataset):
         frame_idx = np.arange(start, end + 1, self.frameskip)
         frame_idx[frame_idx < 0] = -1
         # images
-        cam_gripper_framestack = torch.stack(
-                [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep))
+        # to speed up data loading, do not load img if not using
+        cam_gripper_framestack = 0
+        cam_fixed_framestack = 0
+        tactile_framestack = 0
+
+        # load first frame for better alignment
+        if self.minus_first:
+            if self.use_flow:
+                offset = torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(0) + ".pt"))).type(
+                        torch.FloatTensor)
+            else:
+                offset = self.load_image(self.trial, "left_gelsight_frame", 0)
+        else:
+            if self.use_flow:
+                offset = torch.from_numpy(
+                        torch.load(os.path.join(self.data_folder, "flow_offset.pt"))).type(
+                        torch.FloatTensor)
+            else:
+                offset = self.gelsight_offset
+
+        if "vg" in self.modalities:
+            cam_gripper_framestack = torch.stack(
+                    [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep))
+                        for timestep in frame_idx], dim=0)
+        if "vf" in self.modalities:
+            cam_fixed_framestack = torch.stack(
+                    [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep))
                     for timestep in frame_idx], dim=0)
-        cam_fixed_framestack = torch.stack(
-                [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep))
-                 for timestep in frame_idx], dim=0)
-        tactile_framestack = torch.stack(
-            [(self.transform_gel(
-                self.load_image(self.trial, "left_gelsight_frame", timestep) - self.gelsight_offset
-            ) + 0.5).clamp(0, 1) for
-            timestep in frame_idx], dim=0)
+        if "t" in self.modalities:       
+            if self.use_flow:
+                tactile_framestack = torch.stack(
+                    [torch.from_numpy(
+                        torch.load(os.path.join(self.trial, "left_gelsight_flow", str(timestep) + ".pt"))).type(
+                        torch.FloatTensor) - offset
+                    for timestep in frame_idx], dim=0)
+            else:     
+                tactile_framestack = torch.stack(
+                    [(self.transform_gel(
+                        self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
+                     + 0.5).clamp(0, 1)) for
+                    timestep in frame_idx], dim=0)
 
         # random cropping
         if self.train:
             img = self.transform_cam(self.load_image(self.trial, "cam_fixed_color", end))
             i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))
-            cam_gripper_framestack = cam_gripper_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
+            if "vg"in self.modalities:
+                cam_gripper_framestack = cam_gripper_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
+            if "vf"in self.modalities:
+                cam_fixed_framestack = cam_fixed_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
+            if "t" in self.modalities:
+                if not self.use_flow:
+                    img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
+                    i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
+                    tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
 
         # load audio
         audio_end = end * self.resolution
