@@ -14,7 +14,7 @@ use_mha: True
 exp_name: "default"
 task: "packing"
 aux_multiplier: 0.1
-epochs: 1000
+epochs: 100
 minus_first: True
 
 # transformer settings
