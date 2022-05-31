@@ -6,10 +6,10 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=50G
-#SBATCH --gres=gpu:1
-#SBATCH --job-name="immi"
-#SBATCH --output=logs/immi_slurm_%A.out
-#SBATCH --error=logs/immi_slurm_%A.err
+#SBATCH --gres=gpu:4
+#SBATCH --job-name="trans"
+#SBATCH --output=logs/trans_slurm_%A.out
+#SBATCH --error=logs/trans_slurm_%A.err
 ​
 ######################
 # Begin work section #
@@ -39,4 +39,4 @@ cd svl_project
 # Run your script #
 ###################
 echo "running command : <RUN_COMMAND>"
-python svl_project/imi_training/train_imitaion_Ablation.py
+python svl_project/imi_training/train_transformer.py --num_stack 10

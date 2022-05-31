@@ -41,14 +41,10 @@ def main(args):
     else:
         train_num_episode = args.num_episode
         val_num_episode = args.num_episode
-    print("ckpt0")
 
     train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    print("ckpt1")
-
     train_set = torch.utils.data.ConcatDataset([TransformerDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
     val_set = torch.utils.data.ConcatDataset([TransformerDataset(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
-    print("ckpt2")
 
     # create weighted sampler to balance samples
     train_label = []
@@ -65,8 +61,12 @@ def main(args):
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler)
     val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False)
     
-
-    imi_model = MuT(image_size=(args.resized_height_v, args.resized_width_t), tactile_size=(args.resized_height_t, args.resized_width_t), patch_size=args.patch_size, num_stack=args.num_stack, frameskip=args.frameskip, fps=10, last_layer_stride=args.last_layer_stride, num_classes=3 ** args.action_dim, dim=args.dim, depth=args.depth, qkv_bias=args.qkv_bias, heads=args.heads, mlp_ratio=args.mlp_ratio, ablation=args.ablation, channels=3, audio_channels=2).cuda()
+    _crop_height_v = int(args.resized_height_v * (1.0 - args.crop_percent))
+    _crop_width_v = int(args.resized_width_v * (1.0 - args.crop_percent))
+    _crop_height_t = int(args.resized_height_t * (1.0 - args.crop_percent))
+    _crop_width_t = int(args.resized_width_t * (1.0 - args.crop_percent))
+    print(_crop_height_v, _crop_width_v,_crop_height_t, _crop_width_t)
+    imi_model = MuT(image_size=(_crop_height_v, _crop_width_v), tactile_size=(_crop_height_t, _crop_width_t), patch_size=args.patch_size, num_stack=args.num_stack, frameskip=args.frameskip, fps=10, last_layer_stride=args.last_layer_stride, num_classes=3 ** args.action_dim, dim=args.dim, depth=args.depth, qkv_bias=args.qkv_bias, heads=args.heads, mlp_ratio=args.mlp_ratio, ablation=args.ablation, channels=3, audio_channels=1, learn_time_embedding=args.learn_time_embedding, drop_path_rate=args.drop_path).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -80,11 +80,11 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     import time
     p.add("-c", "--config", is_config_file=True, default="conf/imi/transformer.yaml")
-    p.add("--batch_size", default=3)
-    p.add("--lr", default=1e-4, type=float)
+    p.add("--batch_size", default=16)
+    p.add("--lr", default=5e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
-    p.add("--epochs", default=65, type=int)
+    p.add("--epochs", default=1000, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
     # imi_stuff
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0502/test_recordings")
+    p.add("--data_folder", default="data/data_0528_flat/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -108,6 +108,8 @@ if __name__ == "__main__":
     p.add("--mlp_ratio", default=4, type=int)
     p.add("--qkv_bias", action="store_false", default=True)
     p.add("--last_layer_stride", default=1, type=int)
+    p.add("--learn_time_embedding", default=False, action="store_true")
+    p.add("--drop_path", default=0.1, type=float)
 
     p.add("--num_episode", default=None, type=int)
     p.add("--crop_percent", required=True, type=float)

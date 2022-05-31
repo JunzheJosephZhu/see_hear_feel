@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=50G
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:4
 #SBATCH --job-name="immi"
 #SBATCH --output=logs/immi_slurm_%A.out
 #SBATCH --error=logs/immi_slurm_%A.err
@@ -34,41 +34,14 @@ echo "Virtual Env Activated"
 # export LD_LIBRARY_PATH=/usr/local/cuda-9.1/lib64:/usr/lib/x86_64-linux-gnu 
 echo "Working with the LD_LIBRARY_PATH: "$LD_LIBRARY_PATH
 
-cd svl_fs
+cd svl_project
 ###################
 # Run your script #
 ###################
 echo "running command : <RUN_COMMAND>"
-# pour
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/pour/imi_learn_ablation_vf_pour.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_pour.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_pour_mha.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour_mha.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour_mha.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour_mha_norm.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha_norm.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_t_pour_mha_norm.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_pour.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_pour_norm.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_a_pour_norm_freq.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_a_pour_mha_norm_freq.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_vf_t_a_pour_mha_norm_freq.yaml
-
-
-
-
-# key insertion
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_a.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_mha.yaml
-# python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_a_mha.yaml
-python svl_project/imi_training/train_imitaion_Ablation.py --config conf/imi/imi_learn_ablation_v_t_a_mha.yaml
-
-
+# packing
+# python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg --ablation vg 
+# python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg_t --ablation vg_t 
+# python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg_a --ablation vg_ah 
+python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg_t_a --ablation vg_t_ah 
 

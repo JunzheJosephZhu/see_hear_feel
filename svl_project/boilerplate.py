@@ -19,11 +19,13 @@ def save_config(args):
     return exp_dir
 
 def start_training(args, exp_dir, pl_module, monitor="val/acc"):
-    exp_time = datetime.now().strftime("%m-%d-%H:%M:%S") + "-v" + str(np.random.randint(0, 1000))
+    # jobid = np.random.randint(0, 1000)
+    # jobid = os.environ["SLURM_JOB_ID"]
+    exp_time = datetime.now().strftime("%m-%d-%H:%M:%S") + "-jobid=" #+ str(jobid)
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints"),
         filename=exp_time + "-{epoch}-{step}",
-        save_top_k=2,
+        save_top_k=4,
         save_last=True,
         monitor=monitor,
         mode='max'

@@ -1,13 +1,13 @@
 num_stack: 4
 frameskip: 5
-crop_percent: 0.1
-resized_height_v: 120
-resized_width_v: 160
-resized_height_t: 60 #75 #150 #128
-resized_width_t: 80 #100 #200 #96
+crop_percent: 0.085
+resized_height_v: 140 #128
+resized_width_v: 105 #96
+resized_height_t: 140  #128
+resized_width_t: 105 #96
 patch_size: 16
 ablation: vg_t_ah
-gamma: 0.8
+gamma: 0.9
 action_dim: 3
 norm_audio: True
 use_mha: True
@@ -16,7 +16,6 @@ task: "packing"
 aux_multiplier: 0.1
 epochs: 1000
 minus_first: True
-
 
 # transformer settings
 dim: 192
