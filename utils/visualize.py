@@ -19,7 +19,7 @@ import seaborn as sn
 # tstamp = '2022-05-25 21:23:31.039337'
 # tstamp = '2022-05-25 21:30:36.564805'
 # tstamp = '2022-05-25 21:39:05.821838'
-tstamp = '2022-05-29 01:48:54.479344'
+tstamp = '2022-05-30 22:20:55.817817'
 
 
 # DIR = '../test_recordings/pack_v_t_flat/' + tstamp
@@ -50,7 +50,7 @@ item_list = {
     9: 'confusion_matrix'
 }
 test_items = [1,3,5,9]
-ablation = 'v_t'
+ablation = 'v_a'
 
 
 class Tests():
