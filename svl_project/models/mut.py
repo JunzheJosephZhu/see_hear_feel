@@ -160,29 +160,35 @@ class Audio_Encoder(nn.Module):
 
 class TimeEncoding(nn.Module):
 
-    def __init__(self, d_model: int, num_stack, frameskip, dropout: float = 0.1, max_len: int = 5000):
+    def __init__(self, d_model: int, num_stack, frameskip, learn_time_embedding, dropout: float = 0.1, max_len: int = 5000):
         super().__init__()
         self.offset = num_stack * frameskip
         self.dropout = nn.Dropout(p=dropout)
-
+        # position embedding
         position = torch.arange(max_len).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
         pe = torch.zeros(1, max_len, 1, d_model)
         pe[0, :, 0, 0::2] = torch.sin(position * div_term)
         pe[0, :, 0, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe)
+        # learnable embedding
+        self.time_embedding = nn.Parameter(torch.randn(1, num_stack, 1, d_model))
+        self.learn_time_embedding = learn_time_embedding
 
     def forward(self, x, start):
         """
         Args:
             x: Tensor, shape [batch_size, seq_len, total_patches, dim]
         """
-        for i in range(x.size(0)):
-            x[i] = x[i] + self.pe[0, start[i] + self.offset: start[i] + x.size(1) + self.offset]
+        if self.learn_time_embedding:
+            x = x + self.time_embedding
+        else:
+            for i in range(x.size(0)):
+                x[i] = x[i] + self.pe[0, start[i] + self.offset: start[i] + x.size(1) + self.offset]
         return self.dropout(x)
 
 class MuT(nn.Module):
-    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, last_layer_stride, num_classes, dim, depth, qkv_bias, heads, mlp_ratio, ablation, channels, audio_channels, drop_rate = 0., attn_drop_rate = 0., drop_path_rate=0.1):
+    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, last_layer_stride, num_classes, dim, depth, qkv_bias, heads, mlp_ratio, ablation, channels, audio_channels, learn_time_embedding=False, drop_rate = 0., attn_drop_rate = 0., drop_path_rate=0.1):
         super().__init__()
         image_height, image_width = pair(image_size)
         tactile_height, tactile_width = pair(tactile_size)
@@ -229,10 +235,9 @@ class MuT(nn.Module):
         self.modal_enc_t = nn.Parameter(torch.randn(1, 1, 1, dim)
         )
         # time encoding
-        self.time_embed = TimeEncoding(dim, num_stack, frameskip, dropout=drop_rate, max_len=1000)
+        self.time_embed = TimeEncoding(dim, num_stack, frameskip, dropout=drop_rate, max_len=1000, learn_time_embedding=learn_time_embedding)
         # class token
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim))
-
 
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]
@@ -267,7 +272,7 @@ class MuT(nn.Module):
         
         '''
         vf_inp, vg_inp, t_inp, audio_g, audio_h = inputs
-        batch_size, num_frames, _, Hv, Wv = vf_inp.shape
+        batch_size, num_frames, _, Hv, Wv = vg_inp.shape
 
         embeds = []
         # visual
@@ -349,6 +354,7 @@ if __name__ == "__main__":
     p.add("--mlp_ratio", default=4, type=int)
     p.add("--qkv_bias", action="store_false", default=True)
     p.add("--last_layer_stride", default=1, type=int)
+    p.add("--drop_path", default=0.1, type=float)
 
     p.add("--num_episode", default=None, type=int)
     p.add("--crop_percent", required=True, type=float)

@@ -65,7 +65,7 @@ def main(args):
     _crop_width_v = int(args.resized_width_v * (1.0 - args.crop_percent))
     _crop_height_t = int(args.resized_height_t * (1.0 - args.crop_percent))
     _crop_width_t = int(args.resized_width_t * (1.0 - args.crop_percent))
-    print(_crop_height_v, _crop_width_v,_crop_height_t, _crop_width_t)
+
     imi_model = MuT(image_size=(_crop_height_v, _crop_width_v), tactile_size=(_crop_height_t, _crop_width_t), patch_size=args.patch_size, num_stack=args.num_stack, frameskip=args.frameskip, fps=10, last_layer_stride=args.last_layer_stride, num_classes=3 ** args.action_dim, dim=args.dim, depth=args.depth, qkv_bias=args.qkv_bias, heads=args.heads, mlp_ratio=args.mlp_ratio, ablation=args.ablation, channels=3, audio_channels=1, learn_time_embedding=args.learn_time_embedding, drop_path_rate=args.drop_path).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
