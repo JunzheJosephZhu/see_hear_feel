@@ -9,6 +9,7 @@ import numpy as np
 import random
 from PIL import Image, ImageEnhance
 import time
+import cv2
 
 class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
@@ -75,7 +76,7 @@ class ImitationDataset(BaseDataset):
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.1, contrast=0.05, saturation=0.05, hue=0.0),
+                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.2),
             ])
             
         else:
@@ -141,8 +142,16 @@ class ImitationDataset(BaseDataset):
                 tactile_framestack = torch.stack(
                     [(self.transform_gel(
                         self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
-                    ) + 0.5).clamp(0, 1) for
+                     + 0.5).clamp(0, 1)) for
                     timestep in frame_idx], dim=0)
+                
+                # img = (self.transform_gel(
+                #         self.load_image(self.trial, "left_gelsight_frame", end) - offset
+                #      + 0.5).clamp(0, 1)).numpy().transpose(1, 2, 0)        
+                # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                # cv2.imshow('asda', img)
+                # cv2.waitKey(10000)
+            
 
         # random cropping
         if self.train:
@@ -171,7 +180,6 @@ class ImitationDataset(BaseDataset):
         if "ah" in self.modalities:
             # spoiled code: now using left holebase mic
             audio_clip_h = self.clip_resample(self.audio_holebase.unsqueeze(0), audio_start, audio_end)
-        print(self.audio_holebase.unsqueeze(0).shape)
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
