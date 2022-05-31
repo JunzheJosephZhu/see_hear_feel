@@ -82,11 +82,11 @@ class ImitationDataset(BaseDataset):
             self.start_frame = self.num_frames - 100
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.CenterCrop((self._crop_height_v, self._crop_height_v))
+                T.CenterCrop((self._crop_height_v, self._crop_width_v))
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.CenterCrop((self._crop_height_t, self._crop_height_t))
+                T.CenterCrop((self._crop_height_t, self._crop_width_t))
             ])
 
 
