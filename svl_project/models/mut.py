@@ -268,7 +268,7 @@ class MuT(nn.Module):
         '''
         vf_inp, vg_inp, t_inp, audio_g, audio_h = inputs
         batch_size, num_frames, _, Hv, Wv = vf_inp.shape
-        print(vg_inp.shape)
+
         embeds = []
         # visual
         if "vf" in self.modalities:
