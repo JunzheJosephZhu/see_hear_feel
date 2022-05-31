@@ -1,3 +1,4 @@
+from email.mime import audio
 import sys
 
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
@@ -15,17 +16,25 @@ import pandas as pd
 import torch
 import shutil
 import seaborn as sn
+import torchaudio
 
-tstamp = '2022-05-12 17:27:19.588014'
-DIR = '../test_recordings/' + tstamp
-# DIR = '../data_0504/test_recordings/' + tstamp
+# tstamp = '2022-05-25 21:23:31.039337'
+# tstamp = '2022-05-25 21:30:36.564805'
+# tstamp = '2022-05-25 21:39:05.821838'
+tstamp = '2022-05-28 22:00:07.310100'
+
+
+# DIR = '../test_recordings/pack_v_a/' + tstamp
+# DIR = '../test_recordings/' + tstamp
+DIR = '../data_0528_flat/test_recordings/' + tstamp
+
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
 print(f"data.hdf5 keys: {f.keys()}")
-with open(os.path.join(DIR, 'timestamps.json')) as j:
-    json_data = json.load(j)
-print(f"timestamps.json keys: {json_data.keys()}")
 try:
+    with open(os.path.join(DIR, 'timestamps.json')) as j:
+        json_data = json.load(j)
+    print(f"timestamps.json keys: {json_data.keys()}")
     action_history = json_data['action_history']
     print(f"Found action history with {len(action_history)} entries")
 except:
@@ -42,8 +51,8 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [1,3,5]
-ablation = 'v'
+test_items = [5]
+ablation = 'v_a'
 
 
 class Tests():
@@ -87,7 +96,6 @@ class Tests():
             )
         for s in tqdm(f[self.test_item].iter_chunks()):
             weights = f[self.test_item][s]
-            # print(f"weights {weights} {weights.shape}")
             modalities = ablation.split('_')
             use_vision = 'v' in modalities
             use_tactile = 't' in modalities
@@ -124,22 +132,41 @@ class Tests():
         audio_buffer = f[self.test_item]
         if self.store:
             import soundfile as sd
+            print(audio_buffer.dtype)
+            audio_buffer = audio_buffer[:]
+            # audio_buffer = np.clip(audio_buffer, a_min  = 0.00005, a_max=1)
+            # audio_buffer *= 10
             fs = 44100
             sd.write(
                 file=self.path + '.wav',
-                data=audio_buffer[:],
+                data=audio_buffer,
                 samplerate=fs
             )
         else:
             plt.figure()
+            sr = 44100
             audio_buffer_arr = audio_buffer[:]
-            x_lim = np.arange(0, len(audio_buffer)) / 4410
-            audio_buffer_arr = np.abs(audio_buffer[:])
-            audio_buffer_arr = np.clip(audio_buffer_arr,
-                                       a_min=0,
-                                       a_max=0.5)
-            plt.plot(x_lim, audio_buffer_arr)
-            plt.title(self.test_item)
+            # steps = np.arange(0, len(audio_buffer))
+            steps = np.arange(int(17 * 44100), int(19* 44100))
+            # steps = np.arange(6 * 44100, 8 * 44100)
+            audio_clip = audio_buffer[steps[0]: steps[-1], 0]
+            timesteps = steps / 44100
+            audio_tensor = torch.tensor(audio_clip)
+            mel = torchaudio.transforms.MelSpectrogram(
+                sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
+            )
+            spec = torch.log(mel(audio_tensor))
+            print(spec.shape)
+            plt.imshow(spec)
+
+            # x_lim = np.arange(0, len(audio_buffer)) / 4410
+            # audio_buffer_arr = np.abs(audio_buffer[:])
+            # # audio_buffer_arr = np.clip(audio_buffer_arr, a_min  = 0.00005, a_max=1)
+            # audio_buffer_arr = np.clip(audio_buffer_arr,
+            #                            a_min=0,
+            #                            a_max=0.5)
+            # plt.plot(x_lim, audio_buffer_arr)
+            # plt.title(self.test_item)
             plt.show()
 
     def test_img(self):
