@@ -16,5 +16,5 @@ use_mha: True
 exp_name: default
 task: "insertion"
 aux_multiplier: 1.0
-# minus_first: True
+minus_first: True
 # use_flow: True
