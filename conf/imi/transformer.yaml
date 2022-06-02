@@ -1,4 +1,4 @@
-num_stack: 4
+num_stack: 5
 frameskip: 5
 crop_percent: 0.085
 resized_height_v: 140 #128
@@ -14,11 +14,11 @@ use_mha: True
 exp_name: "default"
 task: "packing"
 aux_multiplier: 0.1
-epochs: 1000
+epochs: 100
 minus_first: True
 
 # transformer settings
-dim: 192
+dim: 128
 drop_path: 0.2
 lr: 1e-4
 learn_time_embedding: True
