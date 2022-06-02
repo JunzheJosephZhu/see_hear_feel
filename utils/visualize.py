@@ -21,12 +21,12 @@ import torchaudio
 # tstamp = '2022-05-25 21:23:31.039337'
 # tstamp = '2022-05-25 21:30:36.564805'
 # tstamp = '2022-05-25 21:39:05.821838'
-tstamp = '2022-05-28 22:00:07.310100'
+tstamp = '2022-05-29 01:48:54.479344'
 
 
 # DIR = '../test_recordings/pack_v_a/' + tstamp
-# DIR = '../test_recordings/' + tstamp
-DIR = '../data_0528_flat/test_recordings/' + tstamp
+DIR = '../test_recordings/' + tstamp
+# DIR = '../data_0528_flat/test_recordings/' + tstamp
 
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
@@ -51,7 +51,7 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [5]
+test_items = [1,3,5]
 ablation = 'v_a'
 
 
@@ -167,7 +167,7 @@ class Tests():
             #                            a_max=0.5)
             # plt.plot(x_lim, audio_buffer_arr)
             # plt.title(self.test_item)
-            plt.show()
+            # plt.show()
 
     def test_img(self):
         if self.test_item == 'left_gelsight_frame':
