@@ -1,6 +1,6 @@
 #!/bin/bash
 # Usage: sbatch run_slurm.sh
-#SBATCH --partition=svl --qos=normal
+#SBATCH --partition=svl --qos=normal 
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -25,7 +25,7 @@ echo "working directory = "$SLURM_SUBMIT_DIR
 ##########################################
 # example here if using virtualenv
 source /sailhome/li2053/.bashrc
-conda activate svl_multi
+conda activate svl_multi_trans
 echo "Virtual Env Activated"
 
 ##############################################################
@@ -34,7 +34,7 @@ echo "Virtual Env Activated"
 # export LD_LIBRARY_PATH=/usr/local/cuda-9.1/lib64:/usr/lib/x86_64-linux-gnu 
 echo "Working with the LD_LIBRARY_PATH: "$LD_LIBRARY_PATH
 
-cd svl_project
+cd svl_project_
 ###################
 # Run your script #
 ###################
@@ -43,5 +43,11 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg --ablation vg 
 # python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg_t --ablation vg_t 
 # python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg_a --ablation vg_ah 
-python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg_t_a --ablation vg_t_ah 
+# python svl_project/imi_training/train_transformer.py --num_stack 10 --exp_name _vg_t_a --ablation vg_t_ah
+python svl_project/imi_training/train_transformer.py --exp_name vg_t_a_120_s4 --ablation vg_t_ah --dim 120 --num_stack 4
+
+
+
+
+
 
