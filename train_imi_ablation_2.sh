@@ -24,7 +24,7 @@ echo "working directory = "$SLURM_SUBMIT_DIR
 # Setting up virtualenv / conda / docker #
 ##########################################
 # example here if using virtualenv
-source /sailhome/li2053/.bashrc
+source /sailhome/zhangyz/.bashrc
 conda activate svl_multi_trans
 echo "Virtual Env Activated"
 
@@ -40,15 +40,19 @@ cd svl_project_
 ###################
 echo "running command : <RUN_COMMAND>"
 # packing
-# python svl_project/imi_training/train_transformer.py --exp_name vg_120_less --ablation vg --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+python svl_project/imi_training/train_transformer.py --exp_name vg_120_less --ablation vg --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_120_less --ablation vg_t --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_a_120_less --ablation vg_ah --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_120_less --ablation vg_t_ah --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
 
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_120_less_d3 --ablation vg_t_ah --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv --drop_path 0.3
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_120_less_d4 --ablation vg_t_ah --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv --drop_path 0.4
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_120_less_d5 --ablation vg_t_ah --dim 120 --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv --drop_path 0.5
+
 # python svl_project/imi_training/train_transformer.py --exp_name vg_t_a_192_2 --ablation vg_t_ah --dim 192 --drop_path 0.2
 # python svl_project/imi_training/train_transformer.py --exp_name vg_t_a_192_3 --ablation vg_t_ah --dim 192 --drop_path 0.3
 
-python svl_project/imi_training/train_transformer.py --exp_name vg_t_a_60_2 --ablation vg_t_ah --dim 60 --drop_path 0.2
+# python svl_project/imi_training/train_transformer.py --exp_name vg_t_a_60_2 --ablation vg_t_ah --dim 60 --drop_path 0.2
 # python svl_project/imi_training/train_transformer.py --exp_name vg_t_a_60_3 --ablation vg_t_ah --dim 60 --drop_path 0.3
 
 # python svl_project/imi_training/train_transformer.py --exp_name vg_t_a_120_s4 --ablation vg_t_ah --dim 120 --num_stack 4
