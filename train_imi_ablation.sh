@@ -39,20 +39,17 @@ cd svl_fs
 # Run your script #
 ###################
 echo "running command : <RUN_COMMAND>"
-# insertion
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg 
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t 
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_tf --use_flow --ablation vg_t
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a --ablation vg_ah 
-python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_tf_a --use_flow --ablation vg_t_ah
+# packing
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name vg_less --ablation vg --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_less --ablation vg_t --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_less --ablation vg_ah --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_less --ablation vg_t_ah --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
 
-# no_fs
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_nfs --ablation vg
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_nfs --ablation vg_t
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_nfs --ablation vg_a
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_nfs --ablation vg_t_a
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_tf_a_nfs --use_flow --ablation vg_t_a
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_less_m --ablation vg --use_mha --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_less_m --ablation vg_t --use_mha --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_less_m --ablation vg_ah --use_mha --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_less_m --ablation vg_t_ah --use_mha --data_folder data/data_pack_final_2/test_recordings --train_csv train_2.csv --val_csv val_2.csv
+
 
 # pour
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg --aux_multiplier 0.0

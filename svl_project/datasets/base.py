@@ -26,7 +26,7 @@ class BaseDataset(Dataset):
         pass
 
 
-    def get_episode(self, idx, load_audio=True):
+    def get_episode(self, idx, load_audio=True, ablation=""):
         """
         Return:
             folder for trial
@@ -34,21 +34,33 @@ class BaseDataset(Dataset):
             audio tracks
             number of frames in episode
         """
+        modes = ablation.split("_")
+        def load(file):
+            fullpath = os.path.join(trial, file)
+            if os.path.exists(fullpath):
+                return sf.read(fullpath)[0]
+            else:
+                return None
         format_time = self.logs.iloc[idx].Time#.replace(":", "_")
         # print("override" + '#' * 50)
         trial = os.path.join(self.data_folder, format_time)
         with open(os.path.join(trial, "timestamps.json")) as ts:
             timestamps = json.load(ts)
-        if load_audio:
-            # audio_gripper_left = sf.read(os.path.join(trial, 'audio_gripper_left.wav'))[0]
-            # audio_gripper_right = sf.read(os.path.join(trial, 'audio_gripper_right.wav'))[0]
-            audio_holebase = torch.as_tensor(sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0])
-            # audio_holebase_right = sf.read(os.path.join(trial, 'audio_holebase_left.wav'))[0]
-            audio_gripper = None #torch.as_tensor(np.stack([audio_gripper_left, audio_gripper_right], 0))
-            # audio_holebase = torch.as_tensor(np.stack([audio_holebase_left, audio_holebase_right], 0))
+        if "ag" in modes:
+            audio_gripper_left = load("audio_gripper_left.wav")
+            audio_gripper_right = load('audio_gripper_right.wav')
+            audio_gripper = [x for x in [audio_gripper_left, audio_gripper_right] if x is not None]
+            audio_gripper = torch.as_tensor(np.stack(audio_gripper, 0))
         else:
             audio_gripper = None
-            audio_holebase = None
+        if "ah" in modes:
+            audio_holebase_left = load('audio_holebase_left.wav')
+            audio_holebase_right = load('audio_holebase_right.wav')
+            audio_holebase = [x for x in [audio_holebase_left, audio_holebase_right] if x is not None]
+            audio_holebase = torch.as_tensor(np.stack(audio_holebase, 0))
+        else:
+            audio_holebase=None
+
         return trial, timestamps, audio_gripper, audio_holebase, len(timestamps["action_history"])
 
 

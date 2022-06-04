@@ -14,7 +14,7 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
         super().__init__(log_file, data_folder)
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(
-            dataset_idx, load_audio=False)
+            dataset_idx, load_audio=False, ablation=args.ablation)
         self.task = args.task
 
     def __len__(self):
@@ -55,7 +55,7 @@ class ImitationDataset(BaseDataset):
         self._crop_width_v = int(self.resized_width_v * (1.0 - args.crop_percent))
         self._crop_height_t = int(self.resized_height_t * (1.0 - args.crop_percent))
         self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
-        self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True, ablation=args.ablation)
         
         # saving the offset
         self.gelsight_offset = torch.as_tensor(
@@ -75,11 +75,11 @@ class ImitationDataset(BaseDataset):
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.1, contrast=0.05, saturation=0.05, hue=0.0),
+                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.2),
             ])
             
         else:
-            self.start_frame = self.num_frames - 100
+            self.start_frame = self.num_frames - 200
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self._crop_height_v, self._crop_width_v))
@@ -141,7 +141,7 @@ class ImitationDataset(BaseDataset):
                 tactile_framestack = torch.stack(
                     [(self.transform_gel(
                         self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
-                    ) + 0.5).clamp(0, 1) for
+                     + 0.5).clamp(0, 1)) for
                     timestep in frame_idx], dim=0)
 
         # random cropping
@@ -170,7 +170,7 @@ class ImitationDataset(BaseDataset):
         # we are only using left holebase, so only return this channel, audio encoder has been changed from 4 to 3
         if "ah" in self.modalities:
             # spoiled code: now using left holebase mic
-            audio_clip_h = self.clip_resample(self.audio_holebase.unsqueeze(0), audio_start, audio_end)
+            audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end)
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":

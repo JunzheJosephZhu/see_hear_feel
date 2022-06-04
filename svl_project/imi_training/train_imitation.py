@@ -68,7 +68,7 @@ def main(args):
     else:
         t_encoder = make_tactile_encoder(args.encoder_dim)
     # a encoder
-    a_encoder = make_audio_encoder(args.encoder_dim * (2 * args.num_stack - 1), args.norm_audio)
+    a_encoder = make_audio_encoder(args.encoder_dim * args.num_stack, args.norm_audio)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0528_flat/test_recordings")
+    p.add("--data_folder", default="data/data_pack_final/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
