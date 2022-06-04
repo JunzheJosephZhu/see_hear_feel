@@ -1,6 +1,4 @@
-from email.mime import audio
 import sys
-
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import numpy as np
@@ -10,21 +8,23 @@ import matplotlib.pyplot as plt
 import argparse
 import os
 import moviepy.editor as mpe
+print("!!!")
 from tqdm import tqdm
 import json
 import pandas as pd
-import torch
+# import torch
 import shutil
 import seaborn as sn
-import torchaudio
-
+# import torchaudio
 # tstamp = '2022-05-25 21:23:31.039337'
 # tstamp = '2022-05-25 21:30:36.564805'
 # tstamp = '2022-05-25 21:39:05.821838'
-tstamp = '2022-05-27 16:07:55.136789'
+tstamp = '2022-05-29 01:48:54.479344'
 
 
-# DIR = '../test_recordings/pack_v_a/' + tstamp
+# DIR = '../test_recordings/pack_v_t_flat/' + tstamp
+# DIR = '../data_0528_flat/test_recordings/' + tstamp
+
 DIR = '../test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
@@ -49,8 +49,8 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [5]
-ablation = 'v_a'
+test_items = [1,3,5,9]
+ablation = 'v_t'
 
 
 class Tests():
@@ -143,11 +143,12 @@ class Tests():
         else:
             plt.figure()
             sr = 44100
-            audio_buffer_arr = audio_buffer[:]
-            # steps = np.arange(0, len(audio_buffer))
-            # # steps = np.arange(15 * 44100, 17 * 44100)
+            # audio_buffer_arr = audio_buffer[:]
+            # print(audio_buffer.shape)
+            # # steps = np.arange(0, len(audio_buffer))
+            # steps = np.arange(int(16 * 44100), int(17 * 44100))
             # # steps = np.arange(6 * 44100, 8 * 44100)
-            # audio_clip = audio_buffer[steps[0]: steps[-1]]
+            # audio_clip = audio_buffer[steps[0]: steps[-1], 0]
             # timesteps = steps / 44100
             # audio_tensor = torch.tensor(audio_clip)
             # mel = torchaudio.transforms.MelSpectrogram(

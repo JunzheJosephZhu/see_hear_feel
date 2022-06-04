@@ -9,6 +9,7 @@ import numpy as np
 import random
 from PIL import Image, ImageEnhance
 import time
+import cv2
 
 class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
@@ -143,6 +144,14 @@ class ImitationDataset(BaseDataset):
                         self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
                      + 0.5).clamp(0, 1)) for
                     timestep in frame_idx], dim=0)
+                
+                # img = (self.transform_gel(
+                #         self.load_image(self.trial, "left_gelsight_frame", end) - offset
+                #      + 0.5).clamp(0, 1)).numpy().transpose(1, 2, 0)        
+                # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                # cv2.imshow('asda', img)
+                # cv2.waitKey(10000)
+            
 
         # random cropping
         if self.train:
