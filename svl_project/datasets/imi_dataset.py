@@ -66,7 +66,8 @@ class ImitationDataset(BaseDataset):
         self.minus_first = args.minus_first
         self.use_flow = args.use_flow
         self.modalities = args.ablation.split('_')
-        
+        self.nocrop = args.nocrop
+
         if self.train:
             self.start_frame = 0
             self.transform_cam = T.Compose([
@@ -75,11 +76,11 @@ class ImitationDataset(BaseDataset):
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.2),
+                T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             ])
             
         else:
-            self.start_frame = self.num_frames - 200
+            self.start_frame = 0 #self.num_frames - 200
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self._crop_height_v, self._crop_width_v))
@@ -147,7 +148,12 @@ class ImitationDataset(BaseDataset):
         # random cropping
         if self.train:
             img = self.transform_cam(self.load_image(self.trial, "cam_fixed_color", end))
-            i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))
+            if not self.nocrop:
+                i_v, j_v, h_v, w_v = T.RandomCrop.get_params(img, output_size=(self._crop_height_v, self._crop_width_v))
+            else:
+                i_v, h_v = (self.resized_height_v - self._crop_height_v) // 2, self._crop_height_v
+                j_v, w_v = (self.resized_width_v - self._crop_width_v) // 2, self._crop_width_v
+                
             if "vg"in self.modalities:
                 cam_gripper_framestack = cam_gripper_framestack[..., i_v: i_v + h_v, j_v: j_v+w_v]
             if "vf"in self.modalities:
@@ -155,7 +161,11 @@ class ImitationDataset(BaseDataset):
             if "t" in self.modalities:
                 if not self.use_flow:
                     img_t = self.transform_gel(self.load_image(self.trial, "left_gelsight_frame", end))
-                    i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
+                    if not self.nocrop:
+                        i_t, j_t, h_t, w_t = T.RandomCrop.get_params(img_t, output_size=(self._crop_height_t, self._crop_width_t))
+                    else:
+                        i_t, h_t = (self.resized_height_t - self._crop_height_t) // 2, self._crop_height_t
+                        j_t, w_t = (self.resized_width_t - self._crop_width_t) // 2, self._crop_width_t
                     tactile_framestack = tactile_framestack[..., i_t: i_t + h_t, j_t: j_t+w_t]
 
         # load audio

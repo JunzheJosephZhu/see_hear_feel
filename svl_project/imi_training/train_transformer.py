@@ -80,10 +80,10 @@ if __name__ == "__main__":
     p = configargparse.ArgParser()
     import time
     p.add("-c", "--config", is_config_file=True, default="conf/imi/transformer.yaml")
-    p.add("--batch_size", default=16)
+    p.add("--batch_size", default=16, type=int)
     p.add("--lr", default=5e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
-    p.add("--period", default=3)
+    p.add("--period", default=3, type=int)
     p.add("--epochs", default=1000, type=int)
     p.add("--resume", default=None)
     p.add("--num_workers", default=8, type=int)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_pack_final/test_recordings")
+    p.add("--data_folder", default="data/data_0603/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -120,8 +120,7 @@ if __name__ == "__main__":
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--aux_multiplier", type=float)
     p.add("--minus_first", default=False, action="store_true")
-
-    
+    p.add("--nocrop", default=False, action="store_true")
 
 
     args = p.parse_args()
