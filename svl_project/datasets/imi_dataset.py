@@ -79,7 +79,7 @@ class ImitationDataset(BaseDataset):
             ])
             
         else:
-            self.start_frame = self.num_frames - 100
+            self.start_frame = 0#self.num_frames - 150
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self._crop_height_v, self._crop_width_v))
