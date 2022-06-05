@@ -1,5 +1,5 @@
 encoder_dim: 128
-num_stack: 5
+num_stack: 6
 frameskip: 5
 crop_percent: 0.085
 conv_bottleneck: 128
