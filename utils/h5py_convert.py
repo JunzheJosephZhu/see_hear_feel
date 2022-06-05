@@ -34,12 +34,12 @@ def convert_episode(data_folder, logs, idx):
                 out_file = os.path.join(trial, stream, str(frame_nb) + ".pt")
                 if not os.path.exists(out_file):
                     torch.save(img, out_file)
-    tracks = ["audio_holebase_left", "audio_holebase_right", "audio_gripper_left", "audio_gripper_right"]
+    tracks = ["audio_holebase_left"]
     for track in tracks:
         sf.write(os.path.join(trial, track + '.wav'), all_datasets[track], 44100)
 
 if __name__ == "__main__":
-    logs = pd.read_csv("data/data_0504/episode_times.csv")
-    data_folder = "data/data_0504/test_recordings"
+    logs = pd.read_csv("data/data_0603/episode_times.csv")
+    data_folder = "data/data_0603/test_recordings"
     for idx in range(len(logs)):
         convert_episode(data_folder, logs, idx)

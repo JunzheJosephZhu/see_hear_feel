@@ -32,11 +32,11 @@ class MakeVideo():
         os.mkdir(self.save_dir)
         self.mydict = {
             'v': {
-                'resolution': (160, 120),
+                'resolution': (96, 128),
                 # 'resolution': (160, 120),
                 'font_scale': .5,
                 'thick_scale': 1},
-            't': {'resolution': (75, 100),
+            't': {'resolution': (128, 96),
                 #   'resolution': (100, 100),
                   'font_scale': .7,
                   'thick_scale': 1},
@@ -87,8 +87,9 @@ class MakeVideo():
     def save_obs(self, imgs, item, pred=None, gt=None, step=None):
         if item in ['hist', 'seq', 'arrow', '   ', 'audio', 'confusion']:
             if item == 'audio':
-                log_spec = imgs[0]
-                audio_clip = imgs[1]
+                # log_spec = imgs[0]
+                audio_clip = imgs[0]
+                print(audio_clip.shape)
                 spec_nomel = torch.fft.rfft(audio_clip.type(torch.FloatTensor))
                 # print(spec_nomel.shape)
                 # print(audio_clip.shape)
@@ -97,7 +98,7 @@ class MakeVideo():
                 fig_audio, arrs_audio = plt.subplots(2, figsize=(6, 3))
                 # print(x)
                 ## plot mel spec
-                arrs_audio[0].imshow(log_spec[0][0])
+                # arrs_audio[0].imshow(log_spec[0][0])
                 ## plot rfft
                 x = torch.fft.rfftfreq(len(audio_clip[0][0]), 1 / 44100)
                 arrs_audio[1].plot(x[:10000], np.abs(spec_nomel[0][0])[:10000])

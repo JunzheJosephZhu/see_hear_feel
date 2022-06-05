@@ -75,9 +75,9 @@ class Analysis():
                 v_list.append(clip)
             elif item[0] == 't':
                 t_list.append(clip)
-        comp_clip = mpe.clips_array([[v_list[0], t_list[0]],
-                                    [v_list[1], t_list[1]],
-                                    [v_list[2], t_list[2]]])
+        comp_clip = mpe.clips_array([[v_list[2], t_list[2]],
+                                    [v_list[3], t_list[3]],
+                                    [v_list[4], t_list[4]]])
         comp_clip.write_videofile(os.path.join(self.dir, "vt.mp4"))
 
     def save_log_video(self, items=None):
@@ -108,10 +108,10 @@ if __name__ == '__main__':
     args = p.parse_args()
 
     ## save histogram video demo
-    analyze_video = Analysis(args.data_folder, ['seq', 'audio', 'confusion']) #'audio','confusion'
+    analyze_video = Analysis(args.data_folder, ['seq']) #'audio','confusion'
     
     ## compose validation videos
-    analyze_video.save_log_video(items=['seq', 'audio', 'confusion']) #'audio', 'confusion'
+    analyze_video.save_log_video(items=['seq']) #'audio', 'confusion'
 
     ## add hist video
     analyze_video.add_log_video()

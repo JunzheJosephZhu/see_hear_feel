@@ -21,12 +21,12 @@ import torchaudio
 # tstamp = '2022-05-25 21:23:31.039337'
 # tstamp = '2022-05-25 21:30:36.564805'
 # tstamp = '2022-05-25 21:39:05.821838'
-tstamp = '2022-05-28 22:00:07.310100'
+tstamp = '2022-06-03 22:20:55.269548'
 
 
 # DIR = '../test_recordings/pack_v_a/' + tstamp
-# DIR = '../test_recordings/' + tstamp
-DIR = '../data_0528_flat/test_recordings/' + tstamp
+DIR = '../test_recordings/' + tstamp
+# DIR = '../data_0528_flat/test_recordings/' + tstamp
 
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
@@ -145,28 +145,28 @@ class Tests():
         else:
             plt.figure()
             sr = 44100
-            audio_buffer_arr = audio_buffer[:]
-            # steps = np.arange(0, len(audio_buffer))
-            steps = np.arange(int(17 * 44100), int(19* 44100))
-            # steps = np.arange(6 * 44100, 8 * 44100)
-            audio_clip = audio_buffer[steps[0]: steps[-1], 0]
-            timesteps = steps / 44100
-            audio_tensor = torch.tensor(audio_clip)
-            mel = torchaudio.transforms.MelSpectrogram(
-                sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
-            )
-            spec = torch.log(mel(audio_tensor))
-            print(spec.shape)
-            plt.imshow(spec)
+            # audio_buffer_arr = audio_buffer[:]
+            # # steps = np.arange(0, len(audio_buffer))
+            # steps = np.arange(int(18 * 44100), int(19* 44100))
+            # # steps = np.arange(6 * 44100, 8 * 44100)
+            # audio_clip = audio_buffer[steps[0]: steps[-1], 0]
+            # timesteps = steps / 44100
+            # audio_tensor = torch.tensor(audio_clip)
+            # mel = torchaudio.transforms.MelSpectrogram(
+            #     sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
+            # )
+            # spec = torch.log(mel(audio_tensor))
+            # print(spec.shape)
+            # plt.imshow(spec)
 
-            # x_lim = np.arange(0, len(audio_buffer)) / 4410
-            # audio_buffer_arr = np.abs(audio_buffer[:])
-            # # audio_buffer_arr = np.clip(audio_buffer_arr, a_min  = 0.00005, a_max=1)
-            # audio_buffer_arr = np.clip(audio_buffer_arr,
-            #                            a_min=0,
-            #                            a_max=0.5)
-            # plt.plot(x_lim, audio_buffer_arr)
-            # plt.title(self.test_item)
+            x_lim = np.arange(0, len(audio_buffer)) / 4410
+            audio_buffer_arr = np.abs(audio_buffer[:])
+            # audio_buffer_arr = np.clip(audio_buffer_arr, a_min  = 0.00005, a_max=1)
+            audio_buffer_arr = np.clip(audio_buffer_arr,
+                                       a_min=0,
+                                       a_max=0.5)
+            plt.plot(x_lim, audio_buffer_arr)
+            plt.title(self.test_item)
             plt.show()
 
     def test_img(self):
