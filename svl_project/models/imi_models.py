@@ -23,6 +23,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_tactile = False
         self.use_audio = False
         self.use_mha = args.use_mha
+        self.use_lstm = args.use_lstm
+        assert not (self.use_mha and self.use_lstm)
         # self.query = nn.Parameter(torch.randn(1, 1, self.layernorm_embed_shape))
             
         ## load models
@@ -30,6 +32,8 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         print(f"Using modalities: {self.modalities}")
         self.embed_dim = args.encoder_dim * args.num_stack * len(self.modalities)
         self.mha = MultiheadAttention(self.encoder_dim, args.num_heads)
+        lstm_size = args.encoder_dim * len(self.modalities)
+        self.lstm = torch.nn.LSTM(lstm_size, lstm_size, num_layers=1, bias=True, batch_first=True)
 
         # action_dim = 3 ** task2actiondim[args.task]
 
@@ -90,10 +94,15 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             # batch first=False, (L, N, E)
             # query = self.query.repeat(1, batch, 1) # [1, 1, D] -> [1, batch, D]
             # change back to 3*3
-            mha_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp) # [1, batch, D]
+            mha_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp) # [num_modes * num_stack, batch, D]
             # mha_out += mlp_inp
             mlp_inp = torch.concat([mha_out[i] for i in range(mha_out.shape[0])], 1)
             # mlp_inp = mha_out.squeeze(0) # [batch, D]
+        elif self.use_lstm:
+            mlp_inp = torch.cat(embeds, dim=2) # [batch, num_stack, D * num_modes]
+            mlp_inp, _ = self.lstm(mlp_inp) # [batch, num_stack, D * num_modes]
+            mlp_inp = mlp_inp.reshape(batch, self.embed_dim)
+            weights = None
         else:
             mlp_inp = torch.cat(embeds, dim=1)
             mlp_inp = mlp_inp.view(batch, self.embed_dim)
