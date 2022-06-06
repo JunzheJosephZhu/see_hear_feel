@@ -11,7 +11,7 @@ def save_config(args):
     config_name = os.path.basename(args.config).split(".yaml")[0]
     now = datetime.now()
     dt = now.strftime("%m%d%Y")
-    exp_dir = os.path.join("exp" + dt + 'final_para_search', config_name)
+    exp_dir = os.path.join("exp" + dt + args.task, config_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:
@@ -20,7 +20,7 @@ def save_config(args):
 
 def start_training(args, exp_dir, pl_module, monitor="val/acc"):
     jobid = np.random.randint(0, 1000)
-    jobid = os.environ["SLURM_JOB_ID"]
+    jobid = os.environ.get("SLURM_JOB_ID", 0)
     exp_time = datetime.now().strftime("%m-%d-%H:%M:%S") + "-jobid=" + str(jobid)
     checkpoint = ModelCheckpoint(
         dirpath=os.path.join(exp_dir, "checkpoints", args.exp_name),

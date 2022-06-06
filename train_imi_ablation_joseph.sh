@@ -24,8 +24,8 @@ echo "working directory = "$SLURM_SUBMIT_DIR
 # Setting up virtualenv / conda / docker #
 ##########################################
 # example here if using virtualenv
-source /sailhome/li2053/.bashrc
-conda activate svl_multi_trans
+source /sailhome/josef/.bashrc
+conda activate joseph
 echo "Virtual Env Activated"
 
 ##############################################################
@@ -34,7 +34,7 @@ echo "Virtual Env Activated"
 # export LD_LIBRARY_PATH=/usr/local/cuda-9.1/lib64:/usr/lib/x86_64-linux-gnu 
 echo "Working with the LD_LIBRARY_PATH: "$LD_LIBRARY_PATH
 
-cd svl_project_
+cd /viscam/u/li2053/svl_project_
 ###################
 # Run your script #
 ###################
@@ -65,6 +65,11 @@ echo "running command : <RUN_COMMAND>"
 
 
 
+# python svl_project/imi_training/train_transformer.py --exp_name _spec_480_noaux_nocrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_480_noaux_hascrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_192_noaux_nocrop --ablation vg_t_ah --dim 192 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_600_noaux_nocrop --ablation vg_t_ah --dim 600 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --task final_para_search
+python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_768_noaux_nocrop --ablation vg_t_ah --dim 768 --depth 12 --period 1 --batch_size 8 --aux_multiplier 0.0 --nocrop --task final_para_search
 
 
 

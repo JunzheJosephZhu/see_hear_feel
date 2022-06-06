@@ -7,6 +7,7 @@ from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 import math
 import numpy as np
+import torchaudio
 # helpers
 def pair(t):
     return t if isinstance(t, tuple) else (t, t)
@@ -158,6 +159,26 @@ class Audio_Encoder(nn.Module):
         x = x.transpose(1, 2)
         return x
 
+class Spec_Patcher(nn.Module):
+    def __init__(self, frameskip, num_patches):
+        super().__init__()
+        sr = 16000
+        self.n_mels = 64
+        # (frameskip * 0.1 / hop) = num_patches
+        hop = frameskip * 0.1 / num_patches
+        self.mel = torchaudio.transforms.MelSpectrogram(
+            sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * hop), n_mels=self.n_mels
+        )
+        self.num_patches = num_patches
+
+    def forward(self, waveform):
+        EPS = 1e-8
+        spec = self.mel(waveform.float())
+        log_spec = torch.log(spec + EPS)
+        assert log_spec.size(-1) % self.num_patches == 0
+        log_spec = rearrange(log_spec, 'b c m (l np) -> b l np (c m)', np=self.num_patches)
+        return log_spec
+
 class TimeEncoding(nn.Module):
 
     def __init__(self, d_model: int, num_stack, frameskip, learn_time_embedding, dropout: float = 0.1, max_len: int = 5000):
@@ -188,7 +209,7 @@ class TimeEncoding(nn.Module):
         return self.dropout(x)
 
 class MuT(nn.Module):
-    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, last_layer_stride, num_classes, dim, depth, qkv_bias, heads, mlp_ratio, ablation, channels, audio_channels, learn_time_embedding=False, drop_rate = 0., attn_drop_rate = 0., drop_path_rate=0.1):
+    def __init__(self, *, image_size, tactile_size, patch_size, num_stack, frameskip, fps, last_layer_stride, num_classes, dim, depth, qkv_bias, heads, mlp_ratio, ablation, channels, audio_channels, use_1dconv, learn_time_embedding=False, drop_rate = 0., attn_drop_rate = 0., drop_path_rate=0.1):
         super().__init__()
         image_height, image_width = pair(image_size)
         tactile_height, tactile_width = pair(tactile_size)
@@ -209,18 +230,24 @@ class MuT(nn.Module):
             Rearrange('b l c (h p1) (w p2) -> b l (h w) (p1 p2 c)', p1 = patch_height, p2 = patch_width),
             nn.Linear(patch_dim, dim),
         ) # tactile encoder
-        self.audio_encoder = Audio_Encoder(audio_channels, last_layer_stride)
-        self.to_patch_embedding_a = nn.Sequential(
-            self.audio_encoder,
-            nn.Linear(self.audio_encoder.encoding_dim, dim),
-        ) # audio encoder
-
+        if use_1dconv:
+            self.audio_encoder = Audio_Encoder(audio_channels, last_layer_stride)
+            self.to_patch_embedding_a = nn.Sequential(
+                self.audio_encoder,
+                nn.Linear(self.audio_encoder.encoding_dim, dim),
+            ) # audio encoder
+            num_patches_a = (1 / fps) * frameskip / (1 / self.audio_encoder.output_freq)
+            assert num_patches_a.is_integer()
+            num_patches_a = int(num_patches_a)
+        else:
+            num_patches_a = 50
+            self.to_patch_embedding_a = nn.Sequential(
+                Spec_Patcher(frameskip, num_patches_a), 
+                nn.Linear(64 * audio_channels, dim)
+            )
+        self.num_patches_a = num_patches_a
         # compute number of patches per timestep for each modality
         num_patches_v = (image_height // patch_height) * (image_width // patch_width)
-        num_patches_a = (1 / fps) * frameskip / (1 / self.audio_encoder.output_freq)
-        assert num_patches_a.is_integer()
-        num_patches_a = int(num_patches_a)
-        self.num_patches_a = num_patches_a
         num_patches_t = (tactile_height // patch_height) * (tactile_width // patch_width)
         print("# of audio patches", num_patches_a, "; # of vision patches", num_patches_v, "; # of tactile patches", num_patches_t)
         # within_image positional encoding

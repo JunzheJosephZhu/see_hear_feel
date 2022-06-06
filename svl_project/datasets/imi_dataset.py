@@ -22,8 +22,8 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
         if self.task == "pouring":
-            x_space = {-.0008: 0, 0: 1, .0008: 2}
-            dy_space = {-.006: 0, 0: 1, .006: 2}
+            x_space = {-.0003: 0, 0: 1, 0.0003: 2}
+            dy_space = {-.0012: 0, 0: 1, .004: 2}
             keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
@@ -183,8 +183,8 @@ class ImitationDataset(BaseDataset):
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
-            x_space = {-.0008: 0, 0: 1, .0008: 2}
-            dy_space = {-.006: 0, 0: 1, .006: 2}
+            x_space = {-.0003: 0, 0: 1, 0.0003: 2}
+            dy_space = {-.0012: 0, 0: 1, .004: 2}
             keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
