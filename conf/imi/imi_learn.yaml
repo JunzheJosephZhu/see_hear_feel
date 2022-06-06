@@ -10,11 +10,12 @@ resized_width_t: 105 #96
 ablation: vg_ah
 gamma: 0.9
 num_heads: 8
-action_dim: 3
+action_dim: 2
 # norm_audio: True
 # use_mha: True
+# use_lstm: True
 exp_name: default
-task: "insertion"
-aux_multiplier: 0.1
+task: "pouring"
+aux_multiplier: 0.0
 minus_first: True
 # use_flow: True

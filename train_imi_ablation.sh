@@ -1,12 +1,12 @@
 #!/bin/bash
 # Usage: sbatch run_slurm.sh
-#SBATCH --partition=svl --qos=normal 
+#SBATCH --partition=svl --qos=normal
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=50G
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:4
 #SBATCH --job-name="immi"
 #SBATCH --output=logs/immi_slurm_%A.out
 #SBATCH --error=logs/immi_slurm_%A.err
@@ -43,25 +43,28 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a --ablation vg_ah 
+# py    thon svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
+
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_m --ablation vg --use_mha --data_folder data/data_0603/test_recordings --train_csv train_0603.csv --val_csv val_0603.csv
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_m --ablation vg_t --use_mha --data_folder data/data_0603/test_recordings --train_csv train_0603.csv --val_csv val_0603.csv
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_m --ablation vg_ah --use_mha --data_folder data/data_0603/test_recordings --train_csv train_0603.csv --val_csv val_0603.csv
+python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m --ablation vg_t_ah --use_mha --batch_size 16 --data_folder data/data_0603/test_recordings --train_csv train_0603.csv --val_csv val_0603.csv
+
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm --data_folder data/data_0603/test_recordings --train_csv train_0603.csv --val_csv val_0603.csv
+
+
+
+# pour
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_m --ablation vg --use_mha 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_m --ablation vg_t --use_mha 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_m --ablation vg_ah --use_mha 
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m --ablation vg_t_ah --use_mha 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m --ablation vg_t_ah --use_mha
+
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm
 
 
-# pour
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t_flow_diff --ablation t --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _t_img_diff --ablation t --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_ah --ablation vg_ah --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _ah --ablation ah --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_ah --ablation vg_t_ah --aux_multiplier 0.0
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_ah_lax_ --ablation vg_t_ah --aux_multiplier 0.01
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_ah_max --ablation vg_t_ah --aux_multiplier 0.1
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_ah_hax --ablation vg_t_ah --aux_multiplier 1.0
 
 
 
