@@ -58,7 +58,7 @@ def main(args):
     sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
     train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler, persistent_workers=True, pin_memory=True)
-    val_loader = DataLoader(val_set, 1, num_workers=2, shuffle=False, persistent_workers=True, pin_memory=True)
+    val_loader = DataLoader(val_set, 1, num_workers=8, shuffle=False, persistent_workers=True, pin_memory=True)
     
     # v encoder
     v_encoder = make_vision_encoder(args.encoder_dim)
@@ -68,7 +68,7 @@ def main(args):
     else:
         t_encoder = make_tactile_encoder(args.encoder_dim)
     # a encoder
-    a_encoder = make_audio_encoder(args.encoder_dim * (2 * args.num_stack - 1), args.norm_audio)
+    a_encoder = make_audio_encoder(args.encoder_dim, args.num_stack, args.norm_audio)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=16)
+    p.add("--batch_size", default=16,type=int)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
@@ -97,10 +97,11 @@ if __name__ == "__main__":
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
     p.add("--use_mha", default=False, action="store_true")
+    p.add("--use_lstm", default=False, action="store_true")
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0528_flat/test_recordings")
+    p.add("--data_folder", default="data/data_0605/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)

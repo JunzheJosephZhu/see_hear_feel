@@ -15,7 +15,7 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
         super().__init__(log_file, data_folder)
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(
-            dataset_idx, load_audio=False)
+            dataset_idx, load_audio=False, ablation=args.ablation)
         self.task = args.task
 
     def __len__(self):
@@ -24,9 +24,9 @@ class ImitationDatasetLabelCount(BaseDataset):
     def __getitem__(self, idx):
         keyboard = self.timestamps["action_history"][idx]
         if self.task == "pouring":
-            x_space = {-.0006: 0, 0: 1, 0.0006: 2}
-            dy_space = {-.003: 0, 0: 1, .009: 2}
-            keyboard = x_space[keyboard[0]] * 3 + dy_space[round(keyboard[4], 3)]
+            x_space = {-.0003: 0, 0: 1, 0.0003: 2}
+            dy_space = {-.0012: 0, 0: 1, .004: 2}
+            keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
             y_space = {-.0003: 0, 0: 1, .0003: 2}
@@ -45,8 +45,8 @@ class ImitationDataset(BaseDataset):
         self.fps = 10
         self.sr = 44100
         self.resolution = self.sr // self.fps  # number of audio samples in one image idx
-        self.audio_len = int(self.resolution * (max(self.max_len + 1, 5)))
-
+        self.audio_len = self.num_stack * self.frameskip * self.resolution
+        
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
         self.resized_width_v = args.resized_width_v
@@ -56,7 +56,7 @@ class ImitationDataset(BaseDataset):
         self._crop_width_v = int(self.resized_width_v * (1.0 - args.crop_percent))
         self._crop_height_t = int(self.resized_height_t * (1.0 - args.crop_percent))
         self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
-        self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True)
+        self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True, ablation=args.ablation)
         
         # saving the offset
         self.gelsight_offset = torch.as_tensor(
@@ -76,11 +76,11 @@ class ImitationDataset(BaseDataset):
             ])
             self.transform_gel = T.Compose([
                 T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.2),
+                T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
             ])
             
         else:
-            self.start_frame = self.num_frames - 100
+            self.start_frame = 0 #self.num_frames - 200
             self.transform_cam = T.Compose([
                 T.Resize((self.resized_height_v, self.resized_width_v)),
                 T.CenterCrop((self._crop_height_v, self._crop_width_v))
@@ -179,13 +179,13 @@ class ImitationDataset(BaseDataset):
         # we are only using left holebase, so only return this channel, audio encoder has been changed from 4 to 3
         if "ah" in self.modalities:
             # spoiled code: now using left holebase mic
-            audio_clip_h = self.clip_resample(self.audio_holebase.unsqueeze(0), audio_start, audio_end)
+            audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end)
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
-            x_space = {-.0006: 0, 0: 1, 0.0006: 2}
-            dy_space = {-.003: 0, 0: 1, .009: 2}
-            keyboard = x_space[keyboard[0]] * 3 + dy_space[round(keyboard[4], 3)]
+            x_space = {-.0003: 0, 0: 1, 0.0003: 2}
+            dy_space = {-.0012: 0, 0: 1, .004: 2}
+            keyboard = x_space[keyboard[0]] * 3 + dy_space[keyboard[4]]
         else:
             x_space = {-.0003: 0, 0: 1, .0003: 2}
             y_space = {-.0003: 0, 0: 1, .0003: 2}
