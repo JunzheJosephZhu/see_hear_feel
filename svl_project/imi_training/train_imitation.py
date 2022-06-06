@@ -68,7 +68,7 @@ def main(args):
     else:
         t_encoder = make_tactile_encoder(args.encoder_dim)
     # a encoder
-    a_encoder = make_audio_encoder(args.encoder_dim * args.num_stack, args.norm_audio)
+    a_encoder = make_audio_encoder(args.encoder_dim, args.num_stack, args.norm_audio)
     imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)

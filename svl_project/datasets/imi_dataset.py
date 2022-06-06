@@ -45,8 +45,8 @@ class ImitationDataset(BaseDataset):
         self.fps = 10
         self.sr = 44100
         self.resolution = self.sr // self.fps  # number of audio samples in one image idx
-        self.audio_len = int(self.resolution * (max(self.max_len + 1, 5)))
-
+        self.audio_len = self.num_stack * self.frameskip * self.resolution
+        
         self.EPS = 1e-8
         self.resized_height_v = args.resized_height_v
         self.resized_width_v = args.resized_width_v

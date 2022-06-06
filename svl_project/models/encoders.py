@@ -5,6 +5,7 @@ from torch import nn
 # from perceiver_pytorch import Perceiver
 import torch.nn.functional as F
 import torchaudio
+from einops import rearrange
 
 class CoordConv(nn.Module):
     """Add coordinates in [0,1] to an image, like CoordConv paper."""
@@ -47,22 +48,28 @@ class Encoder(nn.Module):
         return x
 
 class Spec_Encoder(Encoder):
-    def __init__(self, feature_extractor, out_dim=None, norm_audio=False):
+    def __init__(self, feature_extractor, out_dim, num_stack, norm_audio=False):
         super().__init__(feature_extractor, out_dim)
         self.norm_audio = norm_audio
+        self.num_stack = num_stack
         sr = 16000
+        self.n_mels = 64
         self.mel = torchaudio.transforms.MelSpectrogram(
-            sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
+            sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * 0.01), n_mels=self.n_mels
         )
 
     def forward(self, waveform):
         EPS = 1e-8
         spec = self.mel(waveform.float())
         log_spec = torch.log(spec + EPS)
+        assert log_spec.size(-1) % self.num_stack == 0
         assert log_spec.size(-2) == 64
         if self.norm_audio:
             log_spec /= log_spec.sum(dim=-2, keepdim=True) # [1, 64, 100]
-        return super().forward(log_spec)
+        log_spec = rearrange(log_spec, 'b c m (n l) -> (b n) c m l', n=self.num_stack)
+
+        embeddings = super().forward(log_spec)
+        return embeddings
 
 class Tactile_Flow_Encoder(Encoder):
     def __init__(self, feature_extractor, out_dim):
@@ -105,13 +112,13 @@ def make_tactile_flow_encoder(out_dim):
     return Tactile_Flow_Encoder(tactile_extractor, out_dim)
 
 
-def make_audio_encoder(out_dim=None, norm_audio=False):
+def make_audio_encoder(out_dim, num_stack, norm_audio):
     audio_extractor = resnet18(pretrained=True)
     audio_extractor.conv1 = nn.Conv2d(
         3, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["layer4.1.relu_1"])
-    return Spec_Encoder(audio_extractor, out_dim, norm_audio)
+    return Spec_Encoder(audio_extractor, out_dim, num_stack, norm_audio)
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))
