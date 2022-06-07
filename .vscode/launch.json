@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": []
+            "args": ["--use_query", "--use_mha", "--ablation", "vf_t_ah", "--train_csv", "train_empty.csv"]
         }
     ]
 }

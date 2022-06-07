@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=50G
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:2
 #SBATCH --job-name="immi"
 #SBATCH --output=logs/immi_slurm_%A.out
 #SBATCH --error=logs/immi_slurm_%A.err
@@ -43,16 +43,16 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a --ablation vg_ah 
-py    thon svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_m --ablation vg --use_mha 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_m --ablation vg_t --use_mha 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_m --ablation vg_ah --use_mha
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m --ablation vg_t_ah --use_mha
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m --ablation vg_t_ah --use_mha --use_query
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m_q --ablation vg_t_ah --use_mha --use_query
 
 
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm 
+python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm 
 
 
 

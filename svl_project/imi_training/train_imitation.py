@@ -97,6 +97,7 @@ if __name__ == "__main__":
     p.add("--num_stack", required=True, type=int)
     p.add("--frameskip", required=True, type=int)
     p.add("--use_mha", default=False, action="store_true")
+    p.add("--use_query", default=False, action="store_true")
     p.add("--use_lstm", default=False, action="store_true")
     # data
     p.add("--train_csv", default="train.csv")
