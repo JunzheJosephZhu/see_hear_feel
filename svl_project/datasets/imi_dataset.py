@@ -10,6 +10,7 @@ import random
 from PIL import Image, ImageEnhance
 import time
 import cv2
+import matplotlib.pyplot as plt
 
 class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
@@ -95,6 +96,7 @@ class ImitationDataset(BaseDataset):
         return self.num_frames - self.start_frame
 
     def __getitem__(self, idx):
+
         idx += self.start_frame
         end = idx
         start = end - self.max_len
@@ -151,7 +153,6 @@ class ImitationDataset(BaseDataset):
                 # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 # cv2.imshow('asda', img)
                 # cv2.waitKey(10000)
-            
 
         # random cropping
         if self.train:
@@ -180,6 +181,42 @@ class ImitationDataset(BaseDataset):
         if "ah" in self.modalities:
             # spoiled code: now using left holebase mic
             audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end)
+        
+        # save example
+        save_idx = 100
+        if not self.train:
+            if idx == save_idx:
+                if not os.path.exists("figures"):
+                    os.mkdir("figures")
+                # visual
+                cam_fixed_tmp = torch.stack(
+                    [self.load_image(self.trial, "cam_fixed_color", timestep)
+                    for timestep in frame_idx], dim=0)
+                for id, img in enumerate(cam_fixed_tmp):
+                    array = img.permute(1, 2, 0).detach().cpu().numpy()
+                    plt.imsave(f"figures/v{id}.jpg", array)
+                # tactile
+                tactile_tmp = torch.stack(
+                    [(self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
+                     + 0.5).clamp(0, 1) for
+                    timestep in frame_idx], dim=0)
+                for id, img in enumerate(tactile_tmp):
+                    array = img.permute(1, 2, 0).detach().cpu().numpy()
+                    plt.imsave(f"figures/t{id}.jpg", array)
+                sr = 16000
+                self.n_mels = 301
+                self.mel = torchaudio.transforms.MelSpectrogram(
+                    sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * 0.002), n_mels=self.n_mels
+                )                 
+                spec = self.mel(audio_clip_h.float())
+                EPS = 1e-8
+                log_spec = torch.log(spec + EPS)
+                # audio
+                audio_frames = log_spec.chunk(len(frame_idx), -1)
+                for id, frame in enumerate(audio_frames):
+                    array = frame.squeeze(0).detach().cpu().numpy()
+                    plt.imsave(f"figures/a{id}.jpg", array)
+
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
