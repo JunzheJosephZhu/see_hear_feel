@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": []
+            "args": ["--use_query", "--use_mha"]
         }
     ]
 }
