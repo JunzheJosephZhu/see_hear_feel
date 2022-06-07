@@ -149,11 +149,19 @@ class ImitationDataset(BaseDataset):
                 
                 # img = (self.transform_gel(
                 #         self.load_image(self.trial, "left_gelsight_frame", end) - offset
-                #      + 0.5).clamp(0, 1)).numpy().transpose(1, 2, 0)        
-                # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                # cv2.imshow('asda', img)
-                # cv2.waitKey(10000)
-
+                #      + 0.5).clamp(0, 1)).numpy().transpose(1, 2, 0)
+                # img = self.load_image(self.trial, "cam_gripper_color", end).numpy().transpose(1, 2, 0)         
+                # # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                # # cv2.imshow('asda', img)
+                # # cv2.waitKey(10000)
+                # plt.imshow(img)
+                # plt.show()
+        img = self.load_image(self.trial, "left_gelsight_frame", end).numpy().transpose(1, 2, 0)         
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # cv2.imshow('asda', img)
+        # cv2.waitKey(10000)
+        plt.imshow(img)
+        plt.show()
         # random cropping
         if self.train:
             img = self.transform_cam(self.load_image(self.trial, "cam_fixed_color", end))
