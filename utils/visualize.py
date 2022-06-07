@@ -15,16 +15,17 @@ import pandas as pd
 # import torch
 import shutil
 import seaborn as sn
-# import torchaudio
+import torchaudio
+import torch
 # tstamp = '2022-05-25 21:23:31.039337'
 # tstamp = '2022-05-25 21:30:36.564805'
 # tstamp = '2022-05-25 21:39:05.821838'
-tstamp = '2022-05-30 22:20:55.817817'
+tstamp = '2022-06-06 20:28:24.739264'
 
 
 # DIR = '../test_recordings/pack_v_t_flat/' + tstamp
 # DIR = '../data_0528_flat/test_recordings/' + tstamp
-
+# DIR = '../test_recordings/pour_v_t_a_m/100/' + tstamp
 DIR = '../test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
@@ -49,8 +50,8 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [1,3,5,9]
-ablation = 'v_a'
+test_items = [5]
+ablation = 'v_t_a'
 
 
 class Tests():
@@ -85,7 +86,7 @@ class Tests():
             self.make_video()
     
     def test_confusion_matrix(self):
-        figsize = 3, 2
+        figsize = 9, 6
         cnt = 0
         if self.store:
             video_writer = cv2.VideoWriter(
@@ -101,19 +102,22 @@ class Tests():
             used_input = []
             output = []
             if use_vision:
-                used_input.append('v_in')
-                output.append('v_out')
+                for i in range(6):
+                    used_input.append('v_in' + str(i))
+                    output.append('v_out'+ str(i))
             if use_tactile:
-                used_input.append('t_in')
-                output.append('t_out')
+                for i in range(6):
+                    used_input.append('t_in'+ str(i))
+                    output.append('t_out'+ str(i))
             if use_audio:
-                used_input.append('a_in')
-                output.append('a_out')
+                for i in range(6):
+                    used_input.append('a_in'+ str(i))
+                    output.append('a_out'+ str(i))
             df_cm = pd.DataFrame(weights, index = output, columns=used_input)
             
             plt.figure(figsize=figsize)
             sn.set(font_scale=1)
-            img = sn.heatmap(df_cm, annot=True, cmap="YlGnBu", annot_kws={"fontsize":10}).get_figure()
+            img = sn.heatmap(df_cm, annot=True, cmap="YlGnBu", annot_kws={"fontsize":6}).get_figure()
             img.savefig(os.path.join(self.path, f"{cnt}.png"))
             plt.close(img)
             img_path = os.path.join(self.path, f"{cnt}.png")
@@ -143,30 +147,30 @@ class Tests():
         else:
             plt.figure()
             sr = 44100
-            # audio_buffer_arr = audio_buffer[:]
-            # print(audio_buffer.shape)
-            # # steps = np.arange(0, len(audio_buffer))
-            # steps = np.arange(int(16 * 44100), int(17 * 44100))
-            # # steps = np.arange(6 * 44100, 8 * 44100)
-            # audio_clip = audio_buffer[steps[0]: steps[-1], 0]
-            # timesteps = steps / 44100
-            # audio_tensor = torch.tensor(audio_clip)
-            # mel = torchaudio.transforms.MelSpectrogram(
-            #     sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
-            # )
-            # spec = torch.log(mel(audio_tensor))
-            # print(spec.shape)
-            # plt.imshow(spec)
+            audio_buffer_arr = audio_buffer[:]
+            print(audio_buffer.shape)
+            steps = np.arange(0, len(audio_buffer))
+            # steps = np.arange(int(72 * 44100), int(78 * 44100))
+            # steps = np.arange(6 * 44100, 8 * 44100)
+            audio_clip = audio_buffer[steps[0]: steps[-1]]
+            timesteps = steps / 44100
+            audio_tensor = torch.tensor(audio_clip)
+            mel = torchaudio.transforms.MelSpectrogram(
+                sample_rate=sr, n_fft=int(sr * 0.025), hop_length=int(sr * 0.01), n_mels=64
+            )
+            spec = torch.log(mel(audio_tensor))
+            print(spec.shape)
+            plt.imshow(spec)
 
-            x_lim = np.arange(0, len(audio_buffer)) / 4410
-            audio_buffer_arr = np.abs(audio_buffer[:])
-            # audio_buffer_arr = np.clip(audio_buffer_arr, a_min  = 0.00005, a_max=1)
-            audio_buffer_arr = np.clip(audio_buffer_arr,
-                                       a_min=0,
-                                       a_max=0.5)
-            plt.plot(x_lim, audio_buffer_arr)
-            plt.title(self.test_item)
-            plt.show()
+            # x_lim = np.arange(0, len(audio_buffer)) / 4410
+            # audio_buffer_arr = np.abs(audio_buffer[:])
+            # # audio_buffer_arr = np.clip(audio_buffer_arr, a_min  = 0.00005, a_max=1)
+            # audio_buffer_arr = np.clip(audio_buffer_arr,
+            #                            a_min=0,
+            #                            a_max=0.5)
+            # plt.plot(x_lim, audio_buffer_arr)
+            # plt.title(self.test_item)
+            # plt.show()
 
     def test_img(self):
         if self.test_item == 'left_gelsight_frame':
