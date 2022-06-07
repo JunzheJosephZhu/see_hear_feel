@@ -95,7 +95,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             # query = self.query.repeat(1, batch, 1) # [1, 1, D] -> [1, batch, D]
             # change back to 3*3
             mha_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp) # [num_modes * num_stack, batch, D]
-            # mha_out += mlp_inp
+            mha_out += mlp_inp
             mlp_inp = torch.concat([mha_out[i] for i in range(mha_out.shape[0])], 1)
             # mlp_inp = mha_out.squeeze(0) # [batch, D]
         elif self.use_lstm:
