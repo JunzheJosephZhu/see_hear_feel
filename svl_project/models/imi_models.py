@@ -27,7 +27,7 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_query = args.use_query
         assert not (self.use_mha and self.use_lstm)
         if self.use_query: assert self.use_mha        
-        # self.query = nn.Parameter(torch.randn(1, 1, self.encoder_dim))
+        self.query = nn.Parameter(torch.randn(1, 1, self.encoder_dim))
             
         ## load models
         self.modalities = self.ablation.split('_')

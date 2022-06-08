@@ -1,3 +1,7 @@
+svl_project/datasets/__pycache__/*
+svl_project/engines/__pycache__/*
+svl_project/models/__pycache__/*
+svl_project/__pycache__/*
 __pycache__/
 exp
 exp*/
@@ -36,7 +40,6 @@ svl_project/datasets/__pycache__/*
 svl_project/engines/__pycache__/*
 svl_project/models/__pycache__/*
 svl_project/__pycache__/*
-
 
 *.pth
 *.pt
