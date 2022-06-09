@@ -43,4 +43,4 @@ last.ckpt
 test_data.hdf5
 
 *.csv
-
+figures

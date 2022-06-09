@@ -8,6 +8,7 @@ from svl_project.datasets.base import BaseDataset
 import numpy as np
 import random
 from PIL import Image, ImageEnhance
+import matplotlib.pyplot as plt
 
 class ImitationDatasetLabelCount(BaseDataset):
     def __init__(self, log_file, args, dataset_idx, data_folder=None):
@@ -70,14 +71,22 @@ class ImitationDataset(BaseDataset):
 
         if self.train:
             self.start_frame = 0
-            self.transform_cam = T.Compose([
-                T.Resize((self.resized_height_v, self.resized_width_v)),
-                T.ColorJitter(brightness=0.2, contrast=0.02, saturation=0.02, hue=0.2),
-            ])
-            self.transform_gel = T.Compose([
-                T.Resize((self.resized_height_t, self.resized_width_t)),
-                T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
-            ])
+            if args.no_jitter:
+                self.transform_cam = T.Compose([
+                    T.Resize((self.resized_height_v, self.resized_width_v)),
+                ])
+                self.transform_gel = T.Compose([
+                    T.Resize((self.resized_height_t, self.resized_width_t)),
+                ])
+            else:
+                self.transform_cam = T.Compose([
+                    T.Resize((self.resized_height_v, self.resized_width_v)),
+                    T.ColorJitter(brightness=0.2, contrast=0.02, saturation=0.02),
+                ])
+                self.transform_gel = T.Compose([
+                    T.Resize((self.resized_height_t, self.resized_width_t)),
+                    T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+                ])
             
         else:
             self.start_frame = 0 #self.num_frames - 200
@@ -144,6 +153,9 @@ class ImitationDataset(BaseDataset):
                         self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
                      + 0.5).clamp(0, 1)) for
                     timestep in frame_idx], dim=0)
+                for i, timestep in enumerate(frame_idx):
+                    if timestep < 0:
+                        tactile_framestack[i] = torch.zeros_like(tactile_framestack[i])
 
         # random cropping
         if self.train:
@@ -179,6 +191,48 @@ class ImitationDataset(BaseDataset):
             audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end).float()
         else:
             audio_clip_h = 0
+
+        # save example
+
+        if not self.train:
+            mode = "val"
+            save_idx = 2
+        else:
+            mode = "train"
+            save_idx = 100
+        if idx == save_idx:
+            if not os.path.exists("figures"):
+                os.mkdir("figures")
+            # visual
+            cam_fixed_tmp = torch.stack(
+                [self.load_image(self.trial, "cam_fixed_color", timestep)
+                for timestep in frame_idx], dim=0)
+            for id, img in enumerate(cam_fixed_tmp):
+                array = img.permute(1, 2, 0).detach().cpu().numpy()
+                plt.imsave(f"figures/{mode}_v{id}.jpg", array)
+            # tactile
+            tactile_tmp = torch.stack(
+                [self.load_image(self.trial, "left_gelsight_frame", timestep).clamp(0, 1) for
+                timestep in frame_idx], dim=0)
+            for i, timestep in enumerate(frame_idx):
+                if timestep < 0:
+                    tactile_tmp[i] = torch.zeros_like(tactile_tmp[i])
+            for id, img in enumerate(tactile_tmp):
+                array = img.permute(1, 2, 0).detach().cpu().numpy()
+                plt.imsave(f"figures/{mode}_t{id}.jpg", array)
+            sr = 16000
+            self.n_mels = 301
+            self.mel = torchaudio.transforms.MelSpectrogram(
+                sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * 0.002), n_mels=self.n_mels
+            )                 
+            spec = self.mel(audio_clip_h.float())
+            EPS = 1e-8
+            log_spec = torch.log(spec + EPS)
+            # audio
+            audio_frames = log_spec.chunk(len(frame_idx), -1)
+            for id, frame in enumerate(audio_frames):
+                array = frame.squeeze(0).detach().cpu().numpy()
+                plt.imsave(f"figures/{mode}_a{id}.jpg", array)
 
         # load labels
         keyboard = self.timestamps["action_history"][end]

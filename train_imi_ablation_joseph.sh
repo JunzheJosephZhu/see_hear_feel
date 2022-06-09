@@ -69,7 +69,15 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_480_noaux_hascrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_192_noaux_nocrop --ablation vg_t_ah --dim 192 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_600_noaux_nocrop --ablation vg_t_ah --dim 600 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --task final_para_search
-python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_768_noaux_nocrop --ablation vg_t_ah --dim 768 --depth 12 --period 1 --batch_size 8 --aux_multiplier 0.0 --nocrop --task final_para_search
+
+
+
+
+# python svl_project/imi_training/train_transformer.py --exp_name packing_480_noaux_nocrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 12 --aux_multiplier 0.0 --nocrop --task packing --no_jitter
+
+# python svl_project/imi_training/train_transformer.py --exp_name packing_600_noaux_nocrop --ablation vg_t_ah --dim 600 --depth 12 --period 1 --batch_size 8 --aux_multiplier 0.0 --nocrop --task packing --no_jitter
+
+python svl_project/imi_training/train_transformer.py --exp_name packing_192_noaux_nocrop --ablation vg_t_ah --dim 192 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --task packing --no_jitter
 
 
 

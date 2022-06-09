@@ -3,7 +3,6 @@
 #SBATCH --partition=svl --qos=normal 
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
-#SBATCH --nodelist=svl18
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=50G
@@ -50,9 +49,15 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_252 --ablation vg_t_ah --dim 252 --depth 12
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_312 --ablation vg_t_ah --dim 312 --depth 12
 # python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_432 --ablation vg_t_ah --dim 432 --depth 12
-python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_480_noaux_nocrop_drop3 --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --drop_path 0.3 --batch_size 16
+
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_480_noaux_nocrop_drop3_nojit --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 12 --aux_multiplier 0.0 --nocrop --drop_path 0.3 --no_jitter
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_600_noaux_nocrop_drop3_nojit --ablation vg_t_ah --dim 600 --depth 12 --period 1 --batch_size 8 --aux_multiplier 0.0 --nocrop --drop_path 0.3 --no_jitter
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_192_noaux_nocrop_drop3_nojit --ablation vg_t_ah --dim 192 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --drop_path 0.3 --no_jitter
 
 
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_480_noaux_nocrop_drop2 --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 12 --aux_multiplier 0.0 --nocrop --drop_path 0.2
+# python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_600_noaux_nocrop_drop3 --ablation vg_t_ah --dim 600 --depth 12 --period 1 --batch_size 8 --aux_multiplier 0.0 --nocrop --drop_path 0.3
+python svl_project/imi_training/train_transformer.py --exp_name _vg_t_a_192_noaux_nocrop_drop2 --ablation vg_t_ah --dim 192 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --drop_path 0.2
 
 
 

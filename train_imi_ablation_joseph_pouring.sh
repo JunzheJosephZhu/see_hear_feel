@@ -40,11 +40,18 @@ cd /viscam/u/li2053/svl_project_
 ###################
 echo "running command : <RUN_COMMAND>"
 # pouring
-# python svl_project/imi_training/train_transformer.py --exp_name pouring_480_noaux_nocrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
+# python svl_project/imi_training/train_transformer.py --exp_name pouring_480_noaux_nocrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 12 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
 # python svl_project/imi_training/train_transformer.py --exp_name pouring_360_noaux_nocrop --ablation vg_t_ah --dim 360 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
 # python svl_project/imi_training/train_transformer.py --exp_name pouring_600_noaux_nocrop --ablation vg_t_ah --dim 600 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
 # python svl_project/imi_training/train_transformer.py --exp_name pouring_480_noaux_hascrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
-python svl_project/imi_training/train_transformer.py --exp_name pouring_1dconv_480_noaux_nocrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 12 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring --use_1dconv
+# python svl_project/imi_training/train_transformer.py --exp_name pouring_1dconv_480_noaux_nocrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 12 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring --use_1dconv
 
 
+
+
+python svl_project/imi_training/train_transformer.py --exp_name pouring_480_noaux_nocrop --ablation vg_t_ah --dim 480 --depth 12 --period 1 --batch_size 12 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
+
+# python svl_project/imi_training/train_transformer.py --exp_name pouring_192_noaux_nocrop --ablation vg_t_ah --dim 192 --depth 12 --period 1 --batch_size 16 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
+
+# python svl_project/imi_training/train_transformer.py --exp_name pouring_600_noaux_nocrop --ablation vg_t_ah --dim 600 --depth 12 --period 1 --batch_size 8 --aux_multiplier 0.0 --nocrop --action_dim 2 --train_csv train_0605.csv --val_csv val_0605.csv --data_folder data/data_0605/test_recordings --task pouring
 

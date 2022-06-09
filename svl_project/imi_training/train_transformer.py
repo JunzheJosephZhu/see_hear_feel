@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0603/test_recordings")
+    p.add("--data_folder", default="data/data_0607/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -110,6 +110,7 @@ if __name__ == "__main__":
     p.add("--last_layer_stride", default=1, type=int)
     p.add("--learn_time_embedding", default=False, action="store_true")
     p.add("--drop_path", default=0.1, type=float)
+    p.add("--no_jitter", default=False, action="store_true")
 
     p.add("--num_episode", default=None, type=int)
     p.add("--crop_percent", required=True, type=float)
