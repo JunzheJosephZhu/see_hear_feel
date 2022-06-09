@@ -68,7 +68,7 @@ class BaseDataset(Dataset):
         raise NotImplementedError
 
     @staticmethod
-    def load_image(trial, stream, timestep):
+    def load_image(trial, stream, timestep, to_print=False):
         """
         Args:
             trial: the folder of the current episode
@@ -77,6 +77,8 @@ class BaseDataset(Dataset):
             timestep: the timestep of frame you want to extract
         """
         img_path = os.path.join(trial, stream, str(timestep) + ".png")
+        if to_print is not False:
+            print(img_path)
         image = torch.as_tensor(np.array(Image.open(img_path))).float().permute(2, 0, 1) / 255
         return image
 

@@ -11,7 +11,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["--use_query", "--use_mha", "--ablation", "vf_t_ah", "--train_csv", "train_empty.csv"]
+            "args": ["--ablation", "vg_t_ah", "--pretrained", "exp06082022final_pack_more/imi_learn/checkpoints_/_vg_t_a/06-08-14:22:54-v777-epoch=35-step=22140.ckpt"]
+            // "args": ["--use_query", "--use_mha", "--ablation", "vf_t_ah", "--train_csv", "train_empty.csv"]
         }
     ]
 }

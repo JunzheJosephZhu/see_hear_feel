@@ -12,7 +12,7 @@ def save_config(args):
     config_name = os.path.basename(args.config).split(".yaml")[0]
     now = datetime.now()
     dt = now.strftime("%m%d%Y")
-    exp_dir = os.path.join("exp" + dt + 'final_pack', config_name)
+    exp_dir = os.path.join("exp" + dt + 'final_pack_more', config_name)
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
     with open(os.path.join(exp_dir, "conf.yaml"), "w") as outfile:

@@ -8,3 +8,5 @@ configargparse
 torchaudio
 torchvision
 tomlkit
+seaborn
+einops

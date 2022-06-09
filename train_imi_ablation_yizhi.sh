@@ -8,8 +8,8 @@
 #SBATCH --mem=50G
 #SBATCH --gres=gpu:2
 #SBATCH --job-name="immi"
-#SBATCH --output=logs/immi_slurm_%A.out
-#SBATCH --error=logs/immi_slurm_%A.err
+#SBATCH --output=/viscam/u/li2053/logs/immi_slurm_%A.out
+#SBATCH --error=/viscam/u/li2053/logs/immi_slurm_%A.err
 
 ######################
 # Begin work section #
@@ -24,7 +24,7 @@ echo "working directory = "$SLURM_SUBMIT_DIR
 # Setting up virtualenv / conda / docker #
 ##########################################
 # example here if using virtualenv
-source /sailhome/li2053/.bashrc
+source /sailhome/zhangyz/.bashrc
 conda activate svl_multi
 echo "Virtual Env Activated"
 
@@ -40,10 +40,6 @@ cd svl_fs
 ###################
 echo "running command : <RUN_COMMAND>"
 # packing
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg --ablation vg
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t --ablation vg_t 
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a --ablation vg_ah 
-
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a --ablation vg_t_ah 
 
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_m --ablation vg --use_mha 
@@ -54,25 +50,3 @@ echo "running command : <RUN_COMMAND>"
 
 
 python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm 
-
-
-
-# pour
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_20 --ablation vg_t_ah --num_stack 20
-
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_m_r --ablation vg --use_mha --num_stack 20
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_m_r --ablation vg_t --use_mha --num_stack 20
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_a_m_r --ablation vg_ah --use_mha --num_stack 20
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m_r --ablation vg_t_ah --use_mha
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m_nr --ablation vg_t_ah --use_mha --num_stack 20
-
-# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm
-
-
-
-
-
-
-
-
-

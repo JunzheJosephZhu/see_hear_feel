@@ -45,4 +45,6 @@ last.ckpt
 test_data.hdf5
 
 *.csv
-
+gradcam_output
+figures
+build

@@ -16,6 +16,7 @@ svl_project/engines/imi_engine.py
 svl_project/engines/vae.py
 svl_project/engines/vae_futurepred.py
 svl_project/imi_training/__init__.py
+svl_project/imi_training/gradcam.py
 svl_project/imi_training/train_imitation.py
 svl_project/models/__init__.py
 svl_project/models/decoders.py

@@ -58,7 +58,7 @@ class ImitationDataset(BaseDataset):
         self._crop_height_t = int(self.resized_height_t * (1.0 - args.crop_percent))
         self._crop_width_t = int(self.resized_width_t * (1.0 - args.crop_percent))
         self.trial, self.timestamps, self.audio_gripper, self.audio_holebase, self.num_frames = self.get_episode(dataset_idx, load_audio=True, ablation=args.ablation)
-        
+        self.to_print=False
         # saving the offset
         self.gelsight_offset = torch.as_tensor(
             np.array(Image.open(os.path.join(self.data_folder, 'gs_offset.png')))).float().permute(2, 0,
@@ -127,11 +127,11 @@ class ImitationDataset(BaseDataset):
 
         if "vg" in self.modalities:
             cam_gripper_framestack = torch.stack(
-                    [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep))
+                    [self.transform_cam(self.load_image(self.trial, "cam_gripper_color", timestep, self.to_print))
                         for timestep in frame_idx], dim=0)
         if "vf" in self.modalities:
             cam_fixed_framestack = torch.stack(
-                    [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep))
+                    [self.transform_cam(self.load_image(self.trial, "cam_fixed_color", timestep, self.to_print))
                     for timestep in frame_idx], dim=0)
         if "t" in self.modalities:       
             if self.use_flow:
@@ -143,7 +143,7 @@ class ImitationDataset(BaseDataset):
             else:     
                 tactile_framestack = torch.stack(
                     [(self.transform_gel(
-                        self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
+                        self.load_image(self.trial, "left_gelsight_frame", timestep, self.to_print) - offset
                      + 0.5).clamp(0, 1)) for
                     timestep in frame_idx], dim=0)
                 
@@ -183,39 +183,39 @@ class ImitationDataset(BaseDataset):
             audio_clip_h = self.clip_resample(self.audio_holebase, audio_start, audio_end)
         
         # save example
-        save_idx = 100
-        if not self.train:
-            if idx == save_idx:
-                if not os.path.exists("figures"):
-                    os.mkdir("figures")
-                # visual
-                cam_fixed_tmp = torch.stack(
-                    [self.load_image(self.trial, "cam_fixed_color", timestep)
-                    for timestep in frame_idx], dim=0)
-                for id, img in enumerate(cam_fixed_tmp):
-                    array = img.permute(1, 2, 0).detach().cpu().numpy()
-                    plt.imsave(f"figures/v{id}.jpg", array)
-                # tactile
-                tactile_tmp = torch.stack(
-                    [(self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
-                     + 0.5).clamp(0, 1) for
-                    timestep in frame_idx], dim=0)
-                for id, img in enumerate(tactile_tmp):
-                    array = img.permute(1, 2, 0).detach().cpu().numpy()
-                    plt.imsave(f"figures/t{id}.jpg", array)
-                sr = 16000
-                self.n_mels = 301
-                self.mel = torchaudio.transforms.MelSpectrogram(
-                    sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * 0.002), n_mels=self.n_mels
-                )                 
-                spec = self.mel(audio_clip_h.float())
-                EPS = 1e-8
-                log_spec = torch.log(spec + EPS)
-                # audio
-                audio_frames = log_spec.chunk(len(frame_idx), -1)
-                for id, frame in enumerate(audio_frames):
-                    array = frame.squeeze(0).detach().cpu().numpy()
-                    plt.imsave(f"figures/a{id}.jpg", array)
+        # save_idx = 100
+        # if not self.train:
+        #     if idx == save_idx:
+        #         if not os.path.exists("figures"):
+        #             os.mkdir("figures")
+        #         # visual
+        #         cam_fixed_tmp = torch.stack(
+        #             [self.load_image(self.trial, "cam_fixed_color", timestep)
+        #             for timestep in frame_idx], dim=0)
+        #         for id, img in enumerate(cam_fixed_tmp):
+        #             array = img.permute(1, 2, 0).detach().cpu().numpy()
+        #             plt.imsave(f"figures/v{id}.jpg", array)
+        #         # tactile
+        #         tactile_tmp = torch.stack(
+        #             [(self.load_image(self.trial, "left_gelsight_frame", timestep) - offset
+        #              + 0.5).clamp(0, 1) for
+        #             timestep in frame_idx], dim=0)
+        #         for id, img in enumerate(tactile_tmp):
+        #             array = img.permute(1, 2, 0).detach().cpu().numpy()
+        #             plt.imsave(f"figures/t{id}.jpg", array)
+        #         sr = 16000
+        #         self.n_mels = 301
+        #         self.mel = torchaudio.transforms.MelSpectrogram(
+        #             sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * 0.002), n_mels=self.n_mels
+        #         )                 
+        #         spec = self.mel(audio_clip_h.float())
+        #         EPS = 1e-8
+        #         log_spec = torch.log(spec + EPS)
+        #         # audio
+        #         audio_frames = log_spec.chunk(len(frame_idx), -1)
+        #         for id, frame in enumerate(audio_frames):
+        #             array = frame.squeeze(0).detach().cpu().numpy()
+        #             plt.imsave(f"figures/a{id}.jpg", array)
 
         # load labels
         keyboard = self.timestamps["action_history"][end]
