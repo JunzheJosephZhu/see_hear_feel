@@ -1,3 +1,4 @@
+from random import weibullvariate
 import sys
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
@@ -20,13 +21,13 @@ import torch
 # tstamp = '2022-05-25 21:23:31.039337'
 # tstamp = '2022-05-25 21:30:36.564805'
 # tstamp = '2022-05-25 21:39:05.821838'
-tstamp = '2022-06-06 20:28:24.739264'
+tstamp = '2022-06-06 03:29:20.105892'
 
 
-# DIR = '../test_recordings/pack_v_t_flat/' + tstamp
+DIR = '../test_recordings/pour_key_moment/' + tstamp
 # DIR = '../data_0528_flat/test_recordings/' + tstamp
-# DIR = '../test_recordings/pour_v_t_a_m/100/' + tstamp
-DIR = '../test_recordings/' + tstamp
+# DIR = '../test_recordings_examples/FINAL_EXP/pour/pour_v_t_a_m/100/' + tstamp
+# DIR = '../test_recordings/' + tstamp
 f = h5py.File(os.path.join(DIR, 'data.hdf5'), 'r')
 # load action history
 print(f"data.hdf5 keys: {f.keys()}")
@@ -50,7 +51,9 @@ item_list = {
     8: 'audio_holebase_right',
     9: 'confusion_matrix'
 }
-test_items = [5]
+# test_items = [1,3,5,9]
+test_items = [9]
+
 ablation = 'v_t_a'
 
 
@@ -79,7 +82,7 @@ class Tests():
                 self.test_audio()
             elif self.test_item == 'confusion_matrix':
                 self.test_confusion_matrix()
-        shutil.rmtree(self.path)
+        # shutil.rmtree(self.path)
         plt.show()
         f.close()
         if args.video:
@@ -93,42 +96,48 @@ class Tests():
                 self.path + '.avi', cv2.VideoWriter_fourcc("M", "J", "P", "G"), 10,
                 (figsize[0] * 100, figsize[1] * 100)
             )
+        weights_array = []
         for s in tqdm(f[self.test_item].iter_chunks()):
             weights = f[self.test_item][s]
+            weights = (weights.sum(axis=0) / 18).reshape(1,18)
+            weights_array.append(weights)
+            # print(weights.shape)
             modalities = ablation.split('_')
             use_vision = 'v' in modalities
             use_tactile = 't' in modalities
             use_audio = 'a' in modalities
             used_input = []
-            output = []
+            output = ['feat_out']
             if use_vision:
                 for i in range(6):
                     used_input.append('v_in' + str(i))
-                    output.append('v_out'+ str(i))
+                    # output.append('v_out'+ str(i))
             if use_tactile:
                 for i in range(6):
                     used_input.append('t_in'+ str(i))
-                    output.append('t_out'+ str(i))
+                    # output.append('t_out'+ str(i))
             if use_audio:
                 for i in range(6):
                     used_input.append('a_in'+ str(i))
-                    output.append('a_out'+ str(i))
+                    # output.append('a_out'+ str(i))
             df_cm = pd.DataFrame(weights, index = output, columns=used_input)
             
-            plt.figure(figsize=figsize)
-            sn.set(font_scale=1)
-            img = sn.heatmap(df_cm, annot=True, cmap="YlGnBu", annot_kws={"fontsize":6}).get_figure()
-            img.savefig(os.path.join(self.path, f"{cnt}.png"))
-            plt.close(img)
-            img_path = os.path.join(self.path, f"{cnt}.png")
-            img_read = cv2.imread(img_path)
-            
             if self.store:
+                plt.figure(figsize=figsize)
+                sn.set(font_scale=1)
+                img = sn.heatmap(df_cm, annot=True, cmap="YlGnBu", annot_kws={"fontsize":6}).get_figure()
+                img.savefig(os.path.join(self.path, f"{cnt}.png"))
+                plt.close(img)
+                img_path = os.path.join(self.path, f"{cnt}.png")
+                img_read = cv2.imread(img_path)
                 video_writer.write(img_read)
-            else:
-                cv2.imshow(self.test_item, img_read)
-                cv2.waitKey(100)
+            # else:
+            #     cv2.imshow(self.test_item, img_read)
+            #     cv2.waitKey(100)
             cnt += 1
+        weights_array = np.array(weights_array).reshape(-1,18)
+        pd.DataFrame(weights_array).to_csv(os.path.join(self.path, "weights.csv"))
+            
 
     def test_audio(self):
         audio_buffer = f[self.test_item]
@@ -149,8 +158,8 @@ class Tests():
             sr = 44100
             audio_buffer_arr = audio_buffer[:]
             print(audio_buffer.shape)
-            steps = np.arange(0, len(audio_buffer))
-            # steps = np.arange(int(72 * 44100), int(78 * 44100))
+            # steps = np.arange(0, len(audio_buffer))
+            steps = np.arange(int(18.5 * 44100), int(19.5 * 44100))
             # steps = np.arange(6 * 44100, 8 * 44100)
             audio_clip = audio_buffer[steps[0]: steps[-1]]
             timesteps = steps / 44100
@@ -160,7 +169,9 @@ class Tests():
             )
             spec = torch.log(mel(audio_tensor))
             print(spec.shape)
+            plt.imsave(os.path.join(self.path, "key_m.png"), spec)
             plt.imshow(spec)
+            
 
             # x_lim = np.arange(0, len(audio_buffer)) / 4410
             # audio_buffer_arr = np.abs(audio_buffer[:])
@@ -174,7 +185,7 @@ class Tests():
 
     def test_img(self):
         if self.test_item == 'left_gelsight_frame':
-            resolution = 300, 400  # 400, 300
+            resolution = 300, 400
             font_scale = .7
             thick_scale = 1
         else:
@@ -236,14 +247,23 @@ class Tests():
                 str = f"action: {action_history[cnt]}"
             else:
                 str = self.test_item
-            cv2.putText(img,
+            # cv2.putText(img,
+            #             str, (5, 50),
+            #             # self.test_item, (50, 50),
+            #             self.font, font_scale/2, self.color, thick_scale, self.thickness
+            #             )
+            if self.store:
+                if self.test_item == 'left_gelsight_frame':
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    cv2.imwrite(os.path.join(self.path, f"{cnt}.png"), img)
+                elif self.test_item == 'cam_gripper_color':
+                    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    cv2.imwrite(os.path.join(self.path, f"{cnt}.png"), img)
+                    cv2.putText(img,
                         str, (5, 50),
                         # self.test_item, (50, 50),
                         self.font, font_scale/2, self.color, thick_scale, self.thickness
                         )
-            if self.store:
-                if self.test_item == 'left_gelsight_frame':
-                    cv2.imwrite(os.path.join(self.path, f"{cnt}.png"), img)
                 video_writer.write(img)
             else:
                 cv2.imshow(self.test_item, img)
