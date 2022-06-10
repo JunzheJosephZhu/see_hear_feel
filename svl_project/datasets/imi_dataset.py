@@ -193,7 +193,6 @@ class ImitationDataset(BaseDataset):
             audio_clip_h = 0
 
         # save example
-
         if not self.train:
             mode = "val"
             save_idx = 2
@@ -204,10 +203,10 @@ class ImitationDataset(BaseDataset):
             if not os.path.exists("figures"):
                 os.mkdir("figures")
             # visual
-            cam_fixed_tmp = torch.stack(
-                [self.load_image(self.trial, "cam_fixed_color", timestep)
+            cam_gripper_tmp = torch.stack(
+                [self.load_image(self.trial, "cam_gripper_color", timestep)
                 for timestep in frame_idx], dim=0)
-            for id, img in enumerate(cam_fixed_tmp):
+            for id, img in enumerate(cam_gripper_tmp):
                 array = img.permute(1, 2, 0).detach().cpu().numpy()
                 plt.imsave(f"figures/{mode}_v{id}.jpg", array)
             # tactile
