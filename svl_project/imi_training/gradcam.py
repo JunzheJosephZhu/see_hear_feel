@@ -182,8 +182,13 @@ def main(args):
         grayscale_cam = cam(input_tensor=inputs, targets=targets)
         grayscale_cam = grayscale_cam[0, :]
         cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h = inputs
-        img = torch.chunk(mel(audio_clip_h.float()), 6, -1)[-1].squeeze(0).permute(1, 2, 0).cpu().numpy()
+        spec = mel(audio_clip_h.float())
+        EPS = 1e-8
+        log_spec = torch.log(spec + EPS)
+        log_spec -= log_spec.min()
+        img = torch.chunk(log_spec, 6, -1)[-1].squeeze(0).permute(1, 2, 0).cpu().numpy()
         img /= img.max()
+        plt.imsave(f"gradcam_output/{idx}_img_a_original.jpg", img[..., 0])
         visualization = show_cam_on_image(img, grayscale_cam, use_rgb=True)
         plt.imsave(f"gradcam_output/{idx}_img_a.jpg", visualization)
 
