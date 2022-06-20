@@ -82,7 +82,7 @@ if __name__ == "__main__":
     import configargparse
     p = configargparse.ArgParser()
     p.add("-c", "--config", is_config_file=True, default="conf/imi/imi_learn.yaml")
-    p.add("--batch_size", default=16,type=int)
+    p.add("--batch_size", default=32,type=int)
     p.add("--lr", default=1e-4, type=float)
     p.add("--gamma", default=0.9, type=float)
     p.add("--period", default=3)
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0610/test_recordings")
+    p.add("--data_folder", default="data/data_0619/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -117,6 +117,8 @@ if __name__ == "__main__":
     p.add("--norm_audio", default=False, action="store_true")
     p.add("--aux_multiplier", type=float)
     p.add("--minus_first", default=False, action="store_true")
+    p.add("--remove_temp", default=False, action="store_true")
+    p.add("--remove_modal", default=False, action="store_true")
 
 
 

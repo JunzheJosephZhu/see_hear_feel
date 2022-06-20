@@ -156,12 +156,12 @@ class ImitationDataset(BaseDataset):
                 # # cv2.waitKey(10000)
                 # plt.imshow(img)
                 # plt.show()
-        img = self.load_image(self.trial, "left_gelsight_frame", end).numpy().transpose(1, 2, 0)         
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        # cv2.imshow('asda', img)
-        # cv2.waitKey(10000)
-        plt.imshow(img)
-        plt.show()
+        # img = self.load_image(self.trial, "left_gelsight_frame", end).numpy().transpose(1, 2, 0)         
+        # # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # # cv2.imshow('asda', img)
+        # # cv2.waitKey(10000)
+        # plt.imshow(img)
+        # plt.show()
         # random cropping
         if self.train:
             img = self.transform_cam(self.load_image(self.trial, "cam_fixed_color", end))
@@ -237,7 +237,7 @@ class ImitationDataset(BaseDataset):
             z_space = {-.001: 0, 0: 1, .001: 2}
             keyboard = x_space[keyboard[0]] * 9 + y_space[keyboard[1]] * 3 + z_space[keyboard[2]]
         # 6 D pose
-        xyzrpy = np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
+        xyzrpy = np.array([0,0,0,0,0,0]).astype(np.float32)# np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
         optical_flow = 0
         return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
 

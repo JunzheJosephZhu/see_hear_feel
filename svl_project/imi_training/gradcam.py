@@ -26,6 +26,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from svl_project.boilerplate import *
 import pandas as pd
 import numpy as np
+import torchvision.transforms as T
 import time
 from typing import Callable, List, Tuple
 import cv2
@@ -82,30 +83,30 @@ class MyGradCAM(GradCAM):
 def main(args):
     torch.multiprocessing.set_sharing_strategy("file_system")
     
-    train_csv = pd.read_csv(args.train_csv)
-    val_csv = pd.read_csv(args.val_csv)
-    if args.num_episode is None:
-        train_num_episode = len(train_csv)
-        val_num_episode = len(val_csv)
-    else:
-        train_num_episode = args.num_episode
-        val_num_episode = args.num_episode
+    # train_csv = pd.read_csv(args.train_csv)
+    # val_csv = pd.read_csv(args.val_csv)
+    # if args.num_episode is None:
+    #     train_num_episode = len(train_csv)
+    #     val_num_episode = len(val_csv)
+    # else:
+    #     train_num_episode = args.num_episode
+    #     val_num_episode = args.num_episode
         
-    train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    train_set = torch.utils.data.ConcatDataset([ImitationDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
-    val_set = torch.utils.data.ConcatDataset([ImitationDataset(args.val_csv, args, i, args.data_folder, False) for i in range(val_num_episode)])
+    # train_label_set = torch.utils.data.ConcatDataset([ImitationDatasetLabelCount(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
+    # train_set = torch.utils.data.ConcatDataset([ImitationDataset(args.train_csv, args, i, args.data_folder) for i in range(train_num_episode)])
+    val_set = torch.utils.data.ConcatDataset([ImitationDataset(args.val_csv, args, i, args.data_folder, False) for i in range(1)])
 
-    # create weighted sampler to balance samples
-    train_label = []
-    for keyboard in train_label_set:
-        train_label.append(keyboard)
-    class_sample_count = np.zeros(pow(3, args.action_dim))
-    for t in np.unique(train_label):
-        class_sample_count[t] = len(np.where(train_label == t)[0])
-    weight = 1. / (class_sample_count + 1e-5)
-    samples_weight = np.array([weight[t] for t in train_label])
-    samples_weight = torch.from_numpy(samples_weight)
-    sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
+    # # create weighted sampler to balance samples
+    # train_label = []
+    # for keyboard in train_label_set:
+    #     train_label.append(keyboard)
+    # class_sample_count = np.zeros(pow(3, args.action_dim))
+    # for t in np.unique(train_label):
+    #     class_sample_count[t] = len(np.where(train_label == t)[0])
+    # weight = 1. / (class_sample_count + 1e-5)
+    # samples_weight = np.array([weight[t] for t in train_label])
+    # samples_weight = torch.from_numpy(samples_weight)
+    # sampler = torch.utils.data.WeightedRandomSampler(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
 
     # train_loader = DataLoader(train_set, args.batch_size, num_workers=8, sampler=sampler, persistent_workers=True, pin_memory=True)
     # val_loader = DataLoader(val_set, 1, num_workers=0, shuffle=False, pin_memory=True)
@@ -132,7 +133,7 @@ def main(args):
     model.eval()
     cam = MyGradCAM(model=model, target_layers=[list(v_encoder.feature_extractor.modules())[-1]], use_cuda=True)
 
-    def show_cam_on_image(img: np.ndarray,
+    def show_cam_on_image(img: np.ndarray,  
                         mask: np.ndarray,
                         use_rgb: bool = False,
                         colormap: int = cv2.COLORMAP_JET) -> np.ndarray:
@@ -140,57 +141,75 @@ def main(args):
         if use_rgb:
             heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
         heatmap = np.float32(heatmap) / 255
+        def crop_center(img,cropy,cropx):
+            y,x,_ = img.shape
+            startx = x//2-(cropx//2)
+            starty = y//2-(cropy//2)
+            print(starty)
+            # print    
+            return img[starty:starty+cropy,startx:startx+cropx,:]
+        if img.shape[0] ==240:
+            img = crop_center(img, int(img.shape[0]*(1.0 - args.crop_percent)),int(img.shape[1]*(1.0 - args.crop_percent)))
+        
         heatmap = cv2.resize(heatmap, [img.shape[1], img.shape[0]])
-
         if np.max(img) > 1:
             raise Exception(
                 "The input image should np.float32 in the range [0, 1]")
 
-        cam = heatmap + img
+        # cam = heatmap + img
+        cam = heatmap
         cam = cam / np.max(cam)
         return np.uint8(255 * cam)
 
     for episode in val_set.datasets:
         episode.to_print=True
-    for idx in range(100):
+    for idx in range(0,640):
         inputs, demo, xyzrpy_gt, optical_flow = val_set[idx]
         inputs = [tmp.unsqueeze(0) if torch.is_tensor(tmp) else torch.Tensor([tmp]) for tmp in inputs]
         demo = [demo]
-
+        
         targets = [ClassifierOutputTarget(demo[0])]
         grayscale_cam = cam(input_tensor=inputs, targets=targets)
-        grayscale_cam = grayscale_cam[0, :]
+        grayscale_cam = grayscale_cam[5, :]
         cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h = inputs
-        img = np.array(Image.open("data/data_0607/test_recordings/2022-06-03 22:20:55.269548/cam_gripper_color/0.png"))/255
+        # img = np.array(Image.open("data/data_0607/test_recordings/2022-06-03 22:20:55.269548/cam_gripper_color/187.png"))/255
+        img = np.array(Image.open("data/real_robot_test/pour_key_moment/2022-06-06 03:29:20.105892/cam_gripper_color/" + str(idx) + ".png"))/255
+        # print(img.shape)
         visualization = show_cam_on_image(img, grayscale_cam, use_rgb=True)
         plt.imsave(f"gradcam_output/{idx}_img_v.jpg", visualization)
 
         cam = MyGradCAM(model=model, target_layers=[list(t_encoder.feature_extractor.modules())[-1]], use_cuda=True)
         grayscale_cam = cam(input_tensor=inputs, targets=targets)
-        grayscale_cam = grayscale_cam[0, :]
+        grayscale_cam = grayscale_cam[5, :]
         cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h = inputs
-        img = np.array(Image.open("data/data_0607/test_recordings/2022-06-03 22:20:55.269548/left_gelsight_frame/0.png"))/255
+        # img = np.array(Image.open("data/data_0607/test_recordings/2022-06-03 22:20:55.269548/left_gelsight_frame/187.png"))/255
+        img = np.array(Image.open("data/real_robot_test/pour_key_moment/2022-06-06 03:29:20.105892/left_gelsight_frame/" + str(idx) + ".png"))/255
         visualization = show_cam_on_image(img, grayscale_cam, use_rgb=True)
         plt.imsave(f"gradcam_output/{idx}_img_t.jpg", visualization)
 
         import torchaudio
         sr = 16000
         mel = torchaudio.transforms.MelSpectrogram(
-                sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * 0.01), n_mels=256
+                sample_rate=sr, n_fft=int(sr * 0.025) + 1, hop_length=int(sr * 0.01), n_mels=64
             )
         cam = MyGradCAM(model=model, target_layers=[list(a_encoder.feature_extractor.modules())[-1]], use_cuda=True)
         grayscale_cam = cam(input_tensor=inputs, targets=targets)
-        grayscale_cam = grayscale_cam[0, :]
+        grayscale_cam = grayscale_cam[5, :]
+        # print(grayscale_cam.shape)
+        # grayscale_cam = grayscale_cam.reshape(128, -1)
+        
         cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h = inputs
         spec = mel(audio_clip_h.float())
         EPS = 1e-8
         log_spec = torch.log(spec + EPS)
         log_spec -= log_spec.min()
-        img = torch.chunk(log_spec, 6, -1)[-1].squeeze(0).permute(1, 2, 0).cpu().numpy()
+        # print(log_spec.shape)
+        img = torch.chunk(log_spec, 6, -1)[-1].squeeze(0).permute(1, 2, 0).cpu().numpy() #log_spec.squeeze(0).permute(1, 2, 0).cpu().numpy()
+        # print(img.shape)
         img /= img.max()
-        plt.imsave(f"gradcam_output/{idx}_img_a_original.jpg", img[..., 0])
+        plt.imsave(f"gradcam_output_pour/{idx}_img_a_original.jpg", img[..., 0])
         visualization = show_cam_on_image(img, grayscale_cam, use_rgb=True)
-        plt.imsave(f"gradcam_output/{idx}_img_a.jpg", visualization)
+        plt.imsave(f"gradcam_output_pour/{idx}_img_a.jpg", visualization)
 
 
 
@@ -218,7 +237,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0607/test_recordings")
+    p.add("--data_folder", default="data/real_robot_test/pour_key_moment")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)

@@ -27,8 +27,10 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         self.use_query = args.use_query
         assert not (self.use_mha and self.use_lstm)
         if self.use_query: assert self.use_mha
-        if self.use_query:        
-            self.query = nn.Parameter(torch.randn(1, 1, self.encoder_dim))
+        self.remove_temp = args.remove_temp
+        self.remove_modal = args.remove_modal
+        # if self.use_query:        
+        # self.query = nn.Parameter(torch.randn(1, 1, self.encoder_dim))
             
         ## load models
         self.modalities = self.ablation.split('_')
@@ -37,7 +39,12 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             self.embed_dim = args.encoder_dim
         else:
             self.embed_dim = args.encoder_dim * args.num_stack * len(self.modalities)
-        self.mha = MultiheadAttention(self.encoder_dim, args.num_heads)
+        if self.remove_temp:
+            self.mha = MultiheadAttention(self.encoder_dim * 6, args.num_heads)
+        elif self.remove_modal:
+            self.mha = MultiheadAttention(self.encoder_dim * 3, args.num_heads)
+        else:
+            self.mha = MultiheadAttention(self.encoder_dim, args.num_heads)
         lstm_size = args.encoder_dim * len(self.modalities)
         self.lstm = torch.nn.LSTM(lstm_size, lstm_size, num_layers=1, bias=True, batch_first=True)
 
@@ -103,9 +110,21 @@ class Imitation_Actor_Ablation(torch.nn.Module):
                 mha_out, weights = self.mha(query, mlp_inp, mlp_inp) # [1, batch, D]
                 mlp_inp = mha_out.squeeze(0)
             else:
-                mha_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp) # [num_modes * num_stack, batch, D]
-                # mha_out += mlp_inp
-                mlp_inp = torch.concat([mha_out[i] for i in range(mha_out.shape[0])], 1)
+                if self.remove_temp:
+                    temp_t = t_embeds.view(batch, -1) # [batch, num_stack, encoder_dim] to  [batch, num_stack * encoder_dim]
+                    temp_v = vg_embeds.view(batch, -1)
+                    temp_a = ah_embeds.view(batch, -1)
+                    mlp_inp = torch.stack((temp_v, temp_t, temp_a), dim=0)
+                    mha_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp) #[3, batch, num_stack * encoder_dim]
+                    mlp_inp = torch.concat([mha_out[i] for i in range(mha_out.shape[0])], 1)
+                elif self.remove_modal:
+                    mlp_inp = torch.cat(embeds, dim=2).transpose(0, 1) # [num_stack, batch, D * num_modes]
+                    mha_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp)
+                    mlp_inp = torch.concat([mha_out[i] for i in range(mha_out.shape[0])], 1)
+                else:
+                    mha_out, weights = self.mha(mlp_inp, mlp_inp, mlp_inp) # [num_modes * num_stack, batch, D]
+                    # mha_out += mlp_inp
+                    mlp_inp = torch.concat([mha_out[i] for i in range(mha_out.shape[0])], 1)
             
             # mlp_inp = mha_out.squeeze(0) # [batch, D]
         elif self.use_lstm:

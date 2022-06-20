@@ -53,8 +53,10 @@ echo "running command : <RUN_COMMAND>"
 # python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_m_q --ablation vg_t_ah --use_mha --use_query --encoder_dim 512
 
 
-python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_l --ablation vg_t_ah --use_lstm 
 
+# python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_no_t --ablation vg_t_ah --use_mha --remove_temp
+python svl_project/imi_training/train_imitation.py --config conf/imi/imi_learn.yaml --exp_name _vg_t_a_no_m --ablation vg_t_ah --use_mha --remove_modal
 
 
 # pour
