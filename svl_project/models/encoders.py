@@ -7,6 +7,45 @@ import torch.nn.functional as F
 import torchaudio
 from einops import rearrange
 
+
+def init_weights(modules):
+    """
+    Weight initialization from original SensorFusion Code
+    """
+    for m in modules:
+        if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+            nn.init.kaiming_normal_(m.weight.data)
+            if m.bias is not None:
+                m.bias.data.zero_()
+        elif isinstance(m, nn.BatchNorm2d):
+            m.weight.data.fill_(1)
+            m.bias.data.zero_()
+
+class CausalConv1D(nn.Conv1d):
+    """A causal 1D convolution.
+  """
+
+    def __init__(
+        self, in_channels, out_channels, kernel_size, stride=1, dilation=1, bias=True
+    ):
+        self.__padding = (kernel_size - 1) * dilation
+
+        super().__init__(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=self.__padding,
+            dilation=dilation,
+            bias=bias,
+        )
+
+    def forward(self, x):
+        res = super().forward(x)
+        if self.__padding != 0:
+            return res[:, :, : -self.__padding]
+        return res
+
 class CoordConv(nn.Module):
     """Add coordinates in [0,1] to an image, like CoordConv paper."""
     def forward(self, x):
@@ -48,9 +87,10 @@ class Encoder(nn.Module):
         return x
 
 class Spec_Encoder(Encoder):
-    def __init__(self, feature_extractor, out_dim, num_stack, norm_audio=False):
+    def __init__(self, feature_extractor, out_dim, num_stack, norm_audio=False, norm_freq=False):
         super().__init__(feature_extractor, out_dim)
         self.norm_audio = norm_audio
+        self.norm_freq = norm_freq
         self.num_stack = num_stack
         sr = 16000
         self.n_mels = 64
@@ -66,6 +106,8 @@ class Spec_Encoder(Encoder):
         assert log_spec.size(-2) == 64
         if self.norm_audio:
             log_spec /= log_spec.sum(dim=-2, keepdim=True) # [1, 64, 100]
+        elif self.norm_freq:
+            log_spec[:] = log_spec.sum(dim=-2, keepdim=True) #[1, 64, 100]
         log_spec = rearrange(log_spec, 'b c m (n l) -> (b n) c m l', n=self.num_stack)
 
         embeddings = super().forward(log_spec)
@@ -78,6 +120,30 @@ class Tactile_Flow_Encoder(Encoder):
     def forward(self, flow):
         flow = flow[..., 2:-1, :, :] - flow[..., 0:2, :, :]
         return super().forward(flow)
+
+class ForceEncoder(nn.Module):
+    def __init__(self, out_dim, initailize_weights=True):
+        """
+        Force encoder taken from selfsupervised code
+        """
+        super().__init__()
+        input_dim = 1
+        self.frc_encoder = nn.Sequential(
+            CausalConv1D(input_dim, 16, kernel_size=2, stride=1),
+            nn.LeakyReLU(0.1, inplace=True),
+            CausalConv1D(16, 32, kernel_size=2, stride=1),
+            nn.LeakyReLU(0.1, inplace=True),
+            CausalConv1D(32, 64, kernel_size=2, stride=2),
+            nn.LeakyReLU(0.1, inplace=True),
+            CausalConv1D(64, out_dim, kernel_size=2, stride=2),
+            nn.LeakyReLU(0.1, inplace=True),
+        )
+
+        if initailize_weights:
+            init_weights(self.modules())
+
+    def forward(self, force):
+        return self.frc_encoder(force)
 
 def make_vision_encoder(out_dim=None):
     vision_extractor = resnet18(pretrained=True)
@@ -96,6 +162,10 @@ def make_tactile_encoder(out_dim):
     tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
     return Encoder(tactile_extractor, out_dim)
 
+def make_ft_encoder(out_dim):
+    encoder = ForceEncoder(out_dim)
+    return encoder
+
 def make_flow_encoder():
     input_dim = 2 * 10 * 14
     encoder = nn.Sequential(nn.Flatten(1), nn.Linear(input_dim, 2048),
@@ -112,13 +182,13 @@ def make_tactile_flow_encoder(out_dim):
     return Tactile_Flow_Encoder(tactile_extractor, out_dim)
 
 
-def make_audio_encoder(out_dim, num_stack, norm_audio):
+def make_audio_encoder(out_dim, num_stack, norm_audio, norm_freq):
     audio_extractor = resnet18(pretrained=True)
     audio_extractor.conv1 = nn.Conv2d(
         3, 64, kernel_size=7, stride=1, padding=3, bias=False
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["layer4.1.relu_1"])
-    return Spec_Encoder(audio_extractor, out_dim, num_stack, norm_audio)
+    return Spec_Encoder(audio_extractor, out_dim, num_stack, norm_audio, norm_freq)
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))

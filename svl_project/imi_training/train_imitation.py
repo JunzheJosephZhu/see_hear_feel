@@ -1,6 +1,6 @@
 import sys
 from telnetlib import KERMIT
-from tomlkit import key
+# from tomlkit import key
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
@@ -8,7 +8,7 @@ import torch
 
 # from svl_project.datasets.imi_dataset import ImitationDatasetFramestackMulti, ImitationDatasetLabelCount
 from svl_project.datasets.imi_dataset import ImitationDataset, ImitationDatasetLabelCount
-from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder
+from svl_project.models.encoders import make_vision_encoder, make_tactile_encoder, make_audio_encoder,make_tactile_flow_encoder,make_ft_encoder
 from svl_project.models.imi_models import Imitation_Actor_Ablation
 from svl_project.engines.imi_engine import ImiEngine
 from torch.utils.data import DataLoader
@@ -67,9 +67,11 @@ def main(args):
         t_encoder = make_tactile_flow_encoder(args.encoder_dim)
     else:
         t_encoder = make_tactile_encoder(args.encoder_dim)
+    # ft encoder
+    ft_encoder = make_ft_encoder(args.encoder_dim)
     # a encoder
-    a_encoder = make_audio_encoder(args.encoder_dim, args.num_stack, args.norm_audio)
-    imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, args).cuda()
+    a_encoder = make_audio_encoder(args.encoder_dim, args.num_stack, args.norm_audio, args.norm_freq)
+    imi_model = Imitation_Actor_Ablation(v_encoder, t_encoder, a_encoder, ft_encoder, args).cuda()
     optimizer = torch.optim.Adam(imi_model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.period, gamma=args.gamma)
     # save config
@@ -102,7 +104,7 @@ if __name__ == "__main__":
     # data
     p.add("--train_csv", default="train.csv")
     p.add("--val_csv", default="val.csv")
-    p.add("--data_folder", default="data/data_0619/test_recordings")
+    p.add("--data_folder", default="data/data_0818/test_recordings")
     p.add("--resized_height_v", required=True, type=int)
     p.add("--resized_width_v", required=True, type=int)
     p.add("--resized_height_t", required=True, type=int)
@@ -119,6 +121,7 @@ if __name__ == "__main__":
     p.add("--minus_first", default=False, action="store_true")
     p.add("--remove_temp", default=False, action="store_true")
     p.add("--remove_modal", default=False, action="store_true")
+    p.add("--norm_freq", default=False, action="store_true")
 
 
 

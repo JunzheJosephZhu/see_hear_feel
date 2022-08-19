@@ -109,6 +109,7 @@ class ImitationDataset(BaseDataset):
         cam_gripper_framestack = 0
         cam_fixed_framestack = 0
         tactile_framestack = 0
+        ft_framestack = 0
         # load first frame for better alignment
         if self.minus_first:
             if self.use_flow:
@@ -146,6 +147,9 @@ class ImitationDataset(BaseDataset):
                         self.load_image(self.trial, "left_gelsight_frame", timestep, self.to_print) - offset
                      + 0.5).clamp(0, 1)) for
                     timestep in frame_idx], dim=0)
+        
+        if "ft" in self.modalities:
+            ft_framestack = torch.stack([torch.FloatTensor(self.timestamps["torques"][timestep]).unsqueeze(-2) for timestep in frame_idx], dim=0)
                 
                 # img = (self.transform_gel(
                 #         self.load_image(self.trial, "left_gelsight_frame", end) - offset
@@ -225,6 +229,8 @@ class ImitationDataset(BaseDataset):
         #             array = frame.squeeze(0).detach().cpu().numpy()
         #             plt.imsave(f"figures/a{id}.jpg", array)
 
+
+
         # load labels
         keyboard = self.timestamps["action_history"][end]
         if self.task == "pouring":
@@ -239,7 +245,7 @@ class ImitationDataset(BaseDataset):
         # 6 D pose
         xyzrpy = np.array([0,0,0,0,0,0]).astype(np.float32)# np.asarray(self.timestamps["pose_history"][end])[:-1].astype(np.float32)
         optical_flow = 0
-        return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
+        return (cam_fixed_framestack, cam_gripper_framestack, tactile_framestack, ft_framestack, audio_clip_g, audio_clip_h), keyboard, xyzrpy, optical_flow
 
 if __name__ == "__main__":
 

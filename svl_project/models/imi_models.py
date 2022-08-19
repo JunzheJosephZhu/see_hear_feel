@@ -11,11 +11,12 @@ import matplotlib.pyplot as plt
 task2actiondim = {"pouring": 2, "insertion": 3}
 
 class Imitation_Actor_Ablation(torch.nn.Module):
-    def __init__(self, v_encoder, t_encoder, a_encoder, args):
+    def __init__(self, v_encoder, t_encoder, a_encoder, ft_encoder, args):
         super().__init__()
         self.v_encoder = v_encoder
         self.t_encoder = t_encoder
         self.a_encoder = a_encoder
+        self.ft_encoder = ft_encoder
         self.mlp = None
         self.encoder_dim = args.encoder_dim
         self.ablation = args.ablation
@@ -71,8 +72,9 @@ class Imitation_Actor_Ablation(torch.nn.Module):
         
         '''
 
-        vf_inp, vg_inp, t_inp, audio_g, audio_h = inputs
+        vf_inp, vg_inp, t_inp, ft_inp, audio_g, audio_h = inputs
         embeds = []
+        num_stack = None
         if "vf" in self.modalities:
             batch, num_stack, _, Hv, Wv = vf_inp.shape
             vf_inp = vf_inp.view(batch * num_stack, 3, Hv, Wv) 
@@ -91,8 +93,16 @@ class Imitation_Actor_Ablation(torch.nn.Module):
             t_embeds = self.t_encoder(t_inp)
             t_embeds = t_embeds.view(batch, num_stack, self.encoder_dim)
             embeds.append(t_embeds)
+        if "ft" in self.modalities:
+            batch, num_stack, C_j, j = ft_inp.shape
+            ft_inp = ft_inp.view(batch * num_stack, C_j, j)
+            ft_embeds = self.ft_encoder(ft_inp)
+            ft_embeds = ft_embeds.view(batch, num_stack, self.encoder_dim)
+            embeds.append(ft_embeds)
         if "ah" in self.modalities:
             batch, _, _ = audio_h.shape
+            if num_stack is None:
+                num_stack = 6
             ah_embeds = self.a_encoder(audio_h)
             ah_embeds = ah_embeds.view(batch, num_stack, self.encoder_dim)
             embeds.append(ah_embeds)
