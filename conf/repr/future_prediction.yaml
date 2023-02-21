@@ -1,3 +1,0 @@
-embed_dim: 128
-pretrained: exp/metric_learn/checkpoints/last.ckpt
-num_heads: 4
