@@ -7,12 +7,24 @@ To clone this repo, run:
 git clone https://github.com/JunzheJosephZhu/see_hear_touch.git
 cd see_hear_touch
 ```
-## Setup
+## Set up Environment
 To set up the required libraries to train/test a model, run:
 ```
 conda create -n "multimodal" python=3.7 -y && conda activate multimodal
 pip install -r requirements.txt
 ```
+## Prepare dataset
+You can download an example dataset [here](https://drive.google.com/drive/folders/13S6YcKJIIRKctB0SjdiaKEv_mvJEM_pk)
+
+After downloading, unzip and rename the folder to ```data```, and place it under the project folder.
+
+To preprocess the data, run <br>
+```python utils/h5py_convert.py```
+
+To split the training/testing dataset, run <br>
+```python split_train_val.py```
+
+Brief explanation for the example dataset: Under ```data/test_recordings```, each folder is an episode. ```timestamps.json``` contains the human demo actions and the pose history of the robot, while each subfolder contains a stream of sensory inputs.
 
 ## Train/test your own model
 For the ResNet Encoder + MSA model described in the original paper, run <br>
@@ -51,7 +63,6 @@ If you find our work relevant, please cite us using the following bibtex:
 
 ### TODO(for Hao)
 - [ ] Add some demo videos
-- [ ] Add dataset structure/action space description/example dataset
 - [ ] test the setup commands locally
 - [ ] provide a pretrained vg_t_ah model
 
