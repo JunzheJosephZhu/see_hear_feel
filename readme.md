@@ -31,7 +31,7 @@ Brief explanation for the example dataset: Under ```data/test_recordings```, eac
 For the ResNet Encoder + MSA model described in the original paper, run <br>
 ```python train_imitation.py --ablation vg_t_ah```
 
-Alternatively, we also provide a modified implementation of TimeSformer that takes multimodel tokens as inputs. To train this, run <br>
+Alternatively, we also provide a modified implementation of TimeSformer that takes multimodal data as inputs. To train this, run <br>
 ```python train_transformer.py --ablation vg_t_ah```
 
 ## Run ablation studies
