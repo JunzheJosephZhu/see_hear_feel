@@ -1,4 +1,5 @@
-## This is the official repository for CoRL 2022 paper "See, Hear, and Feel: Smart Sensory Fusion for Robotic Manipulation"
+## See, Hear, and Feel: Smart Sensory Fusion for Robotic Manipulation, CoRL 2022 (Official Repo)
+
 [Project](https://ai.stanford.edu/~rhgao/see_hear_feel/)|[Paper](https://arxiv.org/abs/2212.03858)|[Bibtex](https://ai.stanford.edu/~rhgao/see_hear_feel/bibtex_seehearfeel.txt)
 
 ## Getting Started
