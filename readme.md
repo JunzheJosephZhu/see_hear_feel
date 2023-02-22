@@ -4,8 +4,8 @@
 ## Getting Started
 To clone this repo, run:
 ```
-git clone https://github.com/JunzheJosephZhu/see_hear_touch.git
-cd see_hear_touch
+git clone https://github.com/JunzheJosephZhu/see_hear_feel.git
+cd see_hear_feel
 ```
 ## Install Dependencies
 To set up the required libraries to train/test a model, run:
