@@ -15,7 +15,6 @@ exp_name: "default"
 task: "packing"
 aux_multiplier: 0.1
 epochs: 200
-minus_first: True
 
 # transformer settings
 dim: 120

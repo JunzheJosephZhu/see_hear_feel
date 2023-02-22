@@ -44,3 +44,5 @@ test_data.hdf5
 
 *.csv
 figures
+
+data*.zip

@@ -1,13 +1,19 @@
 from torchvision.models import resnet18
-from torchvision.models.feature_extraction import create_feature_extractor,get_graph_node_names
+from torchvision.models.feature_extraction import (
+    create_feature_extractor,
+    get_graph_node_names,
+)
 import torch
 from torch import nn
+
 # from perceiver_pytorch import Perceiver
 import torch.nn.functional as F
 import torchaudio
 
+
 class CoordConv(nn.Module):
     """Add coordinates in [0,1] to an image, like CoordConv paper."""
+
     def forward(self, x):
         # needs N,C,H,W inputs
         assert x.ndim == 4
@@ -25,13 +31,14 @@ class CoordConv(nn.Module):
         result = torch.cat((x, new_maps_4d_batch), dim=1)
         return result
 
+
 class Encoder(nn.Module):
     def __init__(self, feature_extractor, out_dim=None):
         super().__init__()
         self.feature_extractor = feature_extractor
         self.downsample = nn.MaxPool2d(2, 2)
         self.coord_conv = CoordConv()
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))        
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         if out_dim is not None:
             self.fc = nn.Linear(512, out_dim)
 
@@ -45,6 +52,7 @@ class Encoder(nn.Module):
         if self.fc is not None:
             x = self.fc(x)
         return x
+
 
 class Spec_Encoder(Encoder):
     def __init__(self, feature_extractor, out_dim=None, norm_audio=False):
@@ -61,8 +69,9 @@ class Spec_Encoder(Encoder):
         log_spec = torch.log(spec + EPS)
         assert log_spec.size(-2) == 64
         if self.norm_audio:
-            log_spec /= log_spec.sum(dim=-2, keepdim=True) # [1, 64, 100]
+            log_spec /= log_spec.sum(dim=-2, keepdim=True)  # [1, 64, 100]
         return super().forward(log_spec)
+
 
 class Tactile_Flow_Encoder(nn.Module):
     def __init__(self, feature_extractor, out_dim):
@@ -77,6 +86,7 @@ class Tactile_Flow_Encoder(nn.Module):
         x = self.ln(x)
         return x
 
+
 def make_vision_encoder(out_dim=None):
     vision_extractor = resnet18(pretrained=True)
     vision_extractor.conv1 = nn.Conv2d(
@@ -86,6 +96,7 @@ def make_vision_encoder(out_dim=None):
     # return Vision_Encoder(vision_extractor, out_dim)
     return Encoder(vision_extractor, out_dim)
 
+
 def make_tactile_encoder(out_dim):
     tactile_extractor = resnet18(pretrained=True)
     tactile_extractor.conv1 = nn.Conv2d(
@@ -94,12 +105,17 @@ def make_tactile_encoder(out_dim):
     tactile_extractor = create_feature_extractor(tactile_extractor, ["layer4.1.relu_1"])
     return Encoder(tactile_extractor, out_dim)
 
+
 def make_flow_encoder():
     input_dim = 2 * 10 * 14
-    encoder = nn.Sequential(nn.Flatten(1), nn.Linear(input_dim, 2048),
-                            nn.Linear(2048, 1024),
-                            nn.Linear(1024, 512))
+    encoder = nn.Sequential(
+        nn.Flatten(1),
+        nn.Linear(input_dim, 2048),
+        nn.Linear(2048, 1024),
+        nn.Linear(1024, 512),
+    )
     return encoder
+
 
 def make_tactile_flow_encoder(out_dim):
     tactile_extractor = resnet18(pretrained=False)
@@ -117,6 +133,7 @@ def make_audio_encoder(out_dim=None, norm_audio=False):
     )
     audio_extractor = create_feature_extractor(audio_extractor, ["layer4.1.relu_1"])
     return Spec_Encoder(audio_extractor, out_dim, norm_audio)
+
 
 if __name__ == "__main__":
     inp = torch.zeros((1, 3, 480, 640))

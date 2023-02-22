@@ -8,6 +8,7 @@ import torchvision
 import matplotlib.pyplot as plt
 import pandas as pd
 
+
 class ImiEngine(LightningModule):
     def __init__(self, actor, optimizer, train_loader, val_loader, scheduler, config):
         super().__init__()
@@ -35,35 +36,34 @@ class ImiEngine(LightningModule):
         # use idx in batch for debugging
         inputs, demo, xyzrpy_gt, optical_flow, start = batch
         action_logits, xyzrpy_pred, weights = self.actor(inputs, start)  # , idx)
-        loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
-        self.log_dict({"train/immi_loss": immi_loss, "train/aux_loss": aux_loss}, prog_bar=True)
+        loss, immi_loss, aux_loss = self.compute_loss(
+            demo, action_logits, xyzrpy_gt, xyzrpy_pred
+        )
+        self.log_dict(
+            {"train/immi_loss": immi_loss, "train/aux_loss": aux_loss}, prog_bar=True
+        )
         action_pred = torch.argmax(action_logits, dim=1)
         acc = (action_pred == demo).sum() / action_pred.numel()
         self.log("train/acc", acc, on_step=True, on_epoch=True)
         return loss
 
-
-
     def validation_step(self, batch, batch_idx):
-        inputs, demo, xyzrpy_gt, optical_flow, start = batch  # , idx = batch
+        inputs, demo, xyzrpy_gt, optical_flow, start = batch
         action_logits, xyzrpy_pred, weights = self.actor(inputs, start)  # , idx)
-        loss, immi_loss, aux_loss = self.compute_loss(demo, action_logits, xyzrpy_gt, xyzrpy_pred)
-        self.log_dict({"val/immi_loss": immi_loss, "val/aux_loss": aux_loss}, prog_bar=True)
+        loss, immi_loss, aux_loss = self.compute_loss(
+            demo, action_logits, xyzrpy_gt, xyzrpy_pred
+        )
+        self.log_dict(
+            {"val/immi_loss": immi_loss, "val/aux_loss": aux_loss}, prog_bar=True
+        )
         action_pred = torch.argmax(action_logits, dim=1)
-        if weights != None and  batch_idx < 225:
-            weights = weights[0]
-            df_cm = pd.DataFrame(weights.cpu().numpy(), index = range(weights.shape[0]), columns=range(weights.shape[0]))
-            plt.figure(figsize = (10,7))
-            fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
-            plt.close(fig_)
-            self.logger.experiment.add_figure("Confusion matrix", fig_, batch_idx)
         # number of corrects and total number
         return ((action_pred == demo).sum(), action_pred.numel())
 
     def validation_epoch_end(self, validation_step_outputs):
         numerator = 0
         divider = 0
-        for (cor, total) in validation_step_outputs:
+        for cor, total in validation_step_outputs:
             numerator += cor
             divider += total
         acc = numerator / divider
@@ -79,4 +79,3 @@ class ImiEngine(LightningModule):
 
     def configure_optimizers(self):
         return [self.optimizer], [self.scheduler]
-

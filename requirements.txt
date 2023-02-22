@@ -10,3 +10,4 @@ torchvision
 tomlkit
 seaborn
 einops
+h5py
