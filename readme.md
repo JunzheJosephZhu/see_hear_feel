@@ -1,6 +1,6 @@
 ## See, Hear, and Feel: Smart Sensory Fusion for Robotic Manipulation, CoRL 2022 (Official Repo)
 
-[Project](https://ai.stanford.edu/~rhgao/see_hear_feel/)|[Paper](https://arxiv.org/abs/2212.03858)|[Bibtex](https://ai.stanford.edu/~rhgao/see_hear_feel/bibtex_seehearfeel.txt)
+[Project](https://ai.stanford.edu/~rhgao/see_hear_feel/)|[Paper](https://arxiv.org/abs/2212.03858)|[Data](https://drive.google.com/drive/folders/13S6YcKJIIRKctB0SjdiaKEv_mvJEM_pk)|[Bibtex](https://ai.stanford.edu/~rhgao/see_hear_feel/bibtex_seehearfeel.txt)
 
 ## Getting Started
 To clone this repo, run:
