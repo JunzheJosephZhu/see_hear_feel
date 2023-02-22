@@ -53,5 +53,5 @@ If you find our work relevant, please cite us using the following bibtex:
 - [ ] Add some demo videos
 - [ ] Add dataset structure/action space description/example dataset
 - [ ] test the setup commands locally
-- [ ] provide a pretrained model
+- [ ] provide a pretrained vg_t_ah model
 
