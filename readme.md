@@ -1,5 +1,7 @@
 ## See, Hear, and Feel: Smart Sensory Fusion for Robotic Manipulation, CoRL 2022 (Official Repo)
 
+**Abstract:** We build a robot system that can see with a camera, hear with a contact microphone, and feel with a vision-based tactile sensor, with all three sensory modalities fused with a self-attention model. Results on two challenging tasks, dense packing and pouring, demonstrate the necessity and power of multisensory perception for robotic manipulation
+
 [Project](https://ai.stanford.edu/~rhgao/see_hear_feel/)|[Paper](https://arxiv.org/abs/2212.03858)|[Data](https://drive.google.com/drive/folders/13S6YcKJIIRKctB0SjdiaKEv_mvJEM_pk)|[Bibtex](https://ai.stanford.edu/~rhgao/see_hear_feel/bibtex_seehearfeel.txt)
 
 [![](https://img.youtube.com/vi/sRdx3sa6ryk/0.jpg)](https://www.youtube.com/watch?v=sRdx3sa6ryk)
